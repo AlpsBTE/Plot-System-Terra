@@ -1,0 +1,36 @@
+# -------------------------------------------
+#      Plot System Terra - by Alps BTE
+# -------------------------------------------
+# [Github Repo] https://github.com/AlpsBTE/PlotSystem
+# [Config Documentation] https://github.com/AlpsBTE/PlotSystem/wiki/Configuration
+# [Contacts - Discord] R3tuxn#7169, Cinnazeyy#2440
+# -------------------------------------------
+
+# Your database credentials
+database:
+  url: jdbc:mariadb://adress:port/
+  name: database-name
+  username: user
+  password: paswd
+
+# --------------- FTP/SFTP ---------------
+# If the communication between the servers
+# using symlink doesn't work, use FTP/SFTP
+
+# Set to true if one or more of your servers
+# requires you to transfer using FTP/SFTP
+ftp-enabled: false
+servers:
+  S1:
+    finished-schematic-path: path
+    ftp:
+      secure-ftp: true
+      address: ip-adress
+      port: 22
+      username: user
+      password: paswd
+
+# The prefix for the plugin message outputs
+message-prefix: §7§l>>
+info-prefix: §a
+error-prefix: §c
