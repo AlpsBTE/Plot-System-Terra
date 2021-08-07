@@ -132,27 +132,16 @@ public class CreatePlotMenu {
 
         int counter = 0;
         try (Connection connection = DatabaseConnection.getConnection()) {
-            ResultSet rs = Objects.requireNonNull(connection).createStatement().executeQuery("SELECT idcityProject, name, country FROM cityProjects WHERE visible = '1'");
+            //TODO: Change Query to new database
+            ResultSet rs = Objects.requireNonNull(connection).createStatement().executeQuery("SELECT idcityProject, name, country, head_id FROM cityProjects WHERE visible = '1'");
 
             while (rs.next()) {
                 int cityID = rs.getInt("idcityProject");
                 String name = rs.getString("name");
+                String headID = rs.getString("head_id");
+                CityProject city;
 
-                CityProject city = null;
-
-                switch (rs.getString("country")){
-                    case "AT":
-                        city = new CityProject(cityID, name, "4397");
-                        break;
-                    case "CH":
-                        city = new CityProject(cityID, name, "32348");
-                        break;
-                    case "LI":
-                        city = new CityProject(cityID, name, "26174");
-                        break;
-                    case "IT":
-                        city = new CityProject(cityID, name, "21903");
-                }
+                city = new CityProject(cityID, name, headID);
 
                 createPlotMenu.getSlot(9 + counter).setItem(city.getItem());
                 listProjects.add(city);

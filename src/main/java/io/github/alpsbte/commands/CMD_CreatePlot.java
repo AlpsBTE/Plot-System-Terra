@@ -14,7 +14,7 @@ public class CMD_CreatePlot implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String s, String[] args) {
         if(sender instanceof Player) {
-            if(sender.hasPermission("plotsystem.createPlot")) {
+            if(Utils.hasPermission(sender, "createplot")) {
                 try {
                     new CreatePlotMenu(((Player) sender).getPlayer());
                 } catch (Exception ex) {

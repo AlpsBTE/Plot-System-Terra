@@ -16,6 +16,7 @@ import com.sk89q.worldedit.regions.Polygonal2DRegion;
 import com.sk89q.worldedit.regions.Region;
 import github.alpsbte.PlotSystemTerra;
 import github.alpsbte.core.DatabaseConnection;
+import github.alpsbte.utils.Utils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
@@ -46,7 +47,7 @@ public class PlotCreator {
             plotRegion = Objects.requireNonNull(WorldEdit.getInstance().getSessionManager().findByName(player.getDisplayName())).getSelection(
                     Objects.requireNonNull(WorldEdit.getInstance().getSessionManager().findByName(player.getDisplayName())).getSelectionWorld());
         } catch (NullPointerException | IncompleteRegionException ex) {
-            player.sendMessage("§7§l>> §cPlease select a plot using WorldEdit!");
+            player.sendMessage(Utils.getErrorMessageFormat("Please select a plot using WorldEdit!"));
             return;
         }
 
@@ -59,7 +60,7 @@ public class PlotCreator {
                 polyRegion = (Polygonal2DRegion) plotRegion;
 
                 if (polyRegion.getLength() > 100 || polyRegion.getWidth() > 100 || polyRegion.getHeight() > 250) {
-                    player.sendMessage("§7§l>> §cPlease adjust your selection size!");
+                    player.sendMessage(Utils.getErrorMessageFormat("Please adjust your selection size!"));
                     return;
                 }
 
@@ -74,19 +75,19 @@ public class PlotCreator {
                 try {
                     if(!containsSign(polyRegion.iterator(), player.getWorld())) {
                         Bukkit.getLogger().log(Level.SEVERE, "An error occurred while creating a new plot!");
-                        player.sendMessage("§7§l>> §cPlease place a minimum of one sign for the street side.");
+                        player.sendMessage(Utils.getErrorMessageFormat("Please place a minimum of one sign for the street side."));
                         return;
                     }
                 } catch (Exception ex) {
                     Bukkit.getLogger().log(Level.SEVERE, "An error occurred while checking for sign(s) in selection!", ex);
                 }
             } else {
-                player.sendMessage("§7§l>> §cPlease use poly selection to create a new plot!");
+                player.sendMessage(Utils.getErrorMessageFormat("Please use poly selection to create a new plot!"));
                 return;
             }
         } catch (Exception ex) {
             Bukkit.getLogger().log(Level.SEVERE, "An error occurred while creating a new plot!", ex);
-            player.sendMessage("§7§l>> §cAn error occurred while creating plot!");
+            player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
             return;
         }
 
