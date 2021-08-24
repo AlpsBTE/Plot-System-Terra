@@ -14,7 +14,7 @@ public class Utils {
     /**
      * Prefix used for all command permissions.
      */
-    public static final String permissionPrefix = "alpsbte";
+    public static final String permissionPrefix = "plotsystem";
 
     public static ItemStack getItemHead(String headID) {
         return headDatabaseAPI != null ? headDatabaseAPI.getItemHead(headID) : new ItemBuilder(Material.SKULL_ITEM, 1, (byte) 3).build();
