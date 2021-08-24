@@ -1,6 +1,7 @@
 package com.alpsbte.plotsystemterra.utils;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
+import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import me.arcaniax.hdb.api.HeadDatabaseAPI;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
@@ -21,14 +22,14 @@ public class Utils {
     }
 
     // Player Messages
-    private static final String messagePrefix =  PlotSystemTerra.getPlugin().getConfig().getString("message-prefix") + " ";
+    private static final String messagePrefix =  PlotSystemTerra.getPlugin().getConfig().getString(ConfigPaths.MESSAGE_PREFIX) + " ";
 
     public static String getInfoMessageFormat(String info) {
-        return messagePrefix + PlotSystemTerra.getPlugin().getConfig().getString("info-prefix") + info;
+        return messagePrefix + PlotSystemTerra.getPlugin().getConfig().getString(ConfigPaths.MESSAGE_INFO_COLOUR) + info;
     }
 
     public static String getErrorMessageFormat(String error) {
-        return messagePrefix + PlotSystemTerra.getPlugin().getConfig().getString("error-prefix") + error;
+        return messagePrefix + PlotSystemTerra.getPlugin().getConfig().getString(ConfigPaths.MESSAGE_ERROR_COLOUR) + error;
     }
 
     public static boolean hasPermission(CommandSender sender, String permissionNode) {
