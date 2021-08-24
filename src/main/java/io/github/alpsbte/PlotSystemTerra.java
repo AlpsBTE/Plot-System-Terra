@@ -47,12 +47,12 @@ public class PlotSystemTerra extends JavaPlugin {
 
     @Override
     public void reloadConfig() {
-        this.configManager.reloadConfig();
+        this.configManager.reloadConfigs();
     }
 
     @Override
     public void saveConfig() {
-        this.configManager.saveConfig();
+        this.configManager.saveConfigs();
     }
 
     public static PlotSystemTerra getPlugin() {

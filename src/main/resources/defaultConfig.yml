@@ -1,36 +1,36 @@
-# -------------------------------------------
-#      Plot System Terra - by Alps BTE
-# -------------------------------------------
-# [Github Repo] https://github.com/AlpsBTE/PlotSystem
-# [Config Documentation] https://github.com/AlpsBTE/PlotSystem/wiki/Configuration
-# [Contacts - Discord] R3tuxn#7169, Cinnazeyy#2440
-# -------------------------------------------
+# -----------------------------------------------------
+# |         Plot System Terra - by Alps BTE
+# -----------------------------------------------------
+# | [Github Repo] https://github.com/AlpsBTE/Plot-System-Terra
+# | [Config Documentation] https://github.com/AlpsBTE/Plot-System-Terra/wiki
+# | [Contacts - Discord] R3tuxn#7169, Coppertine#1718
+# -----------------------------------------------------
 
-# Your database credentials
+# Keep updated about newer versions
+check-for-updates: true
+
+# Enables special dev tools and features for development
+# NOTE: Do not change if you do not know what you are doing
+dev-mode: false
+
+
+# -----------------------------------------------------
+# | Supported database: MariaDB
+# -----------------------------------------------------
 database:
-  url: jdbc:mariadb://adress:port/
-  name: database-name
-  username: user
-  password: paswd
+  url: jdbc:mariadb://adress:3306/
+  dbname: plotsystem
+  username: plotsystem
+  password: minecraft
 
-# --------------- FTP/SFTP ---------------
-# If the communication between the servers
-# using symlink doesn't work, use FTP/SFTP
 
-# Set to true if one or more of your servers
-# requires you to transfer using FTP/SFTP
-ftp-enabled: false
-servers:
-  S1:
-    finished-schematic-path: path
-    ftp:
-      secure-ftp: true
-      address: ip-adress
-      port: 22
-      username: user
-      password: paswd
-
-# The prefix for the plugin message outputs
+# -----------------------------------------------------
+# | Formatting: Info/Error message outputs
+# -----------------------------------------------------
 message-prefix: §7§l>>
-info-prefix: §a
-error-prefix: §c
+info-colour: §a
+error-colour: §c
+
+
+# NOTE: Do not change
+config-version: 1.0
