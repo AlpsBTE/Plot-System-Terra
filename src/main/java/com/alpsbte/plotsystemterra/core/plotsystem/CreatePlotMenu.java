@@ -13,12 +13,10 @@ import org.ipvp.canvas.mask.BinaryMask;
 import org.ipvp.canvas.mask.Mask;
 import org.ipvp.canvas.type.ChestMenu;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class CreatePlotMenu {
     private final Menu createPlotMenu = ChestMenu.builder(6).title("Create Plot").redraw(true).build();
@@ -35,7 +33,6 @@ public class CreatePlotMenu {
     }
 
     public Menu getCityProjectUI() {
-        // Set glass border
         Mask mask = BinaryMask.builder(createPlotMenu)
                 .item(new ItemBuilder(Material.STAINED_GLASS_PANE, 1, (byte)7).setName(" ").build())
                 .pattern("111101111") // First row
@@ -57,7 +54,7 @@ public class CreatePlotMenu {
                     selectedCityID = cityID;
                     createPlotMenu.getSlot(4).setItem(getStats(player.getLocation()));
 
-                    clickPlayer.playSound(clickPlayer.getLocation(), Sound.ENTITY_ITEM_PICKUP, 5.0f, 1.0f);
+                    clickPlayer.playSound(clickPlayer.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
                 }
             });
         }
@@ -131,18 +128,11 @@ public class CreatePlotMenu {
         List<CityProject> listProjects = new ArrayList<>();
 
         int counter = 0;
-        try (Connection connection = DatabaseConnection.getConnection()) {
-            //TODO: Change Query to new database
-            ResultSet rs = Objects.requireNonNull(connection).createStatement().executeQuery("SELECT idcityProject, name, country, head_id FROM cityProjects WHERE visible = '1'");
+        try {
+            ResultSet rs = DatabaseConnection.createStatement("SELECT id, country_id, name FROM plotsystem_city_projects").executeQuery();
 
             while (rs.next()) {
-                int cityID = rs.getInt("idcityProject");
-                String name = rs.getString("name");
-                String headID = rs.getString("head_id");
-                CityProject city;
-
-                city = new CityProject(cityID, name, headID);
-
+                CityProject city = new CityProject(rs.getInt(1), rs.getInt(2), rs.getString(3));
                 createPlotMenu.getSlot(9 + counter).setItem(city.getItem());
                 listProjects.add(city);
                 counter++;

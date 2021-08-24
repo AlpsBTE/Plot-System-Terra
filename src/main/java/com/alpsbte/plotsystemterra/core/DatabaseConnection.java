@@ -1,13 +1,16 @@
 package com.alpsbte.plotsystemterra.core;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
+import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import java.sql.Connection;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 
 public class DatabaseConnection {
@@ -15,26 +18,26 @@ public class DatabaseConnection {
     private final static HikariConfig config = new HikariConfig();
     private static HikariDataSource dataSource;
 
-    public static void InitializeDatabase() {
-        try {
-            Class.forName("org.mariadb.jdbc.Driver");
-            Bukkit.getLogger().log(Level.INFO, "Successfully registered MariaDB JDBC Driver!");
+    public static void InitializeDatabase() throws ClassNotFoundException {
+        Class.forName("org.mariadb.jdbc.Driver"); // TODO: Add Support MySQL Driver
 
-            FileConfiguration configFile = PlotSystemTerra.getPlugin().getConfig();
+        FileConfiguration configFile = PlotSystemTerra.getPlugin().getConfig();
+        String URL = configFile.getString(ConfigPaths.DATABASE_URL);
+        String name = configFile.getString(ConfigPaths.DATABASE_NAME);
+        String username = configFile.getString(ConfigPaths.DATABASE_USERNAME);
+        String password = configFile.getString(ConfigPaths.DATABASE_PASSWORD);
 
-            config.setJdbcUrl(configFile.getString("database.url") + configFile.getString("database.name"));
-            config.setUsername(configFile.getString("database.username"));
-            config.setPassword(configFile.getString("database.password"));
-            config.addDataSourceProperty("cachePrepStmts", "true");
-            config.addDataSourceProperty("prepStmtCacheSize", "250");
-            config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        config.setJdbcUrl(URL + name);
+        config.setUsername(username);
+        config.setPassword(password);
+        config.addDataSourceProperty("cachePrepStmts", "true");
+        config.addDataSourceProperty("prepStmtCacheSize", "250");
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
 
-            dataSource = new HikariDataSource(config);
-        } catch (Exception ex) {
-            Bukkit.getLogger().log(Level.SEVERE, "An error occurred while initializing database!", ex);
-        }
+        dataSource = new HikariDataSource(config);
     }
 
+    @Deprecated
     public static Connection getConnection() {
         int retries = 3;
         while (retries > 0) {
@@ -48,4 +51,62 @@ public class DatabaseConnection {
         return null;
     }
 
+    public static StatementBuilder createStatement(String sql) {
+        return new StatementBuilder(sql);
+    }
+
+    /**
+     * Returns a missing auto increment id
+     * @param table in the database
+     * @return smallest missing auto increment id in the table
+     */
+    public static int getTableID(String table) {
+        try {
+            String query ="SELECT id + 1 available_id FROM $table t WHERE NOT EXISTS (SELECT * FROM $table WHERE $table.id = t.id + 1) ORDER BY id LIMIT 1"
+                    .replace("$table", table);
+            ResultSet rs = DatabaseConnection.createStatement(query).executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+            return 1;
+        } catch (SQLException ex) {
+            Bukkit.getLogger().log(Level.SEVERE, "A SQL error occurred!", ex);
+            return 1;
+        }
+    }
+
+    public static class StatementBuilder {
+        private final String sql;
+        private final List<Object> values = new ArrayList<>();
+
+        public StatementBuilder(String sql) {
+            this.sql = sql;
+        }
+
+        public StatementBuilder setValue(Object value) {
+            values.add(value);
+            return this;
+        }
+
+        public ResultSet executeQuery() throws SQLException {
+            try (Connection con = dataSource.getConnection()) {
+                PreparedStatement ps = Objects.requireNonNull(con).prepareStatement(sql);
+                return iterateValues(ps).executeQuery();
+            }
+        }
+
+        public void executeUpdate() throws SQLException {
+            try (Connection con = dataSource.getConnection()) {
+                PreparedStatement ps = Objects.requireNonNull(con).prepareStatement(sql);
+                iterateValues(ps).executeUpdate();
+            }
+        }
+
+        private PreparedStatement iterateValues(PreparedStatement ps) throws SQLException {
+            for (int i = 0; i < values.size(); i++) {
+                ps.setObject(i + 1, values.get(i));
+            }
+            return ps;
+        }
+    }
 }

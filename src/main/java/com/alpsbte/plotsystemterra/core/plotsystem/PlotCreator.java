@@ -27,9 +27,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -39,7 +37,7 @@ public class PlotCreator {
     private final static String schematicsPath = Paths.get(PlotSystemTerra.getPlugin().getDataFolder().getAbsolutePath(), "schematics") + File.separator;
 
     public static void Create(Player player, CityProject cityProject, int difficultyID) {
-        int plotID = 1;
+        int plotID;
         Region plotRegion;
 
         // Get WorldEdit selection of player
@@ -93,30 +91,25 @@ public class PlotCreator {
 
         // Saving schematic
         String filePath;
-        try (Connection connection = DatabaseConnection.getConnection()) {
-            ResultSet rs = Objects.requireNonNull(connection).createStatement().executeQuery("SELECT (t1.idplot + 1) as firstID FROM plots t1 " +
-                    "WHERE NOT EXISTS (SELECT t2.idplot FROM plots t2 WHERE t2.idplot = t1.idplot + 1)");
-            if (rs.next()) {
-                plotID = rs.getInt(1);
-            }
+        try {
+            plotID = DatabaseConnection.getTableID("plotsystem_plots");
 
             filePath = Paths.get(schematicsPath, String.valueOf(cityProject.getID()), plotID + ".schematic").toString();
             File schematic = new File(filePath);
 
             if(!schematic.getParentFile().mkdirs() || !schematic.createNewFile()) { throw new Exception(); };
 
-            WorldEditPlugin worldEdit = (WorldEditPlugin) Bukkit.getServer().getPluginManager().getPlugin("WorldEdit");
+            WorldEditPlugin worldEdit = PlotSystemTerra.DependencyManager.getWorldEditPlugin();
 
             Clipboard cb = new BlockArrayClipboard(polyRegion);
             cb.setOrigin(cb.getRegion().getCenter());
-            LocalSession playerSession = WorldEdit.getInstance().getSessionManager().findByName(player.getDisplayName());
+            LocalSession playerSession = PlotSystemTerra.DependencyManager.getWorldEdit().getSessionManager().findByName(player.getDisplayName());
             ForwardExtentCopy copy = new ForwardExtentCopy(playerSession.createEditSession(worldEdit.wrapPlayer(player)), polyRegion, cb, polyRegion.getMinimumPoint());
             Operations.completeLegacy(copy);
 
             try (ClipboardWriter writer = ClipboardFormat.SCHEMATIC.getWriter(new FileOutputStream(schematic, false))) {
                 writer.write(cb, polyRegion.getWorld().getWorldData());
             }
-            rs.close();
 
             // Clear player selection
             try {
@@ -133,19 +126,17 @@ public class PlotCreator {
         }
 
         // Save to database
-        try (Connection connection = DatabaseConnection.getConnection()) {
-            PreparedStatement statement = connection.prepareStatement("INSERT INTO plots (idplot, idcity, mcCoordinates, iddifficulty) VALUES (?, ?, ?, ?)");
+        try {
+            DatabaseConnection.createStatement("INSERT INTO plotsystem_plots (id, city_project_id, difficulty_id, mc_coordinates, create_date, create_player) VALUES (?, ?, ?, ?, ?, ?)")
+                    .setValue(plotID)
+                    .setValue(cityProject.getID())
+                    .setValue(difficultyID)
+                    .setValue(player.getLocation().getX() + "," + player.getLocation().getY() + "," + player.getLocation().getZ())
+                    .setValue(java.sql.Date.valueOf(LocalDate.now()))
+                    .setValue(player.getUniqueId()).executeUpdate();
 
-            statement.setInt(1, plotID);
-            statement.setInt(2, cityProject.getID());
-            statement.setString(3, player.getLocation().getX() + "," + player.getLocation().getY() + "," + player.getLocation().getZ());
-            statement.setInt(4, difficultyID);
-
-            statement.execute();
-            statement.close();
-
-            player.sendMessage("§7§l>> §aSuccessfully created new plot!§7 (City: " + cityProject.getName() + " | Plot-ID: " + plotID + ")");
-            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
+            player.sendMessage(Utils.getInfoMessageFormat("Successfully created new plot!§7 (City: " + cityProject.getName() + " | Plot-ID: " + plotID + ")"));
+            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
 
             try {
                 placePlotMarker(plotRegion, player.getWorld(), plotID);
