@@ -31,10 +31,6 @@ public class ConfigManager {
             }
         }
 
-        if (!getCommandsConfig().getFile().exists()) {
-            this.createConfig(getCommandsConfig());
-        }
-
         reloadConfigs();
 
         // Check for updates
@@ -119,6 +115,10 @@ public class ConfigManager {
      */
     public boolean createConfig(Config config) {
         try {
+            if (!config.getFile().getParentFile().exists()) {
+                config.getFile().getParentFile().mkdirs();
+            }
+
             if (config.getFile().createNewFile()) {
                 try (InputStream defConfigStream = config.getDefaultFileStream()) {
                     try (OutputStream outputStream = new FileOutputStream(config.getFile())) {
@@ -262,12 +262,5 @@ public class ConfigManager {
      */
     public Config getConfig() {
         return configs.get(0);
-    }
-
-    /**
-     * @return Commands Config
-     */
-    public Config getCommandsConfig() {
-        return configs.get(1);
     }
 }
