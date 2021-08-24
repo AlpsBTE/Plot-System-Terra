@@ -1,4 +1,4 @@
-package github.alpsbte.core.config;
+package com.alpsbte.plotsystemterra.core.config;
 
 public abstract class ConfigPaths {
 

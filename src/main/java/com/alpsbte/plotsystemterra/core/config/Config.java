@@ -1,6 +1,6 @@
-package github.alpsbte.core.config;
+package com.alpsbte.plotsystemterra.core.config;
 
-import github.alpsbte.PlotSystemTerra;
+import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.yaml.snakeyaml.DumperOptions;
 
