@@ -1,11 +1,11 @@
-main: github.alpsbte.PlotSystemTerra
-version: 1.0
+main: com.alpsbte.plotsystemterra.PlotSystemTerra
+version: 1.2
 api-version: 1.12.2
-name: Plot-System-Terra
-author: R3tuxn
+name: PlotSystem-Terra
+author: R3tuxn, Coppertine
 
 commands:
   createplot:
-    description: Create a new plot for the PlotSystem
+    description: Creates a new plot for the PlotSystem.
     usage: /createplot
     permission: plotsystem.createplot
