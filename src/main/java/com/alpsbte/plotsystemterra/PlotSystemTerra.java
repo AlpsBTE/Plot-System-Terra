@@ -7,7 +7,6 @@ import com.alpsbte.plotsystemterra.core.config.ConfigManager;
 import com.alpsbte.plotsystemterra.core.config.ConfigNotImplementedException;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
-import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -147,10 +146,6 @@ public class PlotSystemTerra extends JavaPlugin {
 
             if (!pluginManager.isPluginEnabled("WorldEdit")) {
                 missingDependencies.add("WorldEdit (V6.1.9)");
-            }
-
-            if (!pluginManager.isPluginEnabled("WorldGuard")) {
-                missingDependencies.add("WorldGuard (V6.2.2)");
             }
 
             if (!pluginManager.isPluginEnabled("HeadDatabase")) {
