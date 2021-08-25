@@ -1,5 +1,6 @@
 package com.alpsbte.plotsystemterra.core.config;
 
+import com.alpsbte.plotsystemterra.core.plotsystem.PlotCreator;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.bukkit.Bukkit;
@@ -29,6 +30,15 @@ public class ConfigManager {
             if (this.createConfig(getConfig())) {
                 throw new ConfigNotImplementedException("The config file must be configured!");
             }
+        }
+
+        // Create schematics directory if not exists
+        try {
+            if (!Files.isDirectory(Paths.get(PlotCreator.schematicsPath))) {
+                Files.createDirectories(Paths.get(PlotCreator.schematicsPath));
+            }
+        } catch (IOException ex) {
+            Bukkit.getLogger().log(Level.WARNING, "Could not create schematics directory!");
         }
 
         reloadConfigs();
