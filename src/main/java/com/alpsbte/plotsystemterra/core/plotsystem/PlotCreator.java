@@ -17,7 +17,9 @@ import com.sk89q.worldedit.regions.Polygonal2DRegion;
 import com.sk89q.worldedit.regions.Region;
 import org.apache.commons.vfs2.FileSystemException;
 import org.bukkit.*;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 
@@ -142,7 +144,7 @@ public class PlotCreator {
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
 
             try {
-                placePlotMarker(plotRegion, player.getWorld(), plotID);
+                placePlotMarker(plotRegion, player, plotID);
             } catch (Exception ex) {
                 Bukkit.getLogger().log(Level.SEVERE, "An error occurred while placing plot marker!", ex);
             }
@@ -186,14 +188,31 @@ public class PlotCreator {
         return hasSign;
     }
 
-    private static void placePlotMarker(Region plotRegion, World world, int plotID) {
+    private static void placePlotMarker(Region plotRegion, Player player, int plotID) {
         Vector centerBlock = plotRegion.getCenter();
-        Location highestBlock = world.getHighestBlockAt(centerBlock.getBlockX(), centerBlock.getBlockZ()).getLocation();
+        Location highestBlock = player.getWorld().getHighestBlockAt(centerBlock.getBlockX(), centerBlock.getBlockZ()).getLocation();
 
-        world.getBlockAt(highestBlock.add(0, 1, 0)).setType(Material.SEA_LANTERN);
-        Block signBlock = highestBlock.add(0, 2, 0).getBlock();
-        signBlock.setType(Material.SIGN);
-        Sign sign = (Sign) signBlock.getState();
-        sign.setLine(1, "ID: " + plotID);
+        Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> {
+            player.getWorld().getBlockAt(highestBlock).setType(Material.SEA_LANTERN);
+            player.getWorld().getBlockAt(highestBlock.add(0, 1, 0)).setType(Material.SIGN_POST);
+            Block signBlock = player.getWorld().getBlockAt(highestBlock);
+
+            Sign sign = (Sign) signBlock.getState();
+            org.bukkit.material.Sign matSign =  new org.bukkit.material.Sign(Material.SIGN_POST);
+            matSign.setFacingDirection(getPlayerFaceDirection(player).getOppositeFace());
+            sign.setData(matSign);
+            sign.setLine(0, "§8§lID: §c§l" + plotID);
+            sign.setLine(2, "§8§lCreated By:");
+            sign.setLine(3, "§c§l" + player.getName());
+            sign.update();
+        });
+    }
+
+    private static BlockFace getPlayerFaceDirection(Player player) {
+        float y = player.getLocation().getYaw();
+        if( y < 0 ){y += 360;}
+        y %= 360;
+        int i = (int)((y+8) / 22.5);
+        return BlockFace.values()[i];
     }
 }
