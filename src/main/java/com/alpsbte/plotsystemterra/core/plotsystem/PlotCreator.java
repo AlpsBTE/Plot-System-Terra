@@ -71,8 +71,7 @@ public class PlotCreator {
 
                 // Check if selection contains sign
                 try {
-                    if(!containsSign(polyRegion.iterator(), player.getWorld())) {
-                        Bukkit.getLogger().log(Level.SEVERE, "An error occurred while creating a new plot!");
+                    if(!containsSign(polyRegion, player.getWorld())) {
                         player.sendMessage(Utils.getErrorMessageFormat("Please place a minimum of one sign for the street side."));
                         return CompletableFuture.completedFuture(null);
                     }
@@ -109,15 +108,6 @@ public class PlotCreator {
 
             try (ClipboardWriter writer = ClipboardFormat.SCHEMATIC.getWriter(new FileOutputStream(schematic, false))) {
                 writer.write(cb, polyRegion.getWorld().getWorldData());
-            }
-
-            // Clear player selection
-            try {
-                if (worldEdit.getSelection(player.getPlayer()) != null) {
-                    worldEdit.setSelection(player.getPlayer(), null);
-                }
-            } catch (Exception ex) {
-                Bukkit.getLogger().log(Level.WARNING, "An error occurred while trying to clear players selection!", ex);
             }
         } catch (Exception ex) {
             Bukkit.getLogger().log(Level.SEVERE, "An error occurred while saving new plot to a schematic!", ex);
