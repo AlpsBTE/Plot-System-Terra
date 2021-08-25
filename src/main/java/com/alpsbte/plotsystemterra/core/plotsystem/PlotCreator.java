@@ -2,12 +2,10 @@ package com.alpsbte.plotsystemterra.core.plotsystem;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.DatabaseConnection;
+import com.alpsbte.plotsystemterra.utils.FTPManager;
 import com.alpsbte.plotsystemterra.utils.Utils;
-import com.sk89q.worldedit.BlockVector;
-import com.sk89q.worldedit.IncompleteRegionException;
-import com.sk89q.worldedit.LocalSession;
+import com.sk89q.worldedit.*;
 import com.sk89q.worldedit.Vector;
-import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldedit.extent.clipboard.BlockArrayClipboard;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
@@ -17,6 +15,7 @@ import com.sk89q.worldedit.function.operation.ForwardExtentCopy;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.regions.Polygonal2DRegion;
 import com.sk89q.worldedit.regions.Region;
+import org.apache.commons.vfs2.FileSystemException;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
@@ -27,6 +26,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -34,7 +34,7 @@ import java.util.logging.Level;
 
 public class PlotCreator {
 
-    private final static String schematicsPath = Paths.get(PlotSystemTerra.getPlugin().getDataFolder().getAbsolutePath(), "schematics") + File.separator;
+    public final static String schematicsPath = Paths.get(PlotSystemTerra.getPlugin().getDataFolder().getAbsolutePath(), "schematics") + File.separator;
 
     public static CompletableFuture<Void> Create(Player player, CityProject cityProject, int difficultyID) {
         int plotID;
@@ -135,7 +135,20 @@ public class PlotCreator {
                     .setValue(java.sql.Date.valueOf(LocalDate.now()))
                     .setValue(player.getUniqueId()).executeUpdate();
 
-            player.sendMessage(Utils.getInfoMessageFormat("Successfully created new plot!§7 (City: " + cityProject.getName() + " | Plot-ID: " + plotID + ")"));
+            // Upload to SFTP or FTP server if enabled
+            FTPConfiguration ftpConfiguration = cityProject.getFTPConfiguration();
+            if (ftpConfiguration != null) {
+                if (CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return FTPManager.uploadSchematic(FTPManager.getFTPUrl(ftpConfiguration, cityProject.getID()), new File(filePath));
+                    } catch (FileSystemException ex) {
+                        Bukkit.getLogger().log(Level.SEVERE, "An error occurred while uploading schematic file to SFTP/FTP server!", ex);
+                        return null;
+                    }
+                }).join() == null) throw new SQLException();
+            }
+
+            player.sendMessage(Utils.getInfoMessageFormat("Successfully created new plot! §f(City: §6" + cityProject.getName() + " §f| Plot-ID: §6" + plotID + "§f)"));
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
 
             try {
@@ -143,7 +156,7 @@ public class PlotCreator {
             } catch (Exception ex) {
                 Bukkit.getLogger().log(Level.SEVERE, "An error occurred while placing plot marker!", ex);
             }
-        } catch (Exception ex) {
+        } catch (SQLException ex) {
             Bukkit.getLogger().log(Level.SEVERE, "An error occurred while saving new plot to database!", ex);
             player.sendMessage("§7§l>> §cAn error occurred while creating plot!");
 
