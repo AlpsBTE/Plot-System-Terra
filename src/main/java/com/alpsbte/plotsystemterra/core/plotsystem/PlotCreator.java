@@ -29,14 +29,14 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 public class PlotCreator {
 
     private final static String schematicsPath = Paths.get(PlotSystemTerra.getPlugin().getDataFolder().getAbsolutePath(), "schematics") + File.separator;
 
-    public static void Create(Player player, CityProject cityProject, int difficultyID) {
+    public static CompletableFuture<Void> Create(Player player, CityProject cityProject, int difficultyID) {
         int plotID;
         Region plotRegion;
 
@@ -46,7 +46,7 @@ public class PlotCreator {
                     Objects.requireNonNull(WorldEdit.getInstance().getSessionManager().findByName(player.getDisplayName())).getSelectionWorld());
         } catch (NullPointerException | IncompleteRegionException ex) {
             player.sendMessage(Utils.getErrorMessageFormat("Please select a plot using WorldEdit!"));
-            return;
+            return CompletableFuture.completedFuture(null);
         }
 
         // Conversion
@@ -59,7 +59,7 @@ public class PlotCreator {
 
                 if (polyRegion.getLength() > 100 || polyRegion.getWidth() > 100 || polyRegion.getHeight() > 250) {
                     player.sendMessage(Utils.getErrorMessageFormat("Please adjust your selection size!"));
-                    return;
+                    return CompletableFuture.completedFuture(null);
                 }
 
                 // Set minimum selection height under player location
@@ -74,19 +74,19 @@ public class PlotCreator {
                     if(!containsSign(polyRegion.iterator(), player.getWorld())) {
                         Bukkit.getLogger().log(Level.SEVERE, "An error occurred while creating a new plot!");
                         player.sendMessage(Utils.getErrorMessageFormat("Please place a minimum of one sign for the street side."));
-                        return;
+                        return CompletableFuture.completedFuture(null);
                     }
                 } catch (Exception ex) {
                     Bukkit.getLogger().log(Level.SEVERE, "An error occurred while checking for sign(s) in selection!", ex);
                 }
             } else {
                 player.sendMessage(Utils.getErrorMessageFormat("Please use poly selection to create a new plot!"));
-                return;
+                return CompletableFuture.completedFuture(null);
             }
         } catch (Exception ex) {
             Bukkit.getLogger().log(Level.SEVERE, "An error occurred while creating a new plot!", ex);
             player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
-            return;
+            return CompletableFuture.completedFuture(null);
         }
 
         // Saving schematic
@@ -122,7 +122,7 @@ public class PlotCreator {
         } catch (Exception ex) {
             Bukkit.getLogger().log(Level.SEVERE, "An error occurred while saving new plot to a schematic!", ex);
             player.sendMessage("§7§l>> §cAn error occurred while creating plot!");
-            return;
+            return CompletableFuture.completedFuture(null);
         }
 
         // Save to database
@@ -153,6 +153,7 @@ public class PlotCreator {
                 Bukkit.getLogger().log(Level.SEVERE, "An error occurred while deleting schematic!", ex);
             }
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     private static boolean containsSign(Iterator<BlockVector> vectors, World world) {
