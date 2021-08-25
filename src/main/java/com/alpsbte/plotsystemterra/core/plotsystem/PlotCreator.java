@@ -97,7 +97,7 @@ public class PlotCreator {
             filePath = Paths.get(schematicsPath, String.valueOf(cityProject.getID()), plotID + ".schematic").toString();
             File schematic = new File(filePath);
 
-            if(!schematic.getParentFile().mkdirs() || !schematic.createNewFile()) { throw new Exception(); };
+            if((!schematic.getParentFile().exists() && !schematic.getParentFile().mkdirs()) || (!schematic.exists() && !schematic.createNewFile())) { throw new Exception(); };
 
             WorldEditPlugin worldEdit = PlotSystemTerra.DependencyManager.getWorldEditPlugin();
 
