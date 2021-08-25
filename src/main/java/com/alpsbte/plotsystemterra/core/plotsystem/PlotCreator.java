@@ -159,32 +159,31 @@ public class PlotCreator {
         return CompletableFuture.completedFuture(null);
     }
 
-    private static boolean containsSign(Iterator<BlockVector> vectors, World world) {
-        List<BlockVector> blockVectors = new ArrayList<>();
-        vectors.forEachRemaining(blockVectors::add);
+    private static boolean containsSign(Polygonal2DRegion polyRegion, World world) {
+        boolean hasSign = false;
+            for (int i = polyRegion.getMinimumPoint().getBlockX(); i <= polyRegion.getMaximumPoint().getBlockX(); i++) {
+                for (int j = polyRegion.getMinimumPoint().getBlockY(); j <= polyRegion.getMaximumPoint().getBlockY(); j++) {
+                    for (int k = polyRegion.getMinimumPoint().getBlockZ(); k <= polyRegion.getMaximumPoint().getBlockZ(); k++) {
+                        if (polyRegion.contains(new Vector(i, j, k))) {
+                            Block block = world.getBlockAt(i, j, k);
+                            if(block.getType().equals(Material.SIGN_POST) || block.getType().equals(Material.WALL_SIGN)) {
+                                hasSign = true;
 
-        AtomicBoolean hasSign = new AtomicBoolean(false);
-        Bukkit.getScheduler().runTaskAsynchronously(PlotSystemTerra.getPlugin(), () -> {
-            for (BlockVector blockVector : blockVectors) {
-                Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> {
-                    Block block = world.getBlockAt(blockVector.getBlockX(), blockVector.getBlockY(), blockVector.getBlockZ());
-
-                    if(block.getType().equals(Material.SIGN)) {
-                        hasSign.set(true);
-                        Sign sign = (Sign) block;
-
-                        for (int i = 0; i < 4; i++) {
-                            if(i == 1) {
-                                sign.setLine(i, "Street Side");
-                            } else {
-                                sign.setLine(i, "");
+                                Sign sign = (Sign) block.getState();
+                                for (int s = 0; s < 4; s++) {
+                                    if(s == 1) {
+                                        sign.setLine(s, "§c§lStreet Side");
+                                    } else {
+                                        sign.setLine(s, "");
+                                    }
+                                }
+                                sign.update();
                             }
                         }
                     }
-                });
+                }
             }
-        });
-        return hasSign.get();
+        return hasSign;
     }
 
     private static void placePlotMarker(Region plotRegion, World world, int plotID) {
