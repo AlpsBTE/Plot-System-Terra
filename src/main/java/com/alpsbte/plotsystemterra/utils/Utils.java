@@ -33,6 +33,6 @@ public class Utils {
     }
 
     public static boolean hasPermission(CommandSender sender, String permissionNode) {
-        return sender.hasPermission(permissionPrefix + permissionNode);
+        return sender.hasPermission(permissionPrefix + "." + permissionNode);
     }
 }
