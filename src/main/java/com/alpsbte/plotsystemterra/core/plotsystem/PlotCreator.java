@@ -121,9 +121,9 @@ public class PlotCreator {
                     .setValue(plotID)
                     .setValue(cityProject.getID())
                     .setValue(difficultyID)
-                    .setValue(player.getLocation().getX() + "," + player.getLocation().getY() + "," + player.getLocation().getZ())
+                    .setValue(player.getLocation().getBlockX() + "," + player.getLocation().getBlockY() + "," + player.getLocation().getBlockZ())
                     .setValue(java.sql.Date.valueOf(LocalDate.now()))
-                    .setValue(player.getUniqueId()).executeUpdate();
+                    .setValue(player.getUniqueId().toString()).executeUpdate();
 
             // Upload to SFTP or FTP server if enabled
             FTPConfiguration ftpConfiguration = cityProject.getFTPConfiguration();
