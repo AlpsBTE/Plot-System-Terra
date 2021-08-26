@@ -90,6 +90,8 @@ public class PlotCreator {
             return CompletableFuture.completedFuture(null);
         }
 
+        player.sendMessage(Utils.getInfoMessageFormat("Creating plot..."));
+
         // Saving schematic
         String filePath;
         try {
