@@ -31,13 +31,14 @@ public class FTPManager {
     public static String getFTPUrl(FTPConfiguration ftpConfiguration, int cityID) {
         String schematicsPath = ftpConfiguration.getSchematicPath();
 
-        return String.format("%sftp://%s:%s@%s:%d/%s/%s/",
+        return String.format("%sftp://%s:%s@%s:%d/%s/%s/%s/",
                 ftpConfiguration.getPort() == 22 ? "s" : "",
                 ftpConfiguration.getUsername(),
                 ftpConfiguration.getPassword(),
                 ftpConfiguration.getAddress(),
                 ftpConfiguration.getPort(),
                 schematicsPath == null ? DEFAULT_SCHEMATIC_PATH_LINUX : schematicsPath,
+                "finishedSchematics",
                 cityID
         );
     }
@@ -50,7 +51,7 @@ public class FTPManager {
             FileObject localSchematic = fileManager.toFileObject(schematic);
 
             // Get remote path and create missing directories
-            FileObject remote = fileManager.resolveFile(ftpURL, fileOptions);
+            FileObject remote = fileManager.resolveFile(ftpURL.replace("finishedSchematics/", ""), fileOptions);
             remote.createFolder();
 
             // Create remote schematic and write to it
@@ -59,8 +60,26 @@ public class FTPManager {
 
             localSchematic.close();
             remoteSchematic.close();
+        }
+        return CompletableFuture.completedFuture(null);
+    }
 
-            Bukkit.getLogger().log(Level.INFO, "File " + schematic.getName() + " uploaded successfully!");
+    public static CompletableFuture<Void> downloadSchematic(String ftpURL, File schematic) throws FileSystemException {
+        try (StandardFileSystemManager fileManager = new StandardFileSystemManager()) {
+            fileManager.init();
+
+            // Get local schematic
+            FileObject localSchematic = fileManager.toFileObject(schematic);
+
+            // Get remote path
+            FileObject remote = fileManager.resolveFile(ftpURL, fileOptions);
+
+            // Get remote schematic and write it to local file
+            FileObject remoteSchematic = remote.resolveFile(schematic.getName());
+            localSchematic.copyFrom(remoteSchematic, Selectors.SELECT_SELF);
+
+            localSchematic.close();
+            remoteSchematic.close();
         }
         return CompletableFuture.completedFuture(null);
     }
