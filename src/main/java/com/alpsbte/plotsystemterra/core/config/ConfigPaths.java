@@ -1,5 +1,7 @@
 package com.alpsbte.plotsystemterra.core.config;
 
+import org.bukkit.Bukkit;
+
 public abstract class ConfigPaths {
 
     public static final String CHECK_FOR_UPDATES = "check-for-updates";
@@ -12,6 +14,12 @@ public abstract class ConfigPaths {
     public static final String DATABASE_NAME = DATABASE + "dbname";
     public static final String DATABASE_USERNAME = DATABASE + "username";
     public static final String DATABASE_PASSWORD = DATABASE + "password";
+
+
+    // PLOT PASTING
+    public static final String WORLD_NAME = "world-name";
+    public static final String PASTING_INTERVAL = "pasting-interval";
+    public static final String BROADCAST_INFO = "broadcast-info";
 
 
     // FORMATTING
