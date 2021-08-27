@@ -5,6 +5,7 @@ import com.alpsbte.plotsystemterra.core.DatabaseConnection;
 import com.alpsbte.plotsystemterra.core.EventListener;
 import com.alpsbte.plotsystemterra.core.config.ConfigManager;
 import com.alpsbte.plotsystemterra.core.config.ConfigNotImplementedException;
+import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import org.bukkit.Bukkit;
@@ -97,6 +98,9 @@ public class PlotSystemTerra extends JavaPlugin {
             this.getServer().getPluginManager().disablePlugin(this);
             return;
         }
+
+        // Start checking for plots to paste
+        new PlotPaster().start();
 
         pluginEnabled = true;
         Bukkit.getConsoleSender().sendMessage("");
