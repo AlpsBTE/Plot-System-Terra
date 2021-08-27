@@ -14,17 +14,24 @@ import java.util.logging.Level;
 public class CityProject {
 
     private final int ID;
-    private final int countryID;
-    private final String name;
+    private int countryID;
+    private String name;
     private int headID;
 
-    public CityProject(int ID, int countryID, String name) {
+    public CityProject(int ID) {
         this.ID = ID;
-        this.countryID = countryID;
-        this.name = name;
 
         try {
-            ResultSet rs = DatabaseConnection.createStatement("SELECT head_id FROM plotsystem_countries WHERE id = ?")
+            ResultSet rs;
+            rs = DatabaseConnection.createStatement("SELECT country_id, name FROM plotsystem_city_projects WHERE id = ?")
+                    .setValue(ID).executeQuery();
+
+            if (rs.next()) {
+                this.countryID = rs.getInt(1);
+                this.name = rs.getString(2);
+            }
+
+            rs = DatabaseConnection.createStatement("SELECT head_id FROM plotsystem_countries WHERE id = ?")
                     .setValue(countryID).executeQuery();
 
             if (rs.next()) {
