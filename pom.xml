@@ -125,7 +125,7 @@
         <!-- IMPORTANT: Plugin Building Path -->
         <sourceDirectory>src/main/java</sourceDirectory>
         <!-- IMPORTANT: Output File Name -->
-        <finalName>${project.artifactId}-${project.version}</finalName>
+        <finalName>${project.artifactId}-${project.version}-${build.number}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -141,6 +141,7 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.2.4</version>
                 <configuration>
+                    <outputDirectory>${project.build.directory}/shaded/</outputDirectory>
                     <createDependencyReducedPom>true</createDependencyReducedPom>
                     <filters>
                         <filter>
@@ -171,5 +172,6 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <build.number>SNAPSHOT</build.number>
     </properties>
 </project>
