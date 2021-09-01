@@ -14,8 +14,8 @@ import java.util.logging.Level;
 public class CityProject {
 
     private final int ID;
-    private int countryID;
     private String name;
+    private int countryID;
     private int headID;
 
     public CityProject(int ID) {
@@ -67,6 +67,16 @@ public class CityProject {
             Bukkit.getLogger().log(Level.SEVERE, "Could not check for FTP-Configuration for city project (" + ID + ")!", ex);
         }
         return null;
+    }
+
+    public int getServerID() throws SQLException {
+        ResultSet rs = DatabaseConnection.createStatement("SELECT server_id FROM plotsystem_countries WHERE id = ?")
+                .setValue(this.countryID).executeQuery();
+
+        if (rs.next()) {
+            return rs.getInt(1);
+        }
+        return 1;
     }
 
     public ItemStack getItem() {

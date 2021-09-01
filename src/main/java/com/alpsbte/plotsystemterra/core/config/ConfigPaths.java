@@ -1,10 +1,9 @@
 package com.alpsbte.plotsystemterra.core.config;
 
-import org.bukkit.Bukkit;
-
 public abstract class ConfigPaths {
 
     public static final String CHECK_FOR_UPDATES = "check-for-updates";
+    public static final String SERVER_NAME = "server-name";
     public static final String DEV_MODE = "dev-mode";
 
 

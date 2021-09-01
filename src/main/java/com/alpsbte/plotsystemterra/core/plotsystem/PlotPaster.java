@@ -27,12 +27,15 @@ import java.util.logging.Level;
 
 public class PlotPaster extends Thread {
 
+    private final String serverName;
+
     private final int pasteInterval;
     private final World world;
     private final boolean broadcastMessages;
 
     public PlotPaster() {
         FileConfiguration config = PlotSystemTerra.getPlugin().getConfig();
+        this.serverName = config.getString(ConfigPaths.SERVER_NAME);
         this.world = Bukkit.getWorld(config.getString(ConfigPaths.WORLD_NAME));
         this.pasteInterval = config.getInt(ConfigPaths.PASTING_INTERVAL);
         this.broadcastMessages = config.getBoolean(ConfigPaths.BROADCAST_INFO);
@@ -52,17 +55,25 @@ public class PlotPaster extends Thread {
                         int plotID = -1;
                         try {
                             plotID = rs.getInt(1);
-                            int cityID = rs.getInt(2);
-                            String[] splitCoordinates = rs.getString(3).split(",");
+                            CityProject city = new CityProject(rs.getInt(2));
 
-                            Vector mcCoordinates = Vector.toBlockPoint(
-                                    Float.parseFloat(splitCoordinates[0]),
-                                    Float.parseFloat(splitCoordinates[1]),
-                                    Float.parseFloat(splitCoordinates[2])
-                            );
+                            ResultSet rsServer = DatabaseConnection.createStatement("SELECT name FROM plotsystem_servers WHERE id = ?")
+                                    .setValue(city.getServerID()).executeQuery();
+                            if (rsServer.next()) {
+                                String name = rsServer.getString(1);
+                                if (name.equals(serverName)) {
+                                    String[] splitCoordinates = rs.getString(3).split(",");
 
-                            pastePlotSchematic(plotID, new CityProject(cityID), world, mcCoordinates);
-                            pastedPlots++;
+                                    Vector mcCoordinates = Vector.toBlockPoint(
+                                            Float.parseFloat(splitCoordinates[0]),
+                                            Float.parseFloat(splitCoordinates[1]),
+                                            Float.parseFloat(splitCoordinates[2])
+                                    );
+
+                                    pastePlotSchematic(plotID, city, world, mcCoordinates);
+                                    pastedPlots++;
+                                }
+                            }
                         } catch (Exception ex) {
                             Bukkit.getLogger().log(Level.SEVERE, "An error occurred while pasting plot #" + plotID + "!", ex);
                         }
