@@ -128,6 +128,9 @@ public class PlotSystemTerra extends JavaPlugin {
         Bukkit.getConsoleSender().sendMessage(" ");
         Bukkit.getConsoleSender().sendMessage(ChatColor.DARK_GREEN + "Enabled Plot-System-Terra plugin.");
         Bukkit.getConsoleSender().sendMessage(ChatColor.GOLD + "------------------------------------------------------");
+        Bukkit.getConsoleSender().sendMessage(ChatColor.DARK_GRAY + "> " + ChatColor.GRAY + "Made by " + ChatColor.RED + "Alps BTE (AT/CH/LI)");
+        Bukkit.getConsoleSender().sendMessage(ChatColor.DARK_GRAY + "> " + ChatColor.GRAY + "GitHub: " + ChatColor.WHITE + "https://github.com/AlpsBTE/Plot-System-Terra");
+        Bukkit.getConsoleSender().sendMessage(ChatColor.GOLD + "------------------------------------------------------");
     }
 
     @Override
@@ -135,6 +138,9 @@ public class PlotSystemTerra extends JavaPlugin {
         if (!pluginEnabled) {
             Bukkit.getConsoleSender().sendMessage(" ");
             Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "Disabling plugin...");
+            Bukkit.getConsoleSender().sendMessage(ChatColor.GOLD + "------------------------------------------------------");
+            Bukkit.getConsoleSender().sendMessage(ChatColor.DARK_GRAY + "> " + ChatColor.GRAY + "Made by " + ChatColor.RED + "Alps BTE (AT/CH/LI)");
+            Bukkit.getConsoleSender().sendMessage(ChatColor.DARK_GRAY + "> " + ChatColor.GRAY + "GitHub: " + ChatColor.WHITE + "https://github.com/AlpsBTE/Plot-System-Terra");
             Bukkit.getConsoleSender().sendMessage(ChatColor.GOLD + "------------------------------------------------------");
         }
     }
