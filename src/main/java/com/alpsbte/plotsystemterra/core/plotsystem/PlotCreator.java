@@ -44,8 +44,8 @@ public class PlotCreator {
 
         // Get WorldEdit selection of player
         try {
-            plotRegion = Objects.requireNonNull(WorldEdit.getInstance().getSessionManager().findByName(player.getDisplayName())).getSelection(
-                    Objects.requireNonNull(WorldEdit.getInstance().getSessionManager().findByName(player.getDisplayName())).getSelectionWorld());
+            plotRegion = Objects.requireNonNull(WorldEdit.getInstance().getSessionManager().findByName(player.getName())).getSelection(
+                    Objects.requireNonNull(WorldEdit.getInstance().getSessionManager().findByName(player.getName())).getSelectionWorld());
         } catch (NullPointerException | IncompleteRegionException ex) {
             player.sendMessage(Utils.getErrorMessageFormat("Please select a plot using WorldEdit!"));
             return CompletableFuture.completedFuture(null);
