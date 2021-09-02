@@ -15,11 +15,18 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.ipvp.canvas.MenuFunctionListener;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 
 public class PlotSystemTerra extends JavaPlugin {
+
+    private static final String VERSION = "2.0";
 
     private static PlotSystemTerra plugin;
     private ConfigManager configManager;
@@ -33,9 +40,9 @@ public class PlotSystemTerra extends JavaPlugin {
         String successPrefix = ChatColor.DARK_GRAY + "[" + ChatColor.DARK_GREEN + "✔" + ChatColor.DARK_GRAY + "] " + ChatColor.GRAY;
         String errorPrefix = ChatColor.DARK_GRAY + "[" + ChatColor.RED + "X" + ChatColor.DARK_GRAY + "] " + ChatColor.GRAY;
 
-        Bukkit.getConsoleSender().sendMessage(ChatColor.GOLD + "--------------- Plot-System-Terra V1.2 ----------------");
+        Bukkit.getConsoleSender().sendMessage(ChatColor.GOLD + "--------------- Plot-System-Terra V" + VERSION + " ----------------");
         Bukkit.getConsoleSender().sendMessage(ChatColor.DARK_GREEN + "Starting plugin...");
-        Bukkit.getConsoleSender().sendMessage("");
+        Bukkit.getConsoleSender().sendMessage(" ");
 
         // Check for required dependencies, if it returns false disable plugin
         if (!DependencyManager.checkForRequiredDependencies()) {
@@ -99,11 +106,26 @@ public class PlotSystemTerra extends JavaPlugin {
             return;
         }
 
+        // Check for updates
+        Bukkit.getConsoleSender().sendMessage(" ");
+        Bukkit.getConsoleSender().sendMessage(ChatColor.GOLD + "Update-Checker:");
+
+        UpdateChecker.getVersion(version -> {
+            if (version.equalsIgnoreCase(VERSION)) {
+                Bukkit.getConsoleSender().sendMessage(ChatColor.YELLOW + "You are using the latest stable version.");
+            } else {
+                UpdateChecker.isUpdateAvailable = true;
+                Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "You are using a outdated version!");
+                Bukkit.getConsoleSender().sendMessage(ChatColor.GRAY + "Latest version: " + ChatColor.GREEN + version + ChatColor.GRAY + " | Your version: " + ChatColor.RED + VERSION);
+                Bukkit.getConsoleSender().sendMessage(ChatColor.GRAY + "Update here: " + ChatColor.AQUA + "https://github.com/AlpsBTE/Plot-System/releases");
+            }
+        });
+
         // Start checking for plots to paste
         new PlotPaster().start();
 
         pluginEnabled = true;
-        Bukkit.getConsoleSender().sendMessage("");
+        Bukkit.getConsoleSender().sendMessage(" ");
         Bukkit.getConsoleSender().sendMessage(ChatColor.DARK_GREEN + "Enabled Plot-System-Terra plugin.");
         Bukkit.getConsoleSender().sendMessage(ChatColor.GOLD + "------------------------------------------------------");
     }
@@ -111,7 +133,7 @@ public class PlotSystemTerra extends JavaPlugin {
     @Override
     public void onDisable() {
         if (!pluginEnabled) {
-            Bukkit.getConsoleSender().sendMessage("");
+            Bukkit.getConsoleSender().sendMessage(" ");
             Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "Disabling plugin...");
             Bukkit.getConsoleSender().sendMessage(ChatColor.GOLD + "------------------------------------------------------");
         }
@@ -171,6 +193,32 @@ public class PlotSystemTerra extends JavaPlugin {
          */
         public static WorldEditPlugin getWorldEditPlugin() {
             return (WorldEditPlugin) Bukkit.getServer().getPluginManager().getPlugin("WorldEdit");
+        }
+    }
+
+    public static class UpdateChecker {
+        private final static int RESOURCE_ID = 95921;
+        private static boolean isUpdateAvailable = false;
+
+        /**
+         * Get latest plugin version from SpigotMC
+         * @param version Returns latest stable version
+         */
+        public static void getVersion(final Consumer<String> version) {
+            try (InputStream inputStream = new URL("https://api.spigotmc.org/legacy/update.php?resource=" + RESOURCE_ID).openStream(); Scanner scanner = new Scanner(inputStream)) {
+                if (scanner.hasNext()) {
+                    version.accept(scanner.next());
+                }
+            } catch (IOException ex) {
+                Bukkit.getLogger().log(Level.WARNING, "Cannot look for new updates: " + ex.getMessage());
+            }
+        }
+
+        /**
+         * @return True if an update is available
+         */
+        public static boolean updateAvailable() {
+            return isUpdateAvailable;
         }
     }
 }
