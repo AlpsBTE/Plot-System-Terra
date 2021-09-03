@@ -106,7 +106,7 @@ public class PlotCreator {
 
             Clipboard cb = new BlockArrayClipboard(polyRegion);
             cb.setOrigin(cb.getRegion().getCenter());
-            LocalSession playerSession = PlotSystemTerra.DependencyManager.getWorldEdit().getSessionManager().findByName(player.getDisplayName());
+            LocalSession playerSession = PlotSystemTerra.DependencyManager.getWorldEdit().getSessionManager().findByName(player.getName());
             ForwardExtentCopy copy = new ForwardExtentCopy(playerSession.createEditSession(worldEdit.wrapPlayer(player)), polyRegion, cb, polyRegion.getMinimumPoint());
             Operations.completeLegacy(copy);
 
