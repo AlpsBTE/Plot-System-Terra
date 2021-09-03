@@ -36,7 +36,7 @@ public class FTPConfiguration {
 
     public String getSchematicPath() {
         if (schematicPath != null) {
-            schematicPath = !schematicPath.startsWith("/") ? File.separator + schematicPath : schematicPath;
+            schematicPath = schematicPath.startsWith("/") ? schematicPath.substring(1, schematicPath.length()) : schematicPath;
             schematicPath = schematicPath.endsWith("/") ? schematicPath.substring(0, schematicPath.length() - 1) : schematicPath;
         }
         return schematicPath;
