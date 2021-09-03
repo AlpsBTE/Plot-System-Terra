@@ -79,7 +79,7 @@
             <scope>compile</scope>
         </dependency>
 
-        <!-- Apache Commons & JSch (FTP/SFTP) -->
+        <!-- Apache Commons VFS -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-vfs2</artifactId>
@@ -87,6 +87,15 @@
             <scope>compile</scope>
         </dependency>
 
+        <!-- Apache Commons Net -->
+        <dependency>
+            <groupId>commons-net</groupId>
+            <artifactId>commons-net</artifactId>
+            <version>3.8.0</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- JSCH -->
         <dependency>
             <groupId>com.jcraft</groupId>
             <artifactId>jsch</artifactId>

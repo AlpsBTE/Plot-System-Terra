@@ -1,11 +1,9 @@
 package com.alpsbte.plotsystemterra.utils;
 
 import com.alpsbte.plotsystemterra.core.plotsystem.FTPConfiguration;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileSystemOptions;
-import org.apache.commons.vfs2.Selectors;
+import org.apache.commons.vfs2.*;
 import org.apache.commons.vfs2.impl.StandardFileSystemManager;
+import org.apache.commons.vfs2.provider.ftp.FtpFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.sftp.SftpFileSystemConfigBuilder;
 import org.bukkit.Bukkit;
 
@@ -23,6 +21,9 @@ public class FTPManager {
             fileOptions = new FileSystemOptions();
             SftpFileSystemConfigBuilder.getInstance().setStrictHostKeyChecking(fileOptions, "no");
             SftpFileSystemConfigBuilder.getInstance().setUserDirIsRoot(fileOptions, false);
+
+            FtpFileSystemConfigBuilder.getInstance().setPassiveMode(fileOptions, true);
+            FtpFileSystemConfigBuilder.getInstance().setUserDirIsRoot(fileOptions, false);
         } catch (FileSystemException ex) {
             Bukkit.getLogger().log(Level.SEVERE, "Exception found with FileSystemManager!", ex);
         }
