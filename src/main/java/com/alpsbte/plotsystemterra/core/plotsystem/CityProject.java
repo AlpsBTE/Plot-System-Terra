@@ -60,7 +60,8 @@ public class CityProject {
                         .setValue(rsServer.getInt(1)).executeQuery();
 
                 if (rsFTP.next()) {
-                    return new FTPConfiguration(rsFTP.getInt(1));
+                    int ftpID = rsFTP.getInt(1);
+                    if (!rsFTP.wasNull()) return new FTPConfiguration(ftpID);
                 }
             }
         } catch (SQLException ex) {
