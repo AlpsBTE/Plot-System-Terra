@@ -26,6 +26,7 @@ import org.bukkit.entity.Player;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -143,7 +144,7 @@ public class PlotCreator {
                 if (CompletableFuture.supplyAsync(() -> {
                     try {
                         return FTPManager.uploadSchematic(FTPManager.getFTPUrl(ftpConfiguration, cityProject.getID()), new File(filePath));
-                    } catch (FileSystemException ex) {
+                    } catch (FileSystemException | URISyntaxException ex) {
                         Bukkit.getLogger().log(Level.SEVERE, "An error occurred while uploading schematic file to SFTP/FTP server!", ex);
                         return null;
                     }

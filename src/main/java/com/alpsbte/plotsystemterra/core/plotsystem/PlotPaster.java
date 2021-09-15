@@ -18,6 +18,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
@@ -99,7 +100,7 @@ public class PlotPaster extends Thread {
             if (CompletableFuture.supplyAsync(() -> {
                 try {
                     return FTPManager.downloadSchematic(FTPManager.getFTPUrl(ftpConfiguration, city.getID()), file);
-                } catch (FileSystemException ex) {
+                } catch (FileSystemException | URISyntaxException ex) {
                     Bukkit.getLogger().log(Level.SEVERE, "An error occurred while downloading schematic file from SFTP/FTP server!", ex);
                     return null;
                 }
