@@ -16,7 +16,7 @@ public class CityProject {
     private final int ID;
     private String name;
     private int countryID;
-    private int headID;
+    private String headID;
 
     public CityProject(int ID) {
         this.ID = ID;
@@ -35,7 +35,7 @@ public class CityProject {
                     .setValue(countryID).executeQuery();
 
             if (rs.next()) {
-                this.headID = Integer.parseInt(rs.getString(1));
+                this.headID = rs.getString(1);
             }
         } catch (Exception ex) {
             Bukkit.getLogger().log(Level.SEVERE, "An error occurred while getting country head!", ex);
@@ -81,7 +81,7 @@ public class CityProject {
     }
 
     public ItemStack getItem() {
-        return new ItemBuilder(Utils.getItemHead(String.valueOf(headID)))
+        return new ItemBuilder(Utils.getItemHead(headID))
                 .setName("§b§l" + name)
                 .setLore(new LoreBuilder()
                         .addLine("§bID: §7" + getID())
