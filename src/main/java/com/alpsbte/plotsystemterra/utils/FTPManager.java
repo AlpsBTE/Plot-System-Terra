@@ -22,6 +22,7 @@ public class FTPManager {
         try {
             fileOptions = new FileSystemOptions();
             SftpFileSystemConfigBuilder.getInstance().setStrictHostKeyChecking(fileOptions, "no");
+            SftpFileSystemConfigBuilder.getInstance().setPreferredAuthentications(fileOptions, "password");
             SftpFileSystemConfigBuilder.getInstance().setUserDirIsRoot(fileOptions, false);
 
             FtpFileSystemConfigBuilder.getInstance().setPassiveMode(fileOptions, true);
