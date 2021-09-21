@@ -124,7 +124,7 @@ public class PlotCreator {
             }
         } catch (Exception ex) {
             Bukkit.getLogger().log(Level.SEVERE, "An error occurred while saving new plot to a schematic!", ex);
-            player.sendMessage("§7§l>> §cAn error occurred while creating plot!");
+            player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
             return CompletableFuture.completedFuture(null);
         }
 
@@ -148,7 +148,7 @@ public class PlotCreator {
                         Bukkit.getLogger().log(Level.SEVERE, "An error occurred while uploading schematic file to SFTP/FTP server!", ex);
                         return null;
                     }
-                }).join() == null) throw new FileSystemException("Schematic file upload failed!");
+                }).join() == null) throw new IOException();
             }
 
             player.sendMessage(Utils.getInfoMessageFormat("Successfully created new plot! §f(City: §6" + cityProject.getName() + " §f| Plot-ID: §6" + plotID + "§f)"));
@@ -161,7 +161,7 @@ public class PlotCreator {
             }
         } catch (SQLException | IOException ex) {
             Bukkit.getLogger().log(Level.SEVERE, "An error occurred while saving new plot to database!", ex);
-            player.sendMessage("§7§l>> §cAn error occurred while creating plot!");
+            player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
 
             try {
                 Files.deleteIfExists(Paths.get(filePath));

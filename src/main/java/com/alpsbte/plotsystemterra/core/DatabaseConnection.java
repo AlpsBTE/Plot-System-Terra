@@ -19,7 +19,7 @@ public class DatabaseConnection {
     private static HikariDataSource dataSource;
 
     public static void InitializeDatabase() throws ClassNotFoundException {
-        Class.forName("org.mariadb.jdbc.Driver"); // TODO: Add Support MySQL Driver
+        Class.forName("org.mariadb.jdbc.Driver");
 
         FileConfiguration configFile = PlotSystemTerra.getPlugin().getConfig();
         String URL = configFile.getString(ConfigPaths.DATABASE_URL);

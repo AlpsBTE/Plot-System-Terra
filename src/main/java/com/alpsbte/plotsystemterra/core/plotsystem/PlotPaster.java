@@ -36,6 +36,7 @@ public class PlotPaster extends Thread {
 
     public PlotPaster() {
         FileConfiguration config = PlotSystemTerra.getPlugin().getConfig();
+
         this.serverName = config.getString(ConfigPaths.SERVER_NAME);
         this.world = Bukkit.getWorld(config.getString(ConfigPaths.WORLD_NAME));
         this.pasteInterval = config.getInt(ConfigPaths.PASTING_INTERVAL);
@@ -104,7 +105,7 @@ public class PlotPaster extends Thread {
                     Bukkit.getLogger().log(Level.SEVERE, "An error occurred while downloading schematic file from SFTP/FTP server!", ex);
                     return null;
                 }
-            }).join() == null) throw new FileSystemException("Schematic file download failed!");
+            }).join() == null) throw new IOException();
         }
 
         if (file.exists()) {
