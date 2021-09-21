@@ -129,16 +129,13 @@ public class CreatePlotMenu {
         List<CityProject> listProjects = new ArrayList<>();
 
         int counter = 0;
-        try {
-            ResultSet rs = DatabaseConnection.createStatement("SELECT id FROM plotsystem_city_projects").executeQuery();
-
+        try (ResultSet rs = DatabaseConnection.createStatement("SELECT id FROM plotsystem_city_projects").executeQuery()) {
             while (rs.next()) {
                 CityProject city = new CityProject(rs.getInt(1));
                 createPlotMenu.getSlot(9 + counter).setItem(city.getItem());
                 listProjects.add(city);
                 counter++;
             }
-            rs.close();
         } catch (SQLException ex) {
             createPlotMenu.getSlot(9 + counter).setItem(new ItemBuilder(Material.BARRIER)
                 .setName("§c§lError")

@@ -45,11 +45,9 @@ public class PlotPaster extends Thread {
     @Override
     public void run() {
         Bukkit.getScheduler().scheduleSyncRepeatingTask(PlotSystemTerra.getPlugin(), () -> {
-            try {
+            try (ResultSet rs = DatabaseConnection.createStatement("SELECT id, city_project_id, mc_coordinates FROM plotsystem_plots WHERE status = 'completed' AND pasted = '0' LIMIT 20")
+                    .executeQuery()) {
                 int pastedPlots = 0;
-
-                ResultSet rs = DatabaseConnection.createStatement("SELECT id, city_project_id, mc_coordinates FROM plotsystem_plots WHERE status = 'completed' AND pasted = '0' LIMIT 20")
-                        .executeQuery();
 
                 if (rs.isBeforeFirst()) {
                     while (rs.next()) {
@@ -58,21 +56,23 @@ public class PlotPaster extends Thread {
                             plotID = rs.getInt(1);
                             CityProject city = new CityProject(rs.getInt(2));
 
-                            ResultSet rsServer = DatabaseConnection.createStatement("SELECT name FROM plotsystem_servers WHERE id = ?")
-                                    .setValue(city.getServerID()).executeQuery();
-                            if (rsServer.next()) {
-                                String name = rsServer.getString(1);
-                                if (name.equals(serverName)) {
-                                    String[] splitCoordinates = rs.getString(3).split(",");
+                            try (ResultSet rsServer = DatabaseConnection.createStatement("SELECT name FROM plotsystem_servers WHERE id = ?")
+                                    .setValue(city.getServerID()).executeQuery()) {
 
-                                    Vector mcCoordinates = Vector.toBlockPoint(
-                                            Float.parseFloat(splitCoordinates[0]),
-                                            Float.parseFloat(splitCoordinates[1]),
-                                            Float.parseFloat(splitCoordinates[2])
-                                    );
+                                if (rsServer.next()) {
+                                    String name = rsServer.getString(1);
+                                    if (name.equals(serverName)) {
+                                        String[] splitCoordinates = rs.getString(3).split(",");
 
-                                    pastePlotSchematic(plotID, city, world, mcCoordinates);
-                                    pastedPlots++;
+                                        Vector mcCoordinates = Vector.toBlockPoint(
+                                                Float.parseFloat(splitCoordinates[0]),
+                                                Float.parseFloat(splitCoordinates[1]),
+                                                Float.parseFloat(splitCoordinates[2])
+                                        );
+
+                                        pastePlotSchematic(plotID, city, world, mcCoordinates);
+                                        pastedPlots++;
+                                    }
                                 }
                             }
                         } catch (Exception ex) {

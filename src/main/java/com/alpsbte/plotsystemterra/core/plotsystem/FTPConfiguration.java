@@ -18,16 +18,17 @@ public class FTPConfiguration {
     public FTPConfiguration(int ID) throws SQLException {
         this.ID = ID;
 
-        ResultSet rs = DatabaseConnection.createStatement("SELECT schematics_path, address, port, isSFTP, username, password FROM plotsystem_ftp_configurations WHERE id = ?")
-                .setValue(this.ID).executeQuery();
+        try (ResultSet rs = DatabaseConnection.createStatement("SELECT schematics_path, address, port, isSFTP, username, password FROM plotsystem_ftp_configurations WHERE id = ?")
+                .setValue(this.ID).executeQuery()) {
 
-        if (rs.next()) {
-            this.schematicPath = rs.getString(1);
-            this.address = rs.getString(2);
-            this.port = rs.getInt(3);
-            this.isSFTP = rs.getBoolean(4);
-            this.username = rs.getString(5);
-            this.password = rs.getString(6);
+            if (rs.next()) {
+                this.schematicPath = rs.getString(1);
+                this.address = rs.getString(2);
+                this.port = rs.getInt(3);
+                this.isSFTP = rs.getBoolean(4);
+                this.username = rs.getString(5);
+                this.password = rs.getString(6);
+            }
         }
     }
 

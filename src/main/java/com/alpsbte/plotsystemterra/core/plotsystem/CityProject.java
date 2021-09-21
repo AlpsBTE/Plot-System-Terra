@@ -21,21 +21,20 @@ public class CityProject {
     public CityProject(int ID) {
         this.ID = ID;
 
-        try {
-            ResultSet rs;
-            rs = DatabaseConnection.createStatement("SELECT country_id, name FROM plotsystem_city_projects WHERE id = ?")
-                    .setValue(ID).executeQuery();
+        try (ResultSet rsCity = DatabaseConnection.createStatement("SELECT country_id, name FROM plotsystem_city_projects WHERE id = ?")
+                .setValue(ID).executeQuery()) {
 
-            if (rs.next()) {
-                this.countryID = rs.getInt(1);
-                this.name = rs.getString(2);
+            if (rsCity.next()) {
+                this.countryID = rsCity.getInt(1);
+                this.name = rsCity.getString(2);
             }
 
-            rs = DatabaseConnection.createStatement("SELECT head_id FROM plotsystem_countries WHERE id = ?")
-                    .setValue(countryID).executeQuery();
+            try (ResultSet rsCountry = DatabaseConnection.createStatement("SELECT head_id FROM plotsystem_countries WHERE id = ?")
+                    .setValue(countryID).executeQuery();) {
 
-            if (rs.next()) {
-                this.headID = rs.getString(1);
+                if (rsCountry.next()) {
+                    this.headID = rsCountry.getString(1);
+                }
             }
         } catch (Exception ex) {
             Bukkit.getLogger().log(Level.SEVERE, "An error occurred while getting country head!", ex);
@@ -51,17 +50,17 @@ public class CityProject {
     }
 
     public FTPConfiguration getFTPConfiguration() {
-        try {
-            ResultSet rsServer = DatabaseConnection.createStatement("SELECT server_id FROM plotsystem_countries WHERE id = ?")
-                    .setValue(countryID).executeQuery();
+        try (ResultSet rsServer = DatabaseConnection.createStatement("SELECT server_id FROM plotsystem_countries WHERE id = ?")
+                .setValue(countryID).executeQuery()) {
 
             if (rsServer.next()) {
-                ResultSet rsFTP = DatabaseConnection.createStatement("SELECT ftp_configuration_id FROM plotsystem_servers WHERE id = ?")
-                        .setValue(rsServer.getInt(1)).executeQuery();
+                try (ResultSet rsFTP = DatabaseConnection.createStatement("SELECT ftp_configuration_id FROM plotsystem_servers WHERE id = ?")
+                        .setValue(rsServer.getInt(1)).executeQuery()) {
 
-                if (rsFTP.next()) {
-                    int ftpID = rsFTP.getInt(1);
-                    if (!rsFTP.wasNull()) return new FTPConfiguration(ftpID);
+                    if (rsFTP.next()) {
+                        int ftpID = rsFTP.getInt(1);
+                        if (!rsFTP.wasNull()) return new FTPConfiguration(ftpID);
+                    }
                 }
             }
         } catch (SQLException ex) {
@@ -71,13 +70,14 @@ public class CityProject {
     }
 
     public int getServerID() throws SQLException {
-        ResultSet rs = DatabaseConnection.createStatement("SELECT server_id FROM plotsystem_countries WHERE id = ?")
-                .setValue(this.countryID).executeQuery();
+        try (ResultSet rs = DatabaseConnection.createStatement("SELECT server_id FROM plotsystem_countries WHERE id = ?")
+                .setValue(this.countryID).executeQuery()) {
 
-        if (rs.next()) {
-            return rs.getInt(1);
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+            return 1;
         }
-        return 1;
     }
 
     public ItemStack getItem() {
