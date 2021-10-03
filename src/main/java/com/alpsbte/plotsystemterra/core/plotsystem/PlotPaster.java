@@ -92,7 +92,7 @@ public class PlotPaster extends Thread {
     }
 
     public static void pastePlotSchematic(int plotID, CityProject city, World world, Vector mcCoordinates) throws IOException, DataException, MaxChangedBlocksException, SQLException {
-        File file = Paths.get(PlotCreator.schematicsPath, "finishedSchematics", String.valueOf(city.getID()), plotID + ".schematic").toFile();
+        File file = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), "finishedSchematics", String.valueOf(city.getID()), plotID + ".schematic").toFile();
 
         // Download from SFTP or FTP server if enabled
         FTPConfiguration ftpConfiguration = city.getFTPConfiguration();
