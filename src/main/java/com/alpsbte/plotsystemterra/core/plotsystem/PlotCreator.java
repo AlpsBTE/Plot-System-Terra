@@ -98,7 +98,7 @@ public class PlotCreator {
         try {
             plotID = DatabaseConnection.getTableID("plotsystem_plots");
 
-            filePath = Paths.get(schematicsPath, String.valueOf(cityProject.getID()), plotID + ".schematic").toString();
+            filePath = Paths.get(schematicsPath, String.valueOf(cityProject.getServerID()), String.valueOf(cityProject.getID()), plotID + ".schematic").toString();
             File schematic = new File(filePath);
 
             if (!schematic.exists()) {
