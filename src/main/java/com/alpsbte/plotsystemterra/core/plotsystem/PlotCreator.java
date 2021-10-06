@@ -66,7 +66,9 @@ public class PlotCreator {
                 }
 
                 // Set minimum selection height under player location
-                polyRegion.setMinimumY((int) player.getLocation().getY() - 5);
+                if (polyRegion.getMinimumY() > player.getLocation().getY() - 5) {
+                    polyRegion.setMinimumY((int) player.getLocation().getY() - 5);
+                }
 
                 if (polyRegion.getMaximumY() <= player.getLocation().getY() + 1) {
                     polyRegion.setMaximumY((int) player.getLocation().getY() + 1);
