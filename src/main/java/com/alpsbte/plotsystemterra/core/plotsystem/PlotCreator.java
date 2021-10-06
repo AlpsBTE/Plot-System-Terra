@@ -103,14 +103,13 @@ public class PlotCreator {
             filePath = Paths.get(schematicsPath, String.valueOf(cityProject.getServerID()), String.valueOf(cityProject.getID()), plotID + ".schematic").toString();
             File schematic = new File(filePath);
 
-            if (!schematic.exists()) {
-                boolean createdDirs = schematic.getParentFile().mkdirs();
-                boolean createdFile = schematic.createNewFile();
-                if ((!schematic.getParentFile().exists() && !createdDirs) || (!schematic.exists() && !createdFile)) {
-                    Bukkit.getLogger().log(Level.SEVERE, "Could not create schematic file! (" + filePath + ")");
-                    player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
-                    return CompletableFuture.completedFuture(null);
-                }
+            Files.deleteIfExists(schematic.getAbsoluteFile().toPath());
+            boolean createdDirs = schematic.getParentFile().mkdirs();
+            boolean createdFile = schematic.createNewFile();
+            if ((!schematic.getParentFile().exists() && !createdDirs) || (!schematic.exists() && !createdFile)) {
+                Bukkit.getLogger().log(Level.SEVERE, "Could not create schematic file! (" + filePath + ")");
+                player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
+                return CompletableFuture.completedFuture(null);
             }
 
             WorldEditPlugin worldEdit = PlotSystemTerra.DependencyManager.getWorldEditPlugin();
