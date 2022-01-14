@@ -4,24 +4,29 @@ import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.DatabaseConnection;
 import com.alpsbte.plotsystemterra.utils.FTPManager;
 import com.alpsbte.plotsystemterra.utils.Utils;
-import com.sk89q.worldedit.*;
-import com.sk89q.worldedit.Vector;
+import com.sk89q.worldedit.IncompleteRegionException;
+import com.sk89q.worldedit.LocalSession;
+import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldedit.extent.clipboard.BlockArrayClipboard;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
-import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
+import com.sk89q.worldedit.extent.clipboard.io.BuiltInClipboardFormat;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardWriter;
 import com.sk89q.worldedit.function.operation.ForwardExtentCopy;
 import com.sk89q.worldedit.function.operation.Operations;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldedit.regions.Polygonal2DRegion;
 import com.sk89q.worldedit.regions.Region;
 import org.apache.commons.vfs2.FileSystemException;
 import org.bukkit.*;
-import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
+import org.bukkit.material.MaterialData;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -31,7 +36,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.Objects;
+import java.util.Vector;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
@@ -115,13 +121,16 @@ public class PlotCreator {
             WorldEditPlugin worldEdit = PlotSystemTerra.DependencyManager.getWorldEditPlugin();
 
             Clipboard cb = new BlockArrayClipboard(polyRegion);
-            cb.setOrigin(cb.getRegion().getCenter());
+            cb.setOrigin(BlockVector3.at(cb.getRegion().getCenter().getX(),
+                    cb.getRegion().getCenter().getY(),
+                    cb.getRegion().getCenter().getZ()));
             LocalSession playerSession = PlotSystemTerra.DependencyManager.getWorldEdit().getSessionManager().findByName(player.getName());
+            assert playerSession != null;
             ForwardExtentCopy copy = new ForwardExtentCopy(playerSession.createEditSession(worldEdit.wrapPlayer(player)), polyRegion, cb, polyRegion.getMinimumPoint());
             Operations.completeLegacy(copy);
 
-            try (ClipboardWriter writer = ClipboardFormat.SCHEMATIC.getWriter(new FileOutputStream(schematic, false))) {
-                writer.write(cb, polyRegion.getWorld().getWorldData());
+            try (ClipboardWriter writer = BuiltInClipboardFormat.MCEDIT_SCHEMATIC.getWriter(new FileOutputStream(schematic, false))) {
+                writer.write(cb);
             }
         } catch (Exception ex) {
             Bukkit.getLogger().log(Level.SEVERE, "An error occurred while saving new plot to a schematic!", ex);
@@ -178,9 +187,9 @@ public class PlotCreator {
             for (int i = polyRegion.getMinimumPoint().getBlockX(); i <= polyRegion.getMaximumPoint().getBlockX(); i++) {
                 for (int j = polyRegion.getMinimumPoint().getBlockY(); j <= polyRegion.getMaximumPoint().getBlockY(); j++) {
                     for (int k = polyRegion.getMinimumPoint().getBlockZ(); k <= polyRegion.getMaximumPoint().getBlockZ(); k++) {
-                        if (polyRegion.contains(new Vector(i, j, k))) {
+                        if (polyRegion.contains(BlockVector3.at(i, j, k))) {
                             Block block = world.getBlockAt(i, j, k);
-                            if(block.getType().equals(Material.SIGN_POST) || block.getType().equals(Material.WALL_SIGN)) {
+                            if(block.getType().equals(Material.OAK_SIGN) || block.getType().equals(Material.OAK_WALL_SIGN)) {
                                 hasSign = true;
 
                                 Sign sign = (Sign) block.getState();
@@ -201,18 +210,21 @@ public class PlotCreator {
     }
 
     private static void placePlotMarker(Region plotRegion, Player player, int plotID) {
-        Vector centerBlock = plotRegion.getCenter();
+        BlockVector3 centerBlock = BlockVector3.at(plotRegion.getCenter().getX(),
+                plotRegion.getCenter().getY(),
+                plotRegion.getCenter().getZ());
         Location highestBlock = player.getWorld().getHighestBlockAt(centerBlock.getBlockX(), centerBlock.getBlockZ()).getLocation();
 
         Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> {
             player.getWorld().getBlockAt(highestBlock).setType(Material.SEA_LANTERN);
-            player.getWorld().getBlockAt(highestBlock.add(0, 1, 0)).setType(Material.SIGN_POST);
+            player.getWorld().getBlockAt(highestBlock.add(0, 1, 0)).setType(Material.OAK_SIGN);
             Block signBlock = player.getWorld().getBlockAt(highestBlock);
 
             Sign sign = (Sign) signBlock.getState();
-            org.bukkit.material.Sign matSign =  new org.bukkit.material.Sign(Material.SIGN_POST);
-            matSign.setFacingDirection(getPlayerFaceDirection(player).getOppositeFace());
-            sign.setData(matSign);
+            org.bukkit.block.data.type.Sign signData = (org.bukkit.block.data.type.Sign) signBlock.getBlockData();
+            signData.setRotation(getPlayerFaceDirection(player).getOppositeFace());
+            signBlock.setBlockData(signData);
+
             sign.setLine(0, "§8§lID: §c§l" + plotID);
             sign.setLine(2, "§8§lCreated By:");
             sign.setLine(3, "§c§l" + player.getName());

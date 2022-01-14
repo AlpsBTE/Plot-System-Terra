@@ -1,6 +1,6 @@
 main: com.alpsbte.plotsystemterra.PlotSystemTerra
 version: 2.1
-api-version: 1.12.2
+api-version: 1.17
 name: PlotSystem-Terra
 author: R3tuxn, Coppertine
 softdepend: [WorldEdit, HeadDatabase]

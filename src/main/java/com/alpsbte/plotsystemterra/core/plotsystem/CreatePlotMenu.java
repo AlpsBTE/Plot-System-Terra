@@ -35,7 +35,7 @@ public class CreatePlotMenu {
 
     public Menu getCityProjectUI() {
         Mask mask = BinaryMask.builder(createPlotMenu)
-                .item(new ItemBuilder(Material.STAINED_GLASS_PANE, 1, (byte)7).setName(" ").build())
+                .item(new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE, 1).setName(" ").build())
                 .pattern("111101111") // First row
                 .pattern("000000000") // Second row
                 .pattern("000000000") // Third row
@@ -61,7 +61,7 @@ public class CreatePlotMenu {
         }
 
         createPlotMenu.getSlot(48).setItem(
-                new ItemBuilder(Material.WOOL, 1, (byte) 13)
+                new ItemBuilder(Material.GREEN_WOOL, 1)
                         .setName("§a§lContinue")
                         .build());
         createPlotMenu.getSlot(48).setClickHandler((clickPlayer, clickInformation) -> {
@@ -70,7 +70,7 @@ public class CreatePlotMenu {
         });
 
         createPlotMenu.getSlot(50).setItem(
-                new ItemBuilder(Material.WOOL, 1, (byte) 14)
+                new ItemBuilder(Material.RED_WOOL, 1)
                         .setName("§c§lCancel")
                         .build());
         createPlotMenu.getSlot(50).setClickHandler((clickPlayer, clickInformation) -> {
@@ -85,7 +85,7 @@ public class CreatePlotMenu {
 
         // Set glass border
         Mask mask = BinaryMask.builder(createPlotMenu)
-                .item(new ItemBuilder(Material.STAINED_GLASS_PANE, 1, (byte)7).setName(" ").build())
+                .item(new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE, 1).setName(" ").build())
                 .pattern("111111111") // First row
                 .pattern("000000000") // Second row
                 .pattern("111111111") // Third row
@@ -93,7 +93,7 @@ public class CreatePlotMenu {
         mask.apply(difficultyMenu);
 
         difficultyMenu.getSlot(10).setItem(
-                new ItemBuilder(Material.WOOL, 1, (byte) 5)
+                new ItemBuilder(Material.LIME_WOOL, 1)
                         .setName("§a§lEasy")
                         .build()
         );
@@ -103,7 +103,7 @@ public class CreatePlotMenu {
         });
 
         difficultyMenu.getSlot(13).setItem(
-                new ItemBuilder(Material.WOOL, 1, (byte) 1)
+                new ItemBuilder(Material.WHITE_WOOL, 1)
                         .setName("§6§lMedium")
                         .build()
         );
@@ -113,7 +113,7 @@ public class CreatePlotMenu {
         });
 
         difficultyMenu.getSlot(16).setItem(
-                new ItemBuilder(Material.WOOL, 1, (byte) 14)
+                new ItemBuilder(Material.RED_WOOL, 1)
                         .setName("§c§lHard")
                         .build()
         );
