@@ -64,7 +64,11 @@ public class CityProject {
 
                     if (rsFTP.next()) {
                         int ftpID = rsFTP.getInt(1);
-                        if (!rsFTP.wasNull()) return new FTPConfiguration(ftpID);
+                        if (!rsFTP.wasNull()){
+                            DatabaseConnection.closeResultSet(rsServer);
+                            DatabaseConnection.closeResultSet(rsFTP);
+                            return new FTPConfiguration(ftpID);
+                        }
                     }
 
                     DatabaseConnection.closeResultSet(rsFTP);
@@ -84,7 +88,9 @@ public class CityProject {
                 .setValue(this.countryID).executeQuery()) {
 
             if (rs.next()) {
-                return rs.getInt(1);
+                int i = rs.getInt(1);
+                DatabaseConnection.closeResultSet(rs);
+                return i;
             }
 
             DatabaseConnection.closeResultSet(rs);
