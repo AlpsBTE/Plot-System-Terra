@@ -75,6 +75,9 @@ public class PlotPaster extends Thread {
                                         pastedPlots++;
                                     }
                                 }
+
+                                DatabaseConnection.closeResultSet(rs);
+
                             }
                         } catch (Exception ex) {
                             Bukkit.getLogger().log(Level.SEVERE, "An error occurred while pasting plot #" + plotID + "!", ex);
@@ -85,6 +88,9 @@ public class PlotPaster extends Thread {
                         Bukkit.broadcastMessage("§7§l>§a Pasted §6" + pastedPlots + " §aplot" + (pastedPlots > 1 ? "s" : "") + "!");
                     }
                 }
+
+                DatabaseConnection.closeResultSet(rs);
+
             } catch (SQLException ex) {
                 Bukkit.getLogger().log(Level.SEVERE, "A SQL error occurred!", ex);
             }

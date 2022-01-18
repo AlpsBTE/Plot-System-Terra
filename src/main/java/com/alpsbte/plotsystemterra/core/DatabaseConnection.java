@@ -55,6 +55,12 @@ public class DatabaseConnection {
         return new StatementBuilder(sql);
     }
 
+    public static void closeResultSet(ResultSet resultSet) throws SQLException {
+        resultSet.close();
+        resultSet.getStatement().close();
+        resultSet.getStatement().getConnection().close();
+    }
+
     /**
      * Returns a missing auto increment id
      * @param table in the database
@@ -68,6 +74,8 @@ public class DatabaseConnection {
                 if (rs.next()) {
                     return rs.getInt(1);
                 }
+
+                closeResultSet(rs);
                 return 1;
             }
         } catch (SQLException ex) {
@@ -90,11 +98,9 @@ public class DatabaseConnection {
         }
 
         public ResultSet executeQuery() throws SQLException {
-            try (Connection con = dataSource.getConnection()) {
-                try (PreparedStatement ps = Objects.requireNonNull(con).prepareStatement(sql)) {
-                    return iterateValues(ps).executeQuery();
-                }
-            }
+            Connection con = dataSource.getConnection();
+            PreparedStatement ps = Objects.requireNonNull(con).prepareStatement(sql);
+            return iterateValues(ps).executeQuery();
         }
 
         public void executeUpdate() throws SQLException {
