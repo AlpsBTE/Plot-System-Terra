@@ -18,6 +18,8 @@ public class DatabaseConnection {
     private final static HikariConfig config = new HikariConfig();
     private static HikariDataSource dataSource;
 
+    private static int connectionClosed, connectionOpened;
+
     public static void InitializeDatabase() throws ClassNotFoundException {
         Class.forName("org.mariadb.jdbc.Driver");
 
@@ -56,9 +58,19 @@ public class DatabaseConnection {
     }
 
     public static void closeResultSet(ResultSet resultSet) throws SQLException {
+        if(resultSet.isClosed()
+        && resultSet.getStatement().isClosed()
+        && resultSet.getStatement().getConnection().isClosed())
+            return;
+
         resultSet.close();
         resultSet.getStatement().close();
         resultSet.getStatement().getConnection().close();
+
+        connectionClosed++;
+
+        if(connectionOpened > connectionClosed + 5)
+            Bukkit.getLogger().log(Level.SEVERE, "There are multiple database connections opened. Please report this issue.");
     }
 
     /**
@@ -102,7 +114,11 @@ public class DatabaseConnection {
         public ResultSet executeQuery() throws SQLException {
             Connection con = dataSource.getConnection();
             PreparedStatement ps = Objects.requireNonNull(con).prepareStatement(sql);
-            return iterateValues(ps).executeQuery();
+            ResultSet rs = iterateValues(ps).executeQuery();
+
+            connectionOpened++;
+
+            return rs;
         }
 
         public void executeUpdate() throws SQLException {
