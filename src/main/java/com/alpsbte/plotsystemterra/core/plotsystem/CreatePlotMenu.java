@@ -136,6 +136,9 @@ public class CreatePlotMenu {
                 listProjects.add(city);
                 counter++;
             }
+
+            DatabaseConnection.closeResultSet(rs);
+
         } catch (SQLException ex) {
             createPlotMenu.getSlot(9 + counter).setItem(new ItemBuilder(Material.BARRIER)
                 .setName("§c§lError")

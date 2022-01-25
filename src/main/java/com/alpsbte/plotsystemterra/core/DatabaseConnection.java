@@ -18,6 +18,8 @@ public class DatabaseConnection {
     private final static HikariConfig config = new HikariConfig();
     private static HikariDataSource dataSource;
 
+    private static int connectionClosed, connectionOpened;
+
     public static void InitializeDatabase() throws ClassNotFoundException {
         Class.forName("org.mariadb.jdbc.Driver");
 
@@ -55,6 +57,22 @@ public class DatabaseConnection {
         return new StatementBuilder(sql);
     }
 
+    public static void closeResultSet(ResultSet resultSet) throws SQLException {
+        if(resultSet.isClosed()
+        && resultSet.getStatement().isClosed()
+        && resultSet.getStatement().getConnection().isClosed())
+            return;
+
+        resultSet.close();
+        resultSet.getStatement().close();
+        resultSet.getStatement().getConnection().close();
+
+        connectionClosed++;
+
+        if(connectionOpened > connectionClosed + 5)
+            Bukkit.getLogger().log(Level.SEVERE, "There are multiple database connections opened. Please report this issue.");
+    }
+
     /**
      * Returns a missing auto increment id
      * @param table in the database
@@ -66,8 +84,12 @@ public class DatabaseConnection {
                     .replace("$table", table);
             try (ResultSet rs = DatabaseConnection.createStatement(query).executeQuery()) {
                 if (rs.next()) {
-                    return rs.getInt(1);
+                    int i = rs.getInt(1);
+                    DatabaseConnection.closeResultSet(rs);
+                    return i;
                 }
+
+                DatabaseConnection.closeResultSet(rs);
                 return 1;
             }
         } catch (SQLException ex) {
@@ -90,11 +112,13 @@ public class DatabaseConnection {
         }
 
         public ResultSet executeQuery() throws SQLException {
-            try (Connection con = dataSource.getConnection()) {
-                try (PreparedStatement ps = Objects.requireNonNull(con).prepareStatement(sql)) {
-                    return iterateValues(ps).executeQuery();
-                }
-            }
+            Connection con = dataSource.getConnection();
+            PreparedStatement ps = Objects.requireNonNull(con).prepareStatement(sql);
+            ResultSet rs = iterateValues(ps).executeQuery();
+
+            connectionOpened++;
+
+            return rs;
         }
 
         public void executeUpdate() throws SQLException {

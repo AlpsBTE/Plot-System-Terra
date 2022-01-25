@@ -29,6 +29,9 @@ public class FTPConfiguration {
                 this.username = rs.getString(5);
                 this.password = rs.getString(6);
             }
+
+            DatabaseConnection.closeResultSet(rs);
+
         }
     }
 
