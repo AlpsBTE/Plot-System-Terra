@@ -85,6 +85,7 @@ public class PlotPaster extends Thread {
                                         pastedPlots++;
                                     }
                                 }
+                                DatabaseConnection.closeResultSet(rsServer);
                             }
                         } catch (Exception ex) {
                             Bukkit.getLogger().log(Level.SEVERE, "An error occurred while pasting plot #" + plotID + "!", ex);
@@ -97,13 +98,14 @@ public class PlotPaster extends Thread {
                             " plot" + (pastedPlots > 1 ? "s" : "") + "!"));
                     }
                 }
+                DatabaseConnection.closeResultSet(rs);
             } catch (SQLException ex) {
                 Bukkit.getLogger().log(Level.SEVERE, "A SQL error occurred!", ex);
             }
         }, 0L, 20L * pasteInterval);
     }
 
-    public static void pastePlotSchematic(int plotID, CityProject city, World world, BlockVector3 mcCoordinates) throws IOException, DataException, MaxChangedBlocksException, SQLException {
+    public static void pastePlotSchematic(int plotID, CityProject city, World world, BlockVector3 mcCoordinates) throws IOException, SQLException {
         File file = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), "finishedSchematics", String.valueOf(city.getID()), plotID + ".schematic").toFile();
 
         // Download from SFTP or FTP server if enabled
@@ -124,6 +126,7 @@ public class PlotPaster extends Thread {
             try(EditSession editSession = WorldEdit.getInstance().newEditSession(new BukkitWorld(world))) {
                 Clipboard clipboard;
                 ClipboardFormat schematicFormat = ClipboardFormats.findByFile(file);
+                assert schematicFormat != null;
                 try (ClipboardReader reader = schematicFormat.getReader(new FileInputStream(file)))
                 {
                     clipboard = reader.read();

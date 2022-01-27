@@ -2,6 +2,9 @@ package com.alpsbte.plotsystemterra.core.plotsystem;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.DatabaseConnection;
+import com.alpsbte.plotsystemterra.core.config.Config;
+import com.alpsbte.plotsystemterra.core.config.ConfigManager;
+import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.alpsbte.plotsystemterra.utils.FTPManager;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import com.sk89q.worldedit.IncompleteRegionException;
@@ -43,7 +46,9 @@ import java.util.logging.Level;
 
 public class PlotCreator {
 
-    public final static String schematicsPath = Paths.get(PlotSystemTerra.getPlugin().getDataFolder().getAbsolutePath(), "schematics") + File.separator;
+    public final static String schematicsPath =
+            Objects.equals(PlotSystemTerra.getPlugin().getConfig().getString(ConfigPaths.ABSOLUTE_SCHEMATIC_PATH), "true") ? "" :
+            Paths.get(PlotSystemTerra.getPlugin().getDataFolder().getAbsolutePath(), "schematics") + File.separator;
 
     public static CompletableFuture<Void> Create(Player player, CityProject cityProject, int difficultyID) {
         int plotID;

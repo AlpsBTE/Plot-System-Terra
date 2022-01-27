@@ -51,6 +51,12 @@ public class DatabaseConnection {
         return null;
     }
 
+    public static void closeResultSet(ResultSet resultSet) throws SQLException {
+        resultSet.close();
+        resultSet.getStatement().close();
+        resultSet.getStatement().getConnection().close();
+    }
+
     public static StatementBuilder createStatement(String sql) {
         return new StatementBuilder(sql);
     }
@@ -68,6 +74,7 @@ public class DatabaseConnection {
                 if (rs.next()) {
                     return rs.getInt(1);
                 }
+                closeResultSet(rs);
                 return 1;
             }
         } catch (SQLException ex) {
@@ -90,11 +97,9 @@ public class DatabaseConnection {
         }
 
         public ResultSet executeQuery() throws SQLException {
-            try (Connection con = dataSource.getConnection()) {
-                try (PreparedStatement ps = Objects.requireNonNull(con).prepareStatement(sql)) {
-                    return iterateValues(ps).executeQuery();
-                }
-            }
+            Connection con = dataSource.getConnection();
+            PreparedStatement ps = Objects.requireNonNull(con).prepareStatement(sql);
+            return iterateValues(ps).executeQuery();
         }
 
         public void executeUpdate() throws SQLException {

@@ -29,6 +29,7 @@ public class FTPConfiguration {
                 this.username = rs.getString(5);
                 this.password = rs.getString(6);
             }
+            DatabaseConnection.closeResultSet(rs);
         }
     }
 
@@ -38,7 +39,7 @@ public class FTPConfiguration {
 
     public String getSchematicPath() {
         if (schematicPath != null) {
-            schematicPath = schematicPath.startsWith("/") ? schematicPath.substring(1, schematicPath.length()) : schematicPath;
+            schematicPath = schematicPath.startsWith("/") ? schematicPath.substring(1) : schematicPath;
             schematicPath = schematicPath.endsWith("/") ? schematicPath.substring(0, schematicPath.length() - 1) : schematicPath;
         }
         return schematicPath;

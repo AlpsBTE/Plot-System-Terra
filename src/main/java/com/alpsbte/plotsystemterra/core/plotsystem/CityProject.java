@@ -28,13 +28,15 @@ public class CityProject {
                 this.countryID = rsCity.getInt(1);
                 this.name = rsCity.getString(2);
             }
+            DatabaseConnection.closeResultSet(rsCity);
 
             try (ResultSet rsCountry = DatabaseConnection.createStatement("SELECT head_id FROM plotsystem_countries WHERE id = ?")
-                    .setValue(countryID).executeQuery();) {
+                    .setValue(countryID).executeQuery()) {
 
                 if (rsCountry.next()) {
                     this.headID = rsCountry.getString(1);
                 }
+                DatabaseConnection.closeResultSet(rsCountry);
             }
         } catch (Exception ex) {
             Bukkit.getLogger().log(Level.SEVERE, "An error occurred while getting country head!", ex);
@@ -61,8 +63,10 @@ public class CityProject {
                         int ftpID = rsFTP.getInt(1);
                         if (!rsFTP.wasNull()) return new FTPConfiguration(ftpID);
                     }
+                    DatabaseConnection.closeResultSet(rsFTP);
                 }
             }
+            DatabaseConnection.closeResultSet(rsServer);
         } catch (SQLException ex) {
             Bukkit.getLogger().log(Level.SEVERE, "Could not check for FTP-Configuration for city project (" + ID + ")!", ex);
         }
@@ -76,6 +80,7 @@ public class CityProject {
             if (rs.next()) {
                 return rs.getInt(1);
             }
+            DatabaseConnection.closeResultSet(rs);
             return 1;
         }
     }
