@@ -76,7 +76,7 @@ public class PlotPaster extends Thread {
                                     }
                                 }
 
-                                DatabaseConnection.closeResultSet(rs);
+                                DatabaseConnection.closeResultSet(rsServer);
 
                             }
                         } catch (Exception ex) {
