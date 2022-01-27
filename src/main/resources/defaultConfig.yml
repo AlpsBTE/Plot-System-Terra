@@ -13,6 +13,10 @@ check-for-updates: true
 # NOTE: Do not change if you do not know what you are doing
 dev-mode: false
 
+# If set to false, the path will always be "/plugins/PlotSystem-Terra/schematics"
+# Setting to true removes the above path and uses the paths from the SQL servers.
+absolute-schematic-path: false
+
 
 # -----------------------------------------------------
 # | Supported database: MariaDB
