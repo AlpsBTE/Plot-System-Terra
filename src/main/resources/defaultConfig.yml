@@ -15,7 +15,7 @@ dev-mode: false
 
 
 # -----------------------------------------------------
-# | Supported database: MariaDB
+# | Supported databases: MariaDB & MySQL
 # -----------------------------------------------------
 database:
   url: jdbc:mariadb://adress:3306/
