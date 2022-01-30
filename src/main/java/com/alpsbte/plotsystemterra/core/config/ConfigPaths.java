@@ -17,6 +17,7 @@ public abstract class ConfigPaths {
 
     // PLOT PASTING
     public static final String WORLD_NAME = "world-name";
+    public static final String FAST_MODE = "fast-mode";
     public static final String PASTING_INTERVAL = "pasting-interval";
     public static final String BROADCAST_INFO = "broadcast-info";
 

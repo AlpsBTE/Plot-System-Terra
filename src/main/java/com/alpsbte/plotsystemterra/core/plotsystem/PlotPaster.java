@@ -30,6 +30,7 @@ public class PlotPaster extends Thread {
 
     private final String serverName;
 
+    private final boolean fastMode;
     private final int pasteInterval;
     private final World world;
     private final boolean broadcastMessages;
@@ -38,6 +39,7 @@ public class PlotPaster extends Thread {
         FileConfiguration config = PlotSystemTerra.getPlugin().getConfig();
 
         this.serverName = config.getString(ConfigPaths.SERVER_NAME);
+        this.fastMode = config.getBoolean(ConfigPaths.FAST_MODE);
         this.world = Bukkit.getWorld(config.getString(ConfigPaths.WORLD_NAME));
         this.pasteInterval = config.getInt(ConfigPaths.PASTING_INTERVAL);
         this.broadcastMessages = config.getBoolean(ConfigPaths.BROADCAST_INFO);
@@ -71,7 +73,7 @@ public class PlotPaster extends Thread {
                                                 Float.parseFloat(splitCoordinates[2])
                                         );
 
-                                        pastePlotSchematic(plotID, city, world, mcCoordinates);
+                                        pastePlotSchematic(plotID, city, world, mcCoordinates, fastMode);
                                         pastedPlots++;
                                     }
                                 }
@@ -97,7 +99,7 @@ public class PlotPaster extends Thread {
         }, 0L, 20L * pasteInterval);
     }
 
-    public static void pastePlotSchematic(int plotID, CityProject city, World world, Vector mcCoordinates) throws IOException, DataException, MaxChangedBlocksException, SQLException {
+    public static void pastePlotSchematic(int plotID, CityProject city, World world, Vector mcCoordinates, boolean fastMode) throws IOException, DataException, MaxChangedBlocksException, SQLException {
         File file = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), "finishedSchematics", String.valueOf(city.getID()), plotID + ".schematic").toFile();
 
         // Download from SFTP or FTP server if enabled
@@ -116,6 +118,7 @@ public class PlotPaster extends Thread {
 
         if (file.exists()) {
             EditSession editSession = new EditSession(new BukkitWorld(world), -1);
+            if (fastMode) editSession.setFastMode(true);
             editSession.enableQueue();
 
             SchematicFormat schematicFormat = SchematicFormat.getFormat(file);
