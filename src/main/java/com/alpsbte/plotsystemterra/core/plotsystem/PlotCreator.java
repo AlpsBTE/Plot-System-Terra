@@ -2,6 +2,7 @@ package com.alpsbte.plotsystemterra.core.plotsystem;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.DatabaseConnection;
+import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.alpsbte.plotsystemterra.utils.FTPManager;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import com.sk89q.worldedit.*;
@@ -13,6 +14,10 @@ import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardWriter;
 import com.sk89q.worldedit.function.operation.ForwardExtentCopy;
 import com.sk89q.worldedit.function.operation.Operations;
+import com.sk89q.worldedit.math.geom.Polygons;
+import com.sk89q.worldedit.math.transform.AffineTransform;
+import com.sk89q.worldedit.regions.AbstractRegion;
+import com.sk89q.worldedit.regions.CylinderRegion;
 import com.sk89q.worldedit.regions.Polygonal2DRegion;
 import com.sk89q.worldedit.regions.Region;
 import org.apache.commons.vfs2.FileSystemException;
@@ -21,8 +26,10 @@ import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
+import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -33,15 +40,25 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.logging.Level;
 
 public class PlotCreator {
 
     public final static String schematicsPath = Paths.get(PlotSystemTerra.getPlugin().getDataFolder().getAbsolutePath(), "schematics") + File.separator;
+    private final static String errorCode = "error";
+    private final static int environmentUpExpanding = 50;
+    private final static int environmentDownExpanding = 0;
 
     public static CompletableFuture<Void> Create(Player player, CityProject cityProject, int difficultyID) {
         int plotID;
         Region plotRegion;
+
+        // Read the config
+        FileConfiguration config = PlotSystemTerra.getPlugin().getConfig();
+        boolean environmentEnabled = config.getBoolean(ConfigPaths.ENVIRONMENT_ENABLED);
+        int environmentRadius = config.getInt(ConfigPaths.ENVIRONMENT_RADIUS);
+
 
         // Get WorldEdit selection of player
         try {
@@ -52,31 +69,51 @@ public class PlotCreator {
             return CompletableFuture.completedFuture(null);
         }
 
+
         // Conversion
-        Polygonal2DRegion polyRegion;
+        Polygonal2DRegion plotPolyRegion = null;
+        CylinderRegion environmentPolyRegion = null;
         try {
             // Check if WorldEdit selection is polygonal
             if (plotRegion instanceof Polygonal2DRegion) {
                 // Cast WorldEdit region to polygonal region
-                polyRegion = (Polygonal2DRegion) plotRegion;
+                plotPolyRegion = (Polygonal2DRegion) plotRegion;
 
-                if (polyRegion.getLength() > 100 || polyRegion.getWidth() > 100 || polyRegion.getHeight() > 250) {
+                if (plotPolyRegion.getLength() > 100 || plotPolyRegion.getWidth() > 100 || plotPolyRegion.getHeight() > 250) {
                     player.sendMessage(Utils.getErrorMessageFormat("Please adjust your selection size!"));
                     return CompletableFuture.completedFuture(null);
                 }
 
                 // Set minimum selection height under player location
-                if (polyRegion.getMinimumY() > player.getLocation().getY() - 5) {
-                    polyRegion.setMinimumY((int) player.getLocation().getY() - 5);
+                if (plotPolyRegion.getMinimumY() > player.getLocation().getY() - 5) {
+                    plotPolyRegion.setMinimumY((int) player.getLocation().getY() - 5);
                 }
 
-                if (polyRegion.getMaximumY() <= player.getLocation().getY() + 1) {
-                    polyRegion.setMaximumY((int) player.getLocation().getY() + 1);
+                if (plotPolyRegion.getMaximumY() <= player.getLocation().getY() + 1) {
+                    plotPolyRegion.setMaximumY((int) player.getLocation().getY() + 1);
                 }
+
+
+                // Create the environment selection
+                if(environmentEnabled) {
+
+                    //Create a new cylinder region with the size of the plot + the configured radius around it.
+                    int width = plotPolyRegion.getWidth();
+                    int length = plotPolyRegion.getLength();
+                    Vector2D radius = new Vector2D(width/2 + environmentRadius, length/2 + environmentRadius);
+
+                    environmentPolyRegion = new CylinderRegion(
+                            plotPolyRegion.getWorld(),
+                            plotPolyRegion.getCenter(),
+                            radius, plotPolyRegion.getMinimumY(),
+                            plotPolyRegion.getMaximumY()
+                    );
+                }
+
 
                 // Check if selection contains sign
                 try {
-                    if(!containsSign(polyRegion, player.getWorld())) {
+                    if(!containsSign(plotPolyRegion, player.getWorld())) {
                         player.sendMessage(Utils.getErrorMessageFormat("Please place a minimum of one sign for the street side."));
                         return CompletableFuture.completedFuture(null);
                     }
@@ -96,38 +133,38 @@ public class PlotCreator {
         player.sendMessage(Utils.getInfoMessageFormat("Creating plot..."));
 
         // Saving schematic
-        String filePath;
+        String plotFilePath = null, environmentFilePath = null;
         try {
             plotID = DatabaseConnection.getTableID("plotsystem_plots");
 
-            filePath = Paths.get(schematicsPath, String.valueOf(cityProject.getServerID()), String.valueOf(cityProject.getID()), plotID + ".schematic").toString();
-            File schematic = new File(filePath);
 
-            Files.deleteIfExists(schematic.getAbsoluteFile().toPath());
-            boolean createdDirs = schematic.getParentFile().mkdirs();
-            boolean createdFile = schematic.createNewFile();
-            if ((!schematic.getParentFile().exists() && !createdDirs) || (!schematic.exists() && !createdFile)) {
-                Bukkit.getLogger().log(Level.SEVERE, "Could not create schematic file! (" + filePath + ")");
-                player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
-                return CompletableFuture.completedFuture(null);
+            // Save plot schematic
+            if (plotPolyRegion != null){
+                plotFilePath = createPlotSchematic(plotPolyRegion, plotID + "", player, cityProject);
+
+                if (plotFilePath.equals(errorCode)) {
+                    Bukkit.getLogger().log(Level.SEVERE, "Could not create schematic file! (" + plotFilePath + ")");
+                    player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
+                    return CompletableFuture.completedFuture(null);
+                }
             }
 
-            WorldEditPlugin worldEdit = PlotSystemTerra.DependencyManager.getWorldEditPlugin();
+            // Save environment schematic
+            if(environmentEnabled && environmentPolyRegion != null){
+                environmentFilePath = createPlotSchematic(environmentPolyRegion, plotID + "-env", player, cityProject);
 
-            Clipboard cb = new BlockArrayClipboard(polyRegion);
-            cb.setOrigin(cb.getRegion().getCenter());
-            LocalSession playerSession = PlotSystemTerra.DependencyManager.getWorldEdit().getSessionManager().findByName(player.getName());
-            ForwardExtentCopy copy = new ForwardExtentCopy(playerSession.createEditSession(worldEdit.wrapPlayer(player)), polyRegion, cb, polyRegion.getMinimumPoint());
-            Operations.completeLegacy(copy);
-
-            try (ClipboardWriter writer = ClipboardFormat.SCHEMATIC.getWriter(new FileOutputStream(schematic, false))) {
-                writer.write(cb, polyRegion.getWorld().getWorldData());
+                if(environmentFilePath.equals(errorCode)) {
+                    Bukkit.getLogger().log(Level.SEVERE, "Could not create schematic file! (" + environmentFilePath + ")");
+                    player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
+                    return CompletableFuture.completedFuture(null);
+                }
             }
         } catch (Exception ex) {
             Bukkit.getLogger().log(Level.SEVERE, "An error occurred while saving new plot to a schematic!", ex);
             player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
             return CompletableFuture.completedFuture(null);
         }
+
 
         // Save to database
         try {
@@ -142,9 +179,14 @@ public class PlotCreator {
             // Upload to SFTP or FTP server if enabled
             FTPConfiguration ftpConfiguration = cityProject.getFTPConfiguration();
             if (ftpConfiguration != null) {
+
+                String finalEnvironmentFilePath = environmentFilePath, finalPlotFilePath = plotFilePath;
                 if (CompletableFuture.supplyAsync(() -> {
                     try {
-                        return FTPManager.uploadSchematic(FTPManager.getFTPUrl(ftpConfiguration, cityProject.getID()), new File(filePath));
+                        if(environmentEnabled)
+                            return FTPManager.uploadSchematics(FTPManager.getFTPUrl(ftpConfiguration, cityProject.getID()), new File(finalPlotFilePath), new File(finalEnvironmentFilePath));
+                        else
+                            return FTPManager.uploadSchematics(FTPManager.getFTPUrl(ftpConfiguration, cityProject.getID()), new File(finalPlotFilePath));
                     } catch (FileSystemException | URISyntaxException ex) {
                         Bukkit.getLogger().log(Level.SEVERE, "An error occurred while uploading schematic file to SFTP/FTP server!", ex);
                         return null;
@@ -165,13 +207,56 @@ public class PlotCreator {
             player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
 
             try {
-                Files.deleteIfExists(Paths.get(filePath));
+                Files.deleteIfExists(Paths.get(plotFilePath));
             } catch (IOException e) {
                 Bukkit.getLogger().log(Level.SEVERE, "An error occurred while deleting schematic!", ex);
             }
         }
         return CompletableFuture.completedFuture(null);
     }
+
+
+    /**
+     * Creates a plot schematic of a selected region from the player.
+     *
+     * @param region: Selected poly region of the player
+     * @return the file path of the created schematic
+     */
+    private static String createPlotSchematic(AbstractRegion region, String filename, Player player, CityProject cityProject) throws SQLException, IOException, MaxChangedBlocksException {
+        String filePath;
+
+        // Create File
+        filePath = Paths.get(schematicsPath, String.valueOf(cityProject.getServerID()), String.valueOf(cityProject.getID()), filename + ".schematic").toString();
+        File schematic = new File(filePath);
+
+        // Delete file if exists
+        Files.deleteIfExists(schematic.getAbsoluteFile().toPath());
+        boolean createdDirs = schematic.getParentFile().mkdirs();
+        boolean createdFile = schematic.createNewFile();
+
+        if ((!schematic.getParentFile().exists() && !createdDirs) || (!schematic.exists() && !createdFile))
+            return errorCode;
+
+
+        // Store content of region in schematic
+        WorldEditPlugin worldEdit = PlotSystemTerra.DependencyManager.getWorldEditPlugin();
+
+        Clipboard cb = new BlockArrayClipboard(region);
+        cb.setOrigin(cb.getRegion().getCenter());
+        LocalSession playerSession = PlotSystemTerra.DependencyManager.getWorldEdit().getSessionManager().findByName(player.getName());
+        ForwardExtentCopy copy = new ForwardExtentCopy(playerSession.createEditSession(worldEdit.wrapPlayer(player)), region, cb, region.getMinimumPoint());
+        Operations.completeLegacy(copy);
+
+        try (ClipboardWriter writer = ClipboardFormat.SCHEMATIC.getWriter(new FileOutputStream(schematic, false))) {
+            writer.write(cb, region.getWorld().getWorldData());
+        }
+
+        return filePath;
+    }
+
+
+
+
 
     private static boolean containsSign(Polygonal2DRegion polyRegion, World world) {
         boolean hasSign = false;
