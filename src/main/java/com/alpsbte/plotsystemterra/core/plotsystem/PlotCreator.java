@@ -15,6 +15,7 @@ import com.sk89q.worldedit.function.operation.ForwardExtentCopy;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.regions.Polygonal2DRegion;
 import com.sk89q.worldedit.regions.Region;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.vfs2.FileSystemException;
 import org.bukkit.*;
 import org.bukkit.Location;
@@ -93,6 +94,15 @@ public class PlotCreator {
             return CompletableFuture.completedFuture(null);
         }
 
+        // Convert polygon outline data to string
+        String polyOutline;
+        List<String> points = new ArrayList<>();
+
+        for(BlockVector2D point : polyRegion.getPoints())
+            points.add(point.getBlockX() + "," + point.getBlockZ());
+        polyOutline = StringUtils.join(points, "|");
+
+
         player.sendMessage(Utils.getInfoMessageFormat("Creating plot..."));
 
         // Saving schematic
@@ -131,11 +141,12 @@ public class PlotCreator {
 
         // Save to database
         try {
-            DatabaseConnection.createStatement("INSERT INTO plotsystem_plots (id, city_project_id, difficulty_id, mc_coordinates, create_date, create_player) VALUES (?, ?, ?, ?, ?, ?)")
+            DatabaseConnection.createStatement("INSERT INTO plotsystem_plots (id, city_project_id, difficulty_id, mc_coordinates, outline, create_date, create_player) VALUES (?, ?, ?, ?, ?, ?, ?)")
                     .setValue(plotID)
                     .setValue(cityProject.getID())
                     .setValue(difficultyID)
                     .setValue(player.getLocation().getBlockX() + "," + player.getLocation().getBlockY() + "," + player.getLocation().getBlockZ())
+                    .setValue(polyOutline)
                     .setValue(java.sql.Date.valueOf(LocalDate.now()))
                     .setValue(player.getUniqueId().toString()).executeUpdate();
 
