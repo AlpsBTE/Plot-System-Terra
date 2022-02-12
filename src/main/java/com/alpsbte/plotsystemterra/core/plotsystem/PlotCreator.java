@@ -145,7 +145,7 @@ public class PlotCreator {
                     .setValue(plotID)
                     .setValue(cityProject.getID())
                     .setValue(difficultyID)
-                    .setValue(player.getLocation().getBlockX() + "," + player.getLocation().getBlockY() + "," + player.getLocation().getBlockZ())
+                    .setValue(polyRegion.getCenter().getBlockX() + "," + polyRegion.getCenter().getBlockY() + "," + polyRegion.getCenter().getBlockZ())
                     .setValue(polyOutline)
                     .setValue(java.sql.Date.valueOf(LocalDate.now()))
                     .setValue(player.getUniqueId().toString()).executeUpdate();
