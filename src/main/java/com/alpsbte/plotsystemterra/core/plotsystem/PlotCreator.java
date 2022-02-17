@@ -125,7 +125,7 @@ public class PlotCreator {
             WorldEditPlugin worldEdit = PlotSystemTerra.DependencyManager.getWorldEditPlugin();
 
             Clipboard cb = new BlockArrayClipboard(polyRegion);
-            cb.setOrigin(cb.getRegion().getCenter());
+            cb.setOrigin(polyRegion.getCenter());
             LocalSession playerSession = PlotSystemTerra.DependencyManager.getWorldEdit().getSessionManager().findByName(player.getName());
             ForwardExtentCopy copy = new ForwardExtentCopy(playerSession.createEditSession(worldEdit.wrapPlayer(player)), polyRegion, cb, polyRegion.getMinimumPoint());
             Operations.completeLegacy(copy);
@@ -145,7 +145,7 @@ public class PlotCreator {
                     .setValue(plotID)
                     .setValue(cityProject.getID())
                     .setValue(difficultyID)
-                    .setValue(polyRegion.getCenter().getBlockX() + "," + polyRegion.getCenter().getBlockY() + "," + polyRegion.getCenter().getBlockZ())
+                    .setValue(polyRegion.getCenter().getX() + "," + polyRegion.getCenter().getY() + "," + polyRegion.getCenter().getZ())
                     .setValue(polyOutline)
                     .setValue(java.sql.Date.valueOf(LocalDate.now()))
                     .setValue(player.getUniqueId().toString()).executeUpdate();
