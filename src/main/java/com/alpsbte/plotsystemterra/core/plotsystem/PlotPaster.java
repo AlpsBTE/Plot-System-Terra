@@ -11,7 +11,6 @@ import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.schematic.SchematicFormat;
 import com.sk89q.worldedit.world.DataException;
-import org.apache.commons.vfs2.FileSystemException;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -109,7 +108,7 @@ public class PlotPaster extends Thread {
             if (CompletableFuture.supplyAsync(() -> {
                 try {
                     return FTPManager.downloadSchematic(FTPManager.getFTPUrl(ftpConfiguration, city.getID()), file);
-                } catch (FileSystemException | URISyntaxException ex) {
+                } catch (URISyntaxException ex) {
                     Bukkit.getLogger().log(Level.SEVERE, "An error occurred while downloading schematic file from SFTP/FTP server!", ex);
                     return null;
                 }

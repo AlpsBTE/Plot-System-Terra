@@ -14,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 public class FTPManager {
+
     private static FileSystemOptions fileOptions;
 
     private final static String DEFAULT_SCHEMATIC_PATH_LINUX = "/var/lib/Plot-System/schematics";
@@ -43,7 +44,7 @@ public class FTPManager {
                 null).toString();
     }
 
-    public static CompletableFuture<Void> uploadSchematics(String ftpURL, File... schematics) throws FileSystemException {
+    public static CompletableFuture<Void> uploadSchematics(String ftpURL, File... schematics) {
         try (StandardFileSystemManager fileManager = new StandardFileSystemManager()) {
             fileManager.init();
 
@@ -62,11 +63,13 @@ public class FTPManager {
                 localSchematic.close();
                 remoteSchematic.close();
             }
+        } catch (FileSystemException ex) {
+            Bukkit.getLogger().log(Level.SEVERE, "Exception found with FileSystemManager!", ex);
         }
         return CompletableFuture.completedFuture(null);
     }
 
-    public static CompletableFuture<Void> downloadSchematic(String ftpURL, File schematic) throws FileSystemException {
+    public static CompletableFuture<Void> downloadSchematic(String ftpURL, File schematic) {
         try (StandardFileSystemManager fileManager = new StandardFileSystemManager()) {
             fileManager.init();
 
@@ -82,6 +85,8 @@ public class FTPManager {
 
             localSchematic.close();
             remoteSchematic.close();
+        } catch (FileSystemException ex) {
+            Bukkit.getLogger().log(Level.SEVERE, "Exception found with FileSystemManager!", ex);
         }
         return CompletableFuture.completedFuture(null);
     }

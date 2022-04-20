@@ -14,14 +14,11 @@ import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardWriter;
 import com.sk89q.worldedit.function.operation.ForwardExtentCopy;
 import com.sk89q.worldedit.function.operation.Operations;
-import com.sk89q.worldedit.math.geom.Polygons;
-import com.sk89q.worldedit.math.transform.AffineTransform;
 import com.sk89q.worldedit.regions.AbstractRegion;
 import com.sk89q.worldedit.regions.CylinderRegion;
 import com.sk89q.worldedit.regions.Polygonal2DRegion;
 import com.sk89q.worldedit.regions.Region;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.vfs2.FileSystemException;
 import org.bukkit.*;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -30,7 +27,6 @@ import org.bukkit.block.Sign;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
-import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -41,15 +37,12 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.logging.Level;
 
 public class PlotCreator {
 
     public final static String schematicsPath = Paths.get(PlotSystemTerra.getPlugin().getDataFolder().getAbsolutePath(), "schematics") + File.separator;
     private final static String errorCode = "error";
-    private final static int environmentUpExpanding = 50;
-    private final static int environmentDownExpanding = 0;
 
     public static CompletableFuture<Void> Create(Player player, CityProject cityProject, int difficultyID) {
         int plotID;
@@ -101,6 +94,7 @@ public class PlotCreator {
                     //Create a new cylinder region with the size of the plot + the configured radius around it.
                     int width = plotPolyRegion.getWidth();
                     int length = plotPolyRegion.getLength();
+                    Bukkit.getLogger().log(Level.INFO, "Plot width: " + width + " length: " + length + " radius: " + environmentRadius + " minY: " + plotPolyRegion.getMinimumY() + " maxY: " + plotPolyRegion.getMaximumY());
                     Vector2D radius = new Vector2D(width/2 + environmentRadius, length/2 + environmentRadius);
 
                     environmentPolyRegion = new CylinderRegion(
@@ -135,7 +129,7 @@ public class PlotCreator {
         String polyOutline;
         List<String> points = new ArrayList<>();
 
-        for(BlockVector2D point : polyRegion.getPoints())
+        for(BlockVector2D point : plotPolyRegion.getPoints())
             points.add(point.getBlockX() + "," + point.getBlockZ());
         polyOutline = StringUtils.join(points, "|");
 
@@ -143,24 +137,22 @@ public class PlotCreator {
         player.sendMessage(Utils.getInfoMessageFormat("Creating plot..."));
 
         // Saving schematic
-        String plotFilePath = null, environmentFilePath = null;
+        String plotFilePath, environmentFilePath = null;
         try {
             plotID = DatabaseConnection.getTableID("plotsystem_plots");
 
 
             // Save plot schematic
-            if (plotPolyRegion != null){
-                plotFilePath = createPlotSchematic(plotPolyRegion, plotID + "", player, cityProject);
+            plotFilePath = createPlotSchematic(plotPolyRegion, plotID + "", player, cityProject);
 
-                if (plotFilePath.equals(errorCode)) {
-                    Bukkit.getLogger().log(Level.SEVERE, "Could not create schematic file! (" + plotFilePath + ")");
-                    player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
-                    return CompletableFuture.completedFuture(null);
-                }
+            if (plotFilePath.equals(errorCode)) {
+                Bukkit.getLogger().log(Level.SEVERE, "Could not create schematic file! (" + plotFilePath + ")");
+                player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
+                return CompletableFuture.completedFuture(null);
             }
 
             // Save environment schematic
-            if(environmentEnabled && environmentPolyRegion != null){
+            if(environmentEnabled){
                 environmentFilePath = createPlotSchematic(environmentPolyRegion, plotID + "-env", player, cityProject);
 
                 if(environmentFilePath.equals(errorCode)) {
@@ -175,35 +167,34 @@ public class PlotCreator {
             return CompletableFuture.completedFuture(null);
         }
 
-
-        // Save to database
         try {
-            DatabaseConnection.createStatement("INSERT INTO plotsystem_plots (id, city_project_id, difficulty_id, mc_coordinates, outline, create_date, create_player) VALUES (?, ?, ?, ?, ?, ?, ?)")
-                    .setValue(plotID)
-                    .setValue(cityProject.getID())
-                    .setValue(difficultyID)
-                    .setValue(polyRegion.getCenter().getX() + "," + polyRegion.getCenter().getY() + "," + polyRegion.getCenter().getZ())
-                    .setValue(polyOutline)
-                    .setValue(java.sql.Date.valueOf(LocalDate.now()))
-                    .setValue(player.getUniqueId().toString()).executeUpdate();
-
             // Upload to SFTP or FTP server if enabled
             FTPConfiguration ftpConfiguration = cityProject.getFTPConfiguration();
             if (ftpConfiguration != null) {
 
-                String finalEnvironmentFilePath = environmentFilePath, finalPlotFilePath = plotFilePath;
+                String finalEnvironmentFilePath = environmentFilePath;
                 if (CompletableFuture.supplyAsync(() -> {
                     try {
                         if(environmentEnabled)
-                            return FTPManager.uploadSchematics(FTPManager.getFTPUrl(ftpConfiguration, cityProject.getID()), new File(finalPlotFilePath), new File(finalEnvironmentFilePath));
+                            return FTPManager.uploadSchematics(FTPManager.getFTPUrl(ftpConfiguration, cityProject.getID()), new File(plotFilePath), new File(finalEnvironmentFilePath));
                         else
-                            return FTPManager.uploadSchematics(FTPManager.getFTPUrl(ftpConfiguration, cityProject.getID()), new File(finalPlotFilePath));
-                    } catch (FileSystemException | URISyntaxException ex) {
+                            return FTPManager.uploadSchematics(FTPManager.getFTPUrl(ftpConfiguration, cityProject.getID()), new File(plotFilePath));
+                    } catch (URISyntaxException ex) {
                         Bukkit.getLogger().log(Level.SEVERE, "An error occurred while uploading schematic file to SFTP/FTP server!", ex);
                         return null;
                     }
                 }).join() == null) throw new IOException();
             }
+
+            // Save to database
+            DatabaseConnection.createStatement("INSERT INTO plotsystem_plots (id, city_project_id, difficulty_id, mc_coordinates, outline, create_date, create_player) VALUES (?, ?, ?, ?, ?, ?, ?)")
+                    .setValue(plotID)
+                    .setValue(cityProject.getID())
+                    .setValue(difficultyID)
+                    .setValue(plotPolyRegion.getCenter().getX() + "," + plotPolyRegion.getCenter().getY() + "," + plotPolyRegion.getCenter().getZ())
+                    .setValue(polyOutline)
+                    .setValue(java.sql.Date.valueOf(LocalDate.now()))
+                    .setValue(player.getUniqueId().toString()).executeUpdate();
 
             player.sendMessage(Utils.getInfoMessageFormat("Successfully created new plot! §f(City: §6" + cityProject.getName() + " §f| Plot-ID: §6" + plotID + "§f)"));
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
@@ -219,6 +210,7 @@ public class PlotCreator {
 
             try {
                 Files.deleteIfExists(Paths.get(plotFilePath));
+                if (environmentFilePath != null) Files.deleteIfExists(Paths.get(environmentFilePath));
             } catch (IOException e) {
                 Bukkit.getLogger().log(Level.SEVERE, "An error occurred while deleting schematic!", ex);
             }
