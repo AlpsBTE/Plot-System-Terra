@@ -7,7 +7,6 @@ import com.alpsbte.plotsystemterra.utils.FTPManager;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import com.sk89q.worldedit.*;
 import com.sk89q.worldedit.Vector;
-import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldedit.extent.clipboard.BlockArrayClipboard;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
@@ -65,8 +64,8 @@ public class PlotCreator {
 
 
         // Conversion
-        Polygonal2DRegion plotPolyRegion = null;
-        CylinderRegion environmentPolyRegion = null;
+        Polygonal2DRegion plotPolyRegion;
+        CylinderRegion environmentCylinderRegion = null;
         try {
             // Check if WorldEdit selection is polygonal
             if (plotRegion instanceof Polygonal2DRegion) {
@@ -94,10 +93,9 @@ public class PlotCreator {
                     //Create a new cylinder region with the size of the plot + the configured radius around it.
                     int width = plotPolyRegion.getWidth();
                     int length = plotPolyRegion.getLength();
-                    Bukkit.getLogger().log(Level.INFO, "Plot width: " + width + " length: " + length + " radius: " + environmentRadius + " minY: " + plotPolyRegion.getMinimumY() + " maxY: " + plotPolyRegion.getMaximumY());
                     Vector2D radius = new Vector2D(width/2 + environmentRadius, length/2 + environmentRadius);
 
-                    environmentPolyRegion = new CylinderRegion(
+                    environmentCylinderRegion = new CylinderRegion(
                             plotPolyRegion.getWorld(),
                             plotPolyRegion.getCenter(),
                             radius, plotPolyRegion.getMinimumY(),
@@ -141,7 +139,6 @@ public class PlotCreator {
         try {
             plotID = DatabaseConnection.getTableID("plotsystem_plots");
 
-
             // Save plot schematic
             plotFilePath = createPlotSchematic(plotPolyRegion, plotID + "", player, cityProject);
 
@@ -153,7 +150,7 @@ public class PlotCreator {
 
             // Save environment schematic
             if(environmentEnabled){
-                environmentFilePath = createPlotSchematic(environmentPolyRegion, plotID + "-env", player, cityProject);
+                environmentFilePath = createPlotSchematic(environmentCylinderRegion, plotID + "-env", player, cityProject);
 
                 if(environmentFilePath.equals(errorCode)) {
                     Bukkit.getLogger().log(Level.SEVERE, "Could not create schematic file! (" + environmentFilePath + ")");
@@ -242,16 +239,14 @@ public class PlotCreator {
 
 
         // Store content of region in schematic
-        WorldEditPlugin worldEdit = PlotSystemTerra.DependencyManager.getWorldEditPlugin();
-
         Clipboard cb = new BlockArrayClipboard(region);
         cb.setOrigin(cb.getRegion().getCenter());
-        LocalSession playerSession = PlotSystemTerra.DependencyManager.getWorldEdit().getSessionManager().findByName(player.getName());
-        ForwardExtentCopy copy = new ForwardExtentCopy(playerSession.createEditSession(worldEdit.wrapPlayer(player)), region, cb, region.getMinimumPoint());
-        Operations.completeLegacy(copy);
+        EditSession editSession = PlotSystemTerra.DependencyManager.getWorldEdit().getEditSessionFactory().getEditSession(region.getWorld(), -1);
+        ForwardExtentCopy forwardExtentCopy = new ForwardExtentCopy(editSession, region, cb, region.getMinimumPoint());
+        Operations.completeLegacy(forwardExtentCopy);
 
-        try (ClipboardWriter writer = ClipboardFormat.SCHEMATIC.getWriter(new FileOutputStream(schematic, false))) {
-            writer.write(cb, region.getWorld().getWorldData());
+        try(ClipboardWriter writer = ClipboardFormat.SCHEMATIC.getWriter(new FileOutputStream(schematic, false))) {
+            writer.write(cb, Objects.requireNonNull(region.getWorld()).getWorldData());
         }
 
         return filePath;
