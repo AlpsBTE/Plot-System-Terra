@@ -22,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 public class PlotPaster extends Thread {
@@ -98,21 +97,14 @@ public class PlotPaster extends Thread {
         }, 0L, 20L * pasteInterval);
     }
 
-    public static void pastePlotSchematic(int plotID, CityProject city, World world, Vector mcCoordinates, boolean fastMode) throws IOException, DataException, MaxChangedBlocksException, SQLException {
+    public static void pastePlotSchematic(int plotID, CityProject city, World world, Vector mcCoordinates, boolean fastMode) throws IOException, DataException, MaxChangedBlocksException, SQLException, URISyntaxException {
         File file = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), "finishedSchematics", String.valueOf(city.getID()), plotID + ".schematic").toFile();
 
         // Download from SFTP or FTP server if enabled
         FTPConfiguration ftpConfiguration = city.getFTPConfiguration();
         if (ftpConfiguration != null) {
             Files.deleteIfExists(file.toPath());
-            if (CompletableFuture.supplyAsync(() -> {
-                try {
-                    return FTPManager.downloadSchematic(FTPManager.getFTPUrl(ftpConfiguration, city.getID()), file);
-                } catch (URISyntaxException ex) {
-                    Bukkit.getLogger().log(Level.SEVERE, "An error occurred while downloading schematic file from SFTP/FTP server!", ex);
-                    return null;
-                }
-            }).join() == null) throw new IOException();
+            FTPManager.downloadSchematic(FTPManager.getFTPUrl(ftpConfiguration, city.getID()), file);
         }
 
         if (file.exists()) {

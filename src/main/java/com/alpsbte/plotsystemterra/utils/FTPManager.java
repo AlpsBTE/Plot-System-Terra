@@ -10,7 +10,6 @@ import org.bukkit.Bukkit;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 public class FTPManager {
@@ -44,11 +43,11 @@ public class FTPManager {
                 null).toString();
     }
 
-    public static CompletableFuture<Void> uploadSchematics(String ftpURL, File... schematics) {
+    public static void uploadSchematics(String ftpURL, File... schematics) throws FileSystemException {
         try (StandardFileSystemManager fileManager = new StandardFileSystemManager()) {
             fileManager.init();
 
-            for(File schematic : schematics) {
+            for (File schematic : schematics) {
                 // Get local schematic
                 FileObject localSchematic = fileManager.toFileObject(schematic);
 
@@ -63,13 +62,10 @@ public class FTPManager {
                 localSchematic.close();
                 remoteSchematic.close();
             }
-        } catch (FileSystemException ex) {
-            Bukkit.getLogger().log(Level.SEVERE, "Exception found with FileSystemManager!", ex);
         }
-        return CompletableFuture.completedFuture(null);
     }
 
-    public static CompletableFuture<Void> downloadSchematic(String ftpURL, File schematic) {
+    public static void downloadSchematic(String ftpURL, File schematic) throws FileSystemException {
         try (StandardFileSystemManager fileManager = new StandardFileSystemManager()) {
             fileManager.init();
 
@@ -85,9 +81,6 @@ public class FTPManager {
 
             localSchematic.close();
             remoteSchematic.close();
-        } catch (FileSystemException ex) {
-            Bukkit.getLogger().log(Level.SEVERE, "Exception found with FileSystemManager!", ex);
         }
-        return CompletableFuture.completedFuture(null);
     }
 }
