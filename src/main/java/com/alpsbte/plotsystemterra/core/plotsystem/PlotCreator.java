@@ -94,15 +94,15 @@ public class PlotCreator {
                     // Create the environment selection
                     if (environmentEnabled) {
                         // Get min region size for environment radius
-                        int width = plotRegion.getWidth();
-                        int length = plotRegion.getLength();
-                        Vector2D radius = new Vector2D(width/2 + environmentRadius, length/2 + environmentRadius);
+                        int radius = Math.max(plotRegion.getWidth() / 2 + environmentRadius, plotRegion.getLength() / 2 + environmentRadius);
 
                         // Create a new cylinder region with the size of the plot + the configured radius around it
+                        Vector plotRegionCenter = plotRegion.getCenter();
                         environmentRegion = new CylinderRegion(
                                 plotRegion.getWorld(),
-                                plotRegion.getCenter(),
-                                radius, plotRegion.getMinimumY(),
+                                new Vector(Math.floor(plotRegionCenter.getX()), plotRegionCenter.getY(), Math.floor(plotRegionCenter.getZ())),
+                                new Vector2D(radius, radius),
+                                plotRegion.getMinimumY(),
                                 plotRegion.getMaximumY()
                         );
                     }
