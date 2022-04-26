@@ -9,10 +9,10 @@
     <version>2.1</version>
 
     <repositories>
-        <!-- World Edit -->
+        <!-- AlpsBTE Repo (WorldEdit, WorldGuard, FAWE) -->
         <repository>
-            <id>nachwahl-repo</id>
-            <url>https://maven.nachwahl.dev/</url>
+            <id>alpsbte-repo</id>
+            <url>https://mvn.alps-bte.com/repository/alps-bte/</url>
         </repository>
 
         <!-- JitPack -->
