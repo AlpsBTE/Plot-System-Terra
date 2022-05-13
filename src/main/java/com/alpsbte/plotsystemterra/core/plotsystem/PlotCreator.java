@@ -34,10 +34,12 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
 public class PlotCreator {
     public final static String schematicsPath = Paths.get(PlotSystemTerra.getPlugin().getDataFolder().getAbsolutePath(), "schematics") + File.separator;
+    private final static int MIN_OFFSET_Y = 5;
 
     public static void Create(Player player, CityProject cityProject, int difficultyID) {
         CompletableFuture.runAsync(() -> {
@@ -46,6 +48,7 @@ public class PlotCreator {
 
             Polygonal2DRegion plotRegion;
             String plotFilePath;
+            Vector plotCenter;
             CylinderRegion environmentRegion = null;
             String environmentFilePath = null;
 
@@ -76,20 +79,20 @@ public class PlotCreator {
                     plotRegion = (Polygonal2DRegion) rawPlotRegion;
 
                     // Check if the polygonal region is valid
-                    if (plotRegion.getLength() > 100 || plotRegion.getWidth() > 100 || plotRegion.getHeight() > 240) {
+                    if (plotRegion.getLength() > 100 || plotRegion.getWidth() > 100) {
                         player.sendMessage(Utils.getErrorMessageFormat("Please adjust your selection size!"));
                         return;
                     }
 
-                    // Set minimum selection height under player location
-                    if (plotRegion.getMinimumY() > player.getLocation().getY() - 5) {
-                        plotRegion.setMinimumY((int) player.getLocation().getY() - 5);
-                    }
+                    // Get plot minY and maxY
+                    int offsetHeight = (256 - (plotRegion.getMaximumPoint().getBlockY() - plotRegion.getMinimumPoint().getBlockY())) / 2;
+                    final int minYOffset = plotRegion.getMinimumY() - offsetHeight;
+                    final int maxYOffset = plotRegion.getMaximumY() + offsetHeight;
+                    final int minY = plotRegion.getMinimumY() - MIN_OFFSET_Y;
+                    final int maxY = maxYOffset + offsetHeight - MIN_OFFSET_Y;
 
-                    if (plotRegion.getMaximumY() <= player.getLocation().getY() + 1) {
-                        plotRegion.setMaximumY((int) player.getLocation().getY() + 1);
-                    }
-
+                    plotRegion.setMinimumY(minY);
+                    plotRegion.setMaximumY(maxY);
 
                     // Create the environment selection
                     if (environmentEnabled) {
@@ -102,10 +105,42 @@ public class PlotCreator {
                                 plotRegion.getWorld(),
                                 new Vector(Math.floor(plotRegionCenter.getX()), plotRegionCenter.getY(), Math.floor(plotRegionCenter.getZ())),
                                 new Vector2D(radius, radius),
-                                plotRegion.getMinimumY(),
-                                plotRegion.getMaximumY()
+                                minY,
+                                maxY
                         );
+
+                        // Convert environment region to polygonal region and save points
+                        final List<BlockVector2D> environmentRegionPoints = environmentRegion.polygonize(-1);
+                        final AtomicInteger newYMin = new AtomicInteger(minY);
+
+                        // Iterate over the points and check for the lowest Y value
+                        final World world = player.getWorld();
+                        environmentRegionPoints.forEach(p -> {
+                            int highestBlock = minYOffset;
+                            for (int y = minYOffset; y <= maxYOffset; y++) {
+                                if (world.getBlockAt(p.getBlockX(), y, p.getBlockZ()).getType() != Material.AIR) highestBlock = y;
+                            }
+                            if (highestBlock < newYMin.get()) newYMin.set(highestBlock);
+                        });
+
+                        // Update plot and environment min and max Y to new value if necessary
+                        if (newYMin.get() < minY) {
+                            int heightDif = (minY - newYMin.get()) + MIN_OFFSET_Y;
+                            plotRegion.setMinimumY(newYMin.get() - MIN_OFFSET_Y);
+                            environmentRegion.setMinimumY(newYMin.get() - MIN_OFFSET_Y);
+                            plotRegion.setMaximumY(maxY - heightDif);
+                            environmentRegion.setMaximumY(maxY - heightDif);
+                        }
                     }
+                    plotCenter = plotRegion.getCenter();
+
+                    // Modify max plot height to fit into city plot worlds
+                    int pasteHeight = plotCenter.getBlockY();
+                    while (pasteHeight >= 150) {
+                        pasteHeight -= 150;
+                    };
+                    plotRegion.setMaximumY(plotRegion.getMaximumY() - pasteHeight);
+                    if (environmentEnabled) environmentRegion.setMaximumY(environmentRegion.getMaximumY() - pasteHeight);
                 } else {
                     player.sendMessage(Utils.getErrorMessageFormat("Please use polygonal selection to create a new plot!"));
                     return;
@@ -141,7 +176,7 @@ public class PlotCreator {
                     try (PreparedStatement stmt = Objects.requireNonNull(connection).prepareStatement("INSERT INTO plotsystem_plots (city_project_id, difficulty_id, mc_coordinates, outline, create_date, create_player) VALUES (?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
                         stmt.setInt(1, cityProject.getID());
                         stmt.setInt(2, difficultyID);
-                        stmt.setString(3, plotRegion.getCenter().getX() + "," + plotRegion.getCenter().getY() + "," + plotRegion.getCenter().getZ());
+                        stmt.setString(3, plotCenter.getX() + "," + plotCenter.getBlockY() + "," + plotCenter.getZ());
                         stmt.setString(4, polyOutline);
                         stmt.setDate(5, java.sql.Date.valueOf(LocalDate.now()));
                         stmt.setString(6, player.getUniqueId().toString());
