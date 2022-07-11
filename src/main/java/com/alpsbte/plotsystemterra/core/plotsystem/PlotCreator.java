@@ -39,7 +39,7 @@ import java.util.logging.Level;
 
 public class PlotCreator {
     public final static String schematicsPath = Paths.get(PlotSystemTerra.getPlugin().getDataFolder().getAbsolutePath(), "schematics") + File.separator;
-    private final static int MIN_OFFSET_Y = 5;
+    public final static int MIN_OFFSET_Y = 5;
 
     public static void Create(Player player, CityProject cityProject, int difficultyID) {
         CompletableFuture.runAsync(() -> {
@@ -79,17 +79,17 @@ public class PlotCreator {
                     plotRegion = (Polygonal2DRegion) rawPlotRegion;
 
                     // Check if the polygonal region is valid
-                    if (plotRegion.getLength() > 100 || plotRegion.getWidth() > 100) {
+                    if (plotRegion.getLength() > 100 || plotRegion.getWidth() > 100 || (plotRegion.getHeight() > 256 - MIN_OFFSET_Y)) {
                         player.sendMessage(Utils.getErrorMessageFormat("Please adjust your selection size!"));
                         return;
                     }
 
                     // Get plot minY and maxY
-                    int offsetHeight = (256 - (plotRegion.getMaximumPoint().getBlockY() - plotRegion.getMinimumPoint().getBlockY())) / 2;
-                    final int minYOffset = plotRegion.getMinimumY() - offsetHeight;
-                    final int maxYOffset = plotRegion.getMaximumY() + offsetHeight;
+                    double offsetHeight = (256 - plotRegion.getHeight()) / 2d;
+                    final int minYOffset = plotRegion.getMinimumY() - (int) Math.ceil(offsetHeight);
+                    final int maxYOffset = plotRegion.getMaximumY() + (int) Math.floor(offsetHeight);
                     final int minY = plotRegion.getMinimumY() - MIN_OFFSET_Y;
-                    final int maxY = maxYOffset + offsetHeight - MIN_OFFSET_Y;
+                    final int maxY = maxYOffset + (int) Math.ceil(offsetHeight) - MIN_OFFSET_Y;
 
                     plotRegion.setMinimumY(minY);
                     plotRegion.setMaximumY(maxY);
@@ -133,14 +133,6 @@ public class PlotCreator {
                         }
                     }
                     plotCenter = plotRegion.getCenter();
-
-                    // Modify max plot height to fit into city plot worlds
-                    int pasteHeight = plotCenter.getBlockY();
-                    while (pasteHeight >= 150) {
-                        pasteHeight -= 150;
-                    };
-                    plotRegion.setMaximumY(plotRegion.getMaximumY() - pasteHeight);
-                    if (environmentEnabled) environmentRegion.setMaximumY(environmentRegion.getMaximumY() - pasteHeight);
                 } else {
                     player.sendMessage(Utils.getErrorMessageFormat("Please use polygonal selection to create a new plot!"));
                     return;
@@ -163,7 +155,7 @@ public class PlotCreator {
                 List<String> points = new ArrayList<>();
 
                 for (BlockVector2D point : plotRegion.getPoints())
-                    points.add(point.getBlockX() + "," + point.getBlockZ());
+                    points.add(point.getX() + "," + point.getZ());
                 polyOutline = StringUtils.join(points, "|");
 
 

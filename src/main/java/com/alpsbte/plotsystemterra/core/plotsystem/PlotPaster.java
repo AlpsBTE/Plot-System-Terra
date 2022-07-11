@@ -4,13 +4,14 @@ import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.DatabaseConnection;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.alpsbte.plotsystemterra.utils.FTPManager;
-import com.sk89q.worldedit.CuboidClipboard;
-import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.MaxChangedBlocksException;
-import com.sk89q.worldedit.Vector;
+import com.sk89q.worldedit.*;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
-import com.sk89q.worldedit.schematic.SchematicFormat;
-import com.sk89q.worldedit.world.DataException;
+import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
+import com.sk89q.worldedit.function.operation.Operation;
+import com.sk89q.worldedit.function.operation.Operations;
+import com.sk89q.worldedit.session.ClipboardHolder;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -46,7 +47,7 @@ public class PlotPaster extends Thread {
     @Override
     public void run() {
         Bukkit.getScheduler().scheduleSyncRepeatingTask(PlotSystemTerra.getPlugin(), () -> {
-            try (ResultSet rs = DatabaseConnection.createStatement("SELECT id, city_project_id, mc_coordinates FROM plotsystem_plots WHERE status = 'completed' AND pasted = '0' LIMIT 20")
+            try (ResultSet rs = DatabaseConnection.createStatement("SELECT id, city_project_id, mc_coordinates, type FROM plotsystem_plots WHERE status = 'completed' AND pasted = '0' LIMIT 20")
                     .executeQuery()) {
                 int pastedPlots = 0;
 
@@ -71,7 +72,9 @@ public class PlotPaster extends Thread {
                                                 Float.parseFloat(splitCoordinates[2])
                                         );
 
-                                        pastePlotSchematic(plotID, city, world, mcCoordinates, fastMode);
+                                        int type = rs.getInt(4);
+
+                                        pastePlotSchematic(plotID, city, world, mcCoordinates, type , fastMode);
                                         pastedPlots++;
                                     }
                                 }
@@ -97,7 +100,7 @@ public class PlotPaster extends Thread {
         }, 0L, 20L * pasteInterval);
     }
 
-    public static void pastePlotSchematic(int plotID, CityProject city, World world, Vector mcCoordinates, boolean fastMode) throws IOException, DataException, MaxChangedBlocksException, SQLException, URISyntaxException {
+    public static void pastePlotSchematic(int plotID, CityProject city, World world, Vector mcCoordinates, int type, boolean fastMode) throws IOException, WorldEditException, SQLException, URISyntaxException {
         File file = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), "finishedSchematics", String.valueOf(city.getID()), plotID + ".schematic").toFile();
 
         // Download from SFTP or FTP server if enabled
@@ -108,14 +111,17 @@ public class PlotPaster extends Thread {
         }
 
         if (file.exists()) {
-            EditSession editSession = new EditSession(new BukkitWorld(world), -1);
+            com.sk89q.worldedit.world.World weWorld = new BukkitWorld(world);
+            EditSession editSession = WorldEdit.getInstance().getEditSessionFactory().getEditSession(weWorld, -1);
             if (fastMode) editSession.setFastMode(true);
             editSession.enableQueue();
 
-            SchematicFormat schematicFormat = SchematicFormat.getFormat(file);
-            CuboidClipboard clipboard = schematicFormat.load(file);
+            ClipboardReader reader = ClipboardFormat.SCHEMATIC.getReader(Files.newInputStream(file.toPath()));
+            Clipboard clipboard = reader.read(weWorld.getWorldData());
 
-            clipboard.paste(editSession, mcCoordinates, true);
+            Operation operation = new ClipboardHolder(clipboard, weWorld.getWorldData()).createPaste(editSession, weWorld.getWorldData())
+                    .to(mcCoordinates).ignoreAirBlocks(true).build();
+            Operations.complete(operation);
             editSession.flushQueue();
 
             DatabaseConnection.createStatement("UPDATE plotsystem_plots SET pasted = '1' WHERE id = ?")
