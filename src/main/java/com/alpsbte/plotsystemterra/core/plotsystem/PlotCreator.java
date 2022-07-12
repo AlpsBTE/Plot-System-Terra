@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
 public class PlotCreator {
+    public final static double PLOT_VERSION = 3.0;
     public final static String schematicsPath = Paths.get(PlotSystemTerra.getPlugin().getDataFolder().getAbsolutePath(), "schematics") + File.separator;
     public final static int MIN_OFFSET_Y = 5;
 
@@ -165,13 +166,14 @@ public class PlotCreator {
                 if (connection != null) {
                     connection.setAutoCommit(false);
 
-                    try (PreparedStatement stmt = Objects.requireNonNull(connection).prepareStatement("INSERT INTO plotsystem_plots (city_project_id, difficulty_id, mc_coordinates, outline, create_date, create_player) VALUES (?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+                    try (PreparedStatement stmt = Objects.requireNonNull(connection).prepareStatement("INSERT INTO plotsystem_plots (city_project_id, difficulty_id, mc_coordinates, outline, create_date, create_player, version) VALUES (?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
                         stmt.setInt(1, cityProject.getID());
                         stmt.setInt(2, difficultyID);
                         stmt.setString(3, plotCenter.getX() + "," + plotCenter.getBlockY() + "," + plotCenter.getZ());
                         stmt.setString(4, polyOutline);
                         stmt.setDate(5, java.sql.Date.valueOf(LocalDate.now()));
                         stmt.setString(6, player.getUniqueId().toString());
+                        stmt.setDouble(7, PLOT_VERSION);
                         stmt.executeUpdate();
 
                         // Get the id of the new plot
