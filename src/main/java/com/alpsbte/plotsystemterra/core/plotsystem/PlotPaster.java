@@ -47,7 +47,7 @@ public class PlotPaster extends Thread {
     @Override
     public void run() {
         Bukkit.getScheduler().scheduleSyncRepeatingTask(PlotSystemTerra.getPlugin(), () -> {
-            try (ResultSet rs = DatabaseConnection.createStatement("SELECT id, city_project_id, mc_coordinates, type FROM plotsystem_plots WHERE status = 'completed' AND pasted = '0' LIMIT 20")
+            try (ResultSet rs = DatabaseConnection.createStatement("SELECT id, city_project_id, mc_coordinates FROM plotsystem_plots WHERE status = 'completed' AND pasted = '0' LIMIT 20")
                     .executeQuery()) {
                 int pastedPlots = 0;
 
@@ -72,9 +72,7 @@ public class PlotPaster extends Thread {
                                                 Float.parseFloat(splitCoordinates[2])
                                         );
 
-                                        int type = rs.getInt(4);
-
-                                        pastePlotSchematic(plotID, city, world, mcCoordinates, type , fastMode);
+                                        pastePlotSchematic(plotID, city, world, mcCoordinates , fastMode);
                                         pastedPlots++;
                                     }
                                 }
@@ -100,7 +98,7 @@ public class PlotPaster extends Thread {
         }, 0L, 20L * pasteInterval);
     }
 
-    public static void pastePlotSchematic(int plotID, CityProject city, World world, Vector mcCoordinates, int type, boolean fastMode) throws IOException, WorldEditException, SQLException, URISyntaxException {
+    public static void pastePlotSchematic(int plotID, CityProject city, World world, Vector mcCoordinates, boolean fastMode) throws IOException, WorldEditException, SQLException, URISyntaxException {
         File file = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), "finishedSchematics", String.valueOf(city.getID()), plotID + ".schematic").toFile();
 
         // Download from SFTP or FTP server if enabled
