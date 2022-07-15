@@ -169,7 +169,7 @@ public class PlotCreator {
                     try (PreparedStatement stmt = Objects.requireNonNull(connection).prepareStatement("INSERT INTO plotsystem_plots (city_project_id, difficulty_id, mc_coordinates, outline, create_date, create_player, version) VALUES (?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
                         stmt.setInt(1, cityProject.getID());
                         stmt.setInt(2, difficultyID);
-                        stmt.setString(3, plotCenter.getX() + "," + plotCenter.getBlockY() + "," + plotCenter.getZ());
+                        stmt.setString(3, plotCenter.getX() + "," + plotCenter.getY() + "," + plotCenter.getZ());
                         stmt.setString(4, polyOutline);
                         stmt.setDate(5, java.sql.Date.valueOf(LocalDate.now()));
                         stmt.setString(6, player.getUniqueId().toString());
@@ -267,7 +267,7 @@ public class PlotCreator {
 
         // Store content of region in schematic
         BlockArrayClipboard cb = new BlockArrayClipboard(region);
-        cb.setOrigin(cb.getRegion().getCenter());
+        cb.setOrigin(new Vector(region.getCenter().getX(), region.getMinimumPoint().getY(), region.getCenter().getZ()));
         EditSession editSession = PlotSystemTerra.DependencyManager.getWorldEdit().getEditSessionFactory().getEditSession(region.getWorld(), -1);
         ForwardExtentCopy forwardExtentCopy = new ForwardExtentCopy(editSession, region, cb, region.getMinimumPoint());
         Operations.complete(forwardExtentCopy);
