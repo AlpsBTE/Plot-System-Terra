@@ -5,6 +5,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -111,11 +112,19 @@ public class Updater
         return version;
     }
 
-    public static void notifyUpdate(Player p, boolean updateInstalled, String newVersion){
-        if(!updateInstalled)
-            return;
+    public static void notifyUpdate(String newVersion){
+        for(Player p : Bukkit.getOnlinePlayers())
+            notifyUpdate(p, newVersion);
 
-        if(p.hasPermission("buildteam.notifyUpdate")) {
+        Bukkit.getConsoleSender().sendMessage(" ");
+        Bukkit.getConsoleSender().sendMessage("§c[BuildTeam Plugin] §eThe server automatically installed a new update (v" + newVersion + ").");
+        Bukkit.getConsoleSender().sendMessage("§c>> §ePlease restart or reload the server to activate it.");
+        Bukkit.getConsoleSender().sendMessage(" ");
+
+    }
+
+    public static void notifyUpdate(Player p, String newVersion){
+        if(p.hasPermission("plotsystem.notifyUpdate")) {
             p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0F, 1.0F);
             p.sendMessage("");
             p.sendMessage("§6§l[BuildTeam Plugin] §eThe server automatically installed a new update (v" + newVersion + ").");
@@ -123,6 +132,8 @@ public class Updater
             p.sendMessage("");
         }
     }
+
+
 
     /**
      * Check if id of resource is valid

@@ -36,7 +36,7 @@ public class PlotSystemTerra extends JavaPlugin {
     private boolean pluginEnabled = false;
     public String version;
     public String newVersion;
-    public boolean updateInstalled;
+    public boolean updateInstalled = false;
 
     @Override
     public void onEnable() {
@@ -159,12 +159,12 @@ public class PlotSystemTerra extends JavaPlugin {
     }
 
     private String startUpdateChecker(){
-        Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
             @Override
             public void run() {
                 checkForUpdates();
             }
-        }, 20*60*60);
+        }, 20*60*60,20*60*60);
 
         return checkForUpdates();
     }
@@ -178,8 +178,8 @@ public class PlotSystemTerra extends JavaPlugin {
             case BAD_ID: resultMessage = "Failed to update the plugin: Wrong Spigot ID."; break;
             case FAILED: resultMessage = "Failed to update the plugin."; break;
             case NO_UPDATE: resultMessage = "The plugin is up to date."; break;
-            case SUCCESS: resultMessage = "Plugin successfully updated."; break;
-            case UPDATE_FOUND: resultMessage = "Found an update for the plugin."; break;
+            case SUCCESS: resultMessage = "Plugin successfully updated to version " + updater.getVersion() + "."; break;
+            case UPDATE_FOUND: resultMessage = "Found an update (v" + updater.getVersion() + ") for the plugin."; break;
             default: resultMessage = "No result for update search"; break;
         }
 
@@ -188,10 +188,14 @@ public class PlotSystemTerra extends JavaPlugin {
 
     public void setUpdateInstalled(String newVersion) {
         this.newVersion = newVersion;
-        this.updateInstalled = true;
 
-        for(Player p : Bukkit.getOnlinePlayers())
-            Updater.notifyUpdate(p, updateInstalled, version);
+        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+            @Override
+            public void run() {
+                Updater.notifyUpdate(newVersion);
+            }
+        }, 20*5);
+
     }
 
 
