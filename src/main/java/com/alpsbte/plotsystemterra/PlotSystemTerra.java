@@ -27,7 +27,7 @@ import java.util.logging.Level;
 
 public class PlotSystemTerra extends JavaPlugin {
 
-    private static final String VERSION = "2.1";
+    private static final String VERSION = "3.0";
 
     private static PlotSystemTerra plugin;
     private ConfigManager configManager;
