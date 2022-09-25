@@ -39,7 +39,6 @@ public class DatabaseConnection {
         dataSource = new HikariDataSource(config);
     }
 
-    @Deprecated
     public static Connection getConnection() {
         int retries = 3;
         while (retries > 0) {
@@ -71,31 +70,6 @@ public class DatabaseConnection {
 
         if(connectionOpened > connectionClosed + 5)
             Bukkit.getLogger().log(Level.SEVERE, "There are multiple database connections opened. Please report this issue.");
-    }
-
-    /**
-     * Returns a missing auto increment id
-     * @param table in the database
-     * @return smallest missing auto increment id in the table
-     */
-    public static int getTableID(String table) {
-        try {
-            String query ="SELECT id + 1 available_id FROM $table t WHERE NOT EXISTS (SELECT * FROM $table WHERE $table.id = t.id + 1) ORDER BY id LIMIT 1"
-                    .replace("$table", table);
-            try (ResultSet rs = DatabaseConnection.createStatement(query).executeQuery()) {
-                if (rs.next()) {
-                    int i = rs.getInt(1);
-                    DatabaseConnection.closeResultSet(rs);
-                    return i;
-                }
-
-                DatabaseConnection.closeResultSet(rs);
-                return 1;
-            }
-        } catch (SQLException ex) {
-            Bukkit.getLogger().log(Level.SEVERE, "A SQL error occurred!", ex);
-            return 1;
-        }
     }
 
     public static class StatementBuilder {

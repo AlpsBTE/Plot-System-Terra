@@ -15,6 +15,12 @@ public abstract class ConfigPaths {
     public static final String DATABASE_PASSWORD = DATABASE + "password";
 
 
+    // PLOT SCANNING
+    private static final String ENVIRONMENT = "environment.";
+    public static final String ENVIRONMENT_ENABLED = ENVIRONMENT + "enabled";
+    public static final String ENVIRONMENT_RADIUS = ENVIRONMENT + "radius";
+
+
     // PLOT PASTING
     public static final String WORLD_NAME = "world-name";
     public static final String FAST_MODE = "fast-mode";

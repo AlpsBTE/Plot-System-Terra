@@ -1,5 +1,5 @@
 main: com.alpsbte.plotsystemterra.PlotSystemTerra
-version: 2.1
+version: 3.0
 api-version: 1.12.2
 name: PlotSystem-Terra
 author: R3tuxn, Coppertine
@@ -10,3 +10,7 @@ commands:
     description: Creates a new plot for the PlotSystem.
     usage: /createplot
     permission: plotsystem.createplot
+  pasteplot:
+    description: Pastes a plot manually with specific ID
+    usage: /pasteplot <ID>
+    permission: plotsystem.pasteplot

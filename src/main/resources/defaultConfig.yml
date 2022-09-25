@@ -25,6 +25,17 @@ database:
 
 
 # -----------------------------------------------------
+# | Plot Scanning
+# -----------------------------------------------------
+
+# Additional to the scanned plot the environment around the plot is
+# scanned to fill the area around the plot in the plot server
+# [radius] -> in blocks around the plot; default: 50 blocks
+environment:
+  enabled: true
+  radius: 50
+
+# -----------------------------------------------------
 # | Plot Pasting
 # -----------------------------------------------------
 
@@ -56,4 +67,4 @@ error-colour: §c
 
 
 # NOTE: Do not change
-config-version: 1.3
+config-version: 1.4

@@ -6,13 +6,13 @@
 
     <groupId>com.alpsbte</groupId>
     <artifactId>PlotSystem-Terra</artifactId>
-    <version>2.1</version>
+    <version>3.0</version>
 
     <repositories>
-        <!-- World Edit -->
+        <!-- AlpsBTE Repo (WorldEdit, WorldGuard, FAWE) -->
         <repository>
-            <id>nachwahl-repo</id>
-            <url>https://maven.nachwahl.dev/</url>
+            <id>alpsbte-repo</id>
+            <url>https://mvn.alps-bte.com/repository/alps-bte/</url>
         </repository>
 
         <!-- JitPack -->
@@ -97,9 +97,9 @@
 
         <!-- JSCH -->
         <dependency>
-            <groupId>com.jcraft</groupId>
+            <groupId>com.github.mwiede</groupId>
             <artifactId>jsch</artifactId>
-            <version>0.1.55</version>
+            <version>0.2.0</version>
             <scope>compile</scope>
         </dependency>
 
