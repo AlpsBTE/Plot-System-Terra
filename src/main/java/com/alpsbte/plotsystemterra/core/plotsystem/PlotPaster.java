@@ -28,9 +28,9 @@ public class PlotPaster extends Thread {
 
     private final String serverName;
 
-    private final boolean fastMode;
+    public final boolean fastMode;
     private final int pasteInterval;
-    private final World world;
+    public final World world;
     private final boolean broadcastMessages;
 
     public PlotPaster() {
