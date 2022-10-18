@@ -2,6 +2,7 @@ package com.alpsbte.plotsystemterra;
 
 import com.alpsbte.plotsystemterra.commands.CMD_CreatePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PastePlot;
+import com.alpsbte.plotsystemterra.commands.CMD_PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.DatabaseConnection;
 import com.alpsbte.plotsystemterra.core.EventListener;
 import com.alpsbte.plotsystemterra.core.config.ConfigManager;
@@ -30,7 +31,6 @@ import java.util.logging.Level;
 public class PlotSystemTerra extends JavaPlugin {
 
     public static int SPIGOT_PROJECT_ID = 105323;
-    private static final String VERSION = "3.0";
 
     private static PlotSystemTerra plugin;
     private ConfigManager configManager;
@@ -40,6 +40,7 @@ public class PlotSystemTerra extends JavaPlugin {
     public String version;
     public String newVersion;
     public boolean updateInstalled = false;
+    public Updater updater;
 
     @Override
     public void onEnable() {
@@ -108,6 +109,7 @@ public class PlotSystemTerra extends JavaPlugin {
         try {
             this.getCommand("createplot").setExecutor(new CMD_CreatePlot());
             this.getCommand("pasteplot").setExecutor(new CMD_PastePlot());
+            this.getCommand("plotsystemterra").setExecutor(new CMD_PlotSystemTerra());
             Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully registered commands.");
         } catch (Exception ex) {
             Bukkit.getConsoleSender().sendMessage(errorPrefix + "Could not register commands.");
@@ -176,7 +178,7 @@ public class PlotSystemTerra extends JavaPlugin {
     }
 
     public String checkForUpdates(){
-        Updater updater = new Updater(this, SPIGOT_PROJECT_ID, this.getFile(), Updater.UpdateType.CHECK_DOWNLOAD, false);
+        updater = new Updater(this, SPIGOT_PROJECT_ID, this.getFile(), Updater.UpdateType.CHECK_DOWNLOAD, false);
         Updater.Result result = updater.getResult();
 
         String resultMessage = "";
