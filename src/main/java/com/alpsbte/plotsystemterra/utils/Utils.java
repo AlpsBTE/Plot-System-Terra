@@ -35,4 +35,12 @@ public class Utils {
     public static boolean hasPermission(CommandSender sender, String permissionNode) {
         return sender.hasPermission(permissionPrefix + "." + permissionNode);
     }
+
+    public static Integer tryParseInt(String integer) {
+        try {
+            return Integer.parseInt(integer);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
 }

@@ -1,6 +1,7 @@
 package com.alpsbte.plotsystemterra;
 
 import com.alpsbte.plotsystemterra.commands.CMD_CreatePlot;
+import com.alpsbte.plotsystemterra.commands.CMD_PastePlot;
 import com.alpsbte.plotsystemterra.core.DatabaseConnection;
 import com.alpsbte.plotsystemterra.core.EventListener;
 import com.alpsbte.plotsystemterra.core.config.ConfigManager;
@@ -29,9 +30,11 @@ import java.util.logging.Level;
 public class PlotSystemTerra extends JavaPlugin {
 
     public static int SPIGOT_PROJECT_ID = 105323;
+    private static final String VERSION = "3.0";
 
     private static PlotSystemTerra plugin;
     private ConfigManager configManager;
+    private PlotPaster plotPaster;
 
     private boolean pluginEnabled = false;
     public String version;
@@ -40,6 +43,7 @@ public class PlotSystemTerra extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.NoOpLog"); // Disable Logging
         plugin = this;
         version = getDescription().getVersion();
 
@@ -103,6 +107,7 @@ public class PlotSystemTerra extends JavaPlugin {
         // Register commands
         try {
             this.getCommand("createplot").setExecutor(new CMD_CreatePlot());
+            this.getCommand("pasteplot").setExecutor(new CMD_PastePlot());
             Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully registered commands.");
         } catch (Exception ex) {
             Bukkit.getConsoleSender().sendMessage(errorPrefix + "Could not register commands.");
@@ -120,7 +125,8 @@ public class PlotSystemTerra extends JavaPlugin {
 
 
         // Start checking for plots to paste
-        new PlotPaster().start();
+        plotPaster = new PlotPaster();
+        plotPaster.start();
 
         pluginEnabled = true;
         Bukkit.getConsoleSender().sendMessage(" ");
@@ -201,6 +207,10 @@ public class PlotSystemTerra extends JavaPlugin {
 
     public static PlotSystemTerra getPlugin() {
         return plugin;
+    }
+
+    public PlotPaster getPlotPaster() {
+        return plotPaster;
     }
 
     public static class DependencyManager {
