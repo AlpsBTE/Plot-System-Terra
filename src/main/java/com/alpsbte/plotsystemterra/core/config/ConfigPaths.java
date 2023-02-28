@@ -7,6 +7,14 @@ public abstract class ConfigPaths {
     public static final String DEV_MODE = "dev-mode";
 
 
+    // Data Mode
+    public static final String DATA_MODE = "data-mode";
+
+    // API
+    public static final String API = "api.";
+    public static final String API_URL = API + "url";
+    public static final String API_PORT = API + "port";
+
     // Database
     private static final String DATABASE = "database.";
     public static final String DATABASE_URL = DATABASE + "url";

@@ -15,8 +15,20 @@ dev-mode: false
 
 
 # -----------------------------------------------------
-# | Supported databases: MariaDB & MySQL
+# | Data Mode (API or Database)
 # -----------------------------------------------------
+
+# The data mode in which the plugin should run. Possible values: DATABASE, API
+data-mode: API
+
+# If the data mode is set to API, the plugin will use the PlotSystem API to get the plot data
+# Documentation for the PlotSystem API: https://github.com/BuildTheEarth/PlotSystemAPI
+api:
+  url: psapi.buildtheearth.net
+  port: 8080
+
+# If the data mode is set to DATABASE, the plugin will use a database to get the plot data
+# The database must be a MariaDB/MySQL database
 database:
   url: jdbc:mariadb://adress:3306/
   dbname: plotsystem
@@ -67,4 +79,4 @@ error-colour: §c
 
 
 # NOTE: Do not change
-config-version: 1.4
+config-version: 1.5

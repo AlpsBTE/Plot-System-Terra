@@ -7,6 +7,8 @@ import com.alpsbte.plotsystemterra.core.DatabaseConnection;
 import com.alpsbte.plotsystemterra.core.EventListener;
 import com.alpsbte.plotsystemterra.core.config.ConfigManager;
 import com.alpsbte.plotsystemterra.core.config.ConfigNotImplementedException;
+import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
+import com.alpsbte.plotsystemterra.core.config.DataMode;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
 import com.alpsbte.plotsystemterra.utils.Updater;
 import com.sk89q.worldedit.WorldEdit;
@@ -19,6 +21,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.ipvp.canvas.MenuFunctionListener;
 
+import javax.xml.crypto.Data;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -82,8 +85,15 @@ public class PlotSystemTerra extends JavaPlugin {
 
         // Initialize database connection
         try {
-            DatabaseConnection.InitializeDatabase();
-            Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully initialized database connection.");
+            FileConfiguration configFile = PlotSystemTerra.getPlugin().getConfig();
+
+            if(configFile.getString(ConfigPaths.DATA_MODE).equalsIgnoreCase(DataMode.DATABASE.toString())){
+                DatabaseConnection.InitializeDatabase();
+                Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully initialized database connection.");
+            }
+
+
+
         } catch (Exception ex) {
             Bukkit.getConsoleSender().sendMessage(errorPrefix + "Could not initialize database connection.");
             Bukkit.getLogger().log(Level.SEVERE, ex.getMessage(), ex);
