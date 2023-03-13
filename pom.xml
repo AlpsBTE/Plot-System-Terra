@@ -31,14 +31,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Bukkit -->
-        <dependency>
-            <groupId>org.bukkit</groupId>
-            <artifactId>bukkit</artifactId>
-            <version>1.12.2-R0.1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-
         <!-- World Edit -->
         <dependency>
             <groupId>com.sk89q.worldedit</groupId>
