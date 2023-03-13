@@ -24,13 +24,14 @@ data-mode: API
 # If the data mode is set to API, the plugin will use the PlotSystem API to get the plot data
 # Documentation for the PlotSystem API: https://github.com/BuildTheEarth/PlotSystemAPI
 api:
-  url: psapi.buildtheearth.net
+  api-url: psapi.buildtheearth.net
   port: 8080
+  api-key: ffffffff-ffff-ffff-ffff-ffffffffffff
 
 # If the data mode is set to DATABASE, the plugin will use a database to get the plot data
 # The database must be a MariaDB/MySQL database
 database:
-  url: jdbc:mariadb://adress:3306/
+  db-url: jdbc:mariadb://adress:3306/
   dbname: plotsystem
   username: plotsystem
   password: minecraft
@@ -79,4 +80,4 @@ error-colour: §c
 
 
 # NOTE: Do not change
-config-version: 1.5
+config-version: 1.6
