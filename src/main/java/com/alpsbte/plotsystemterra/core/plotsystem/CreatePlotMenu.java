@@ -17,7 +17,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 public class CreatePlotMenu {
     private final Menu createPlotMenu = ChestMenu.builder(6).title("Create Plot").redraw(true).build();
@@ -99,7 +98,7 @@ public class CreatePlotMenu {
         );
         difficultyMenu.getSlot(10).setClickHandler((clickPlayer, clickInformation) -> {
             clickPlayer.closeInventory();
-            PlotCreator.Create(clickPlayer, cityProject, 1);
+            PlotCreator.createPlot(clickPlayer, cityProject, 1);
         });
 
         difficultyMenu.getSlot(13).setItem(
@@ -109,7 +108,7 @@ public class CreatePlotMenu {
         );
         difficultyMenu.getSlot(13).setClickHandler((clickPlayer, clickInformation) -> {
             clickPlayer.closeInventory();
-            PlotCreator.Create(clickPlayer, cityProject, 2);
+            PlotCreator.createPlot(clickPlayer, cityProject, 2);
         });
 
         difficultyMenu.getSlot(16).setItem(
@@ -119,7 +118,7 @@ public class CreatePlotMenu {
         );
         difficultyMenu.getSlot(16).setClickHandler((clickPlayer, clickInformation) -> {
             clickPlayer.closeInventory();
-            PlotCreator.Create(clickPlayer, cityProject, 3);
+            PlotCreator.createPlot(clickPlayer, cityProject, 3);
         });
 
         return difficultyMenu;

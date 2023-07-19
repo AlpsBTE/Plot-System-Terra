@@ -38,210 +38,265 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
 public class PlotCreator {
+    @FunctionalInterface
+    public interface IPlotRegionsAction {
+        void onSchematicsCreationComplete(Polygonal2DRegion plotRegion, CylinderRegion environmentRegion, Vector plotCenter);
+    }
+
     public final static double PLOT_VERSION = 3.0;
     public final static String schematicsPath = Paths.get(PlotSystemTerra.getPlugin().getDataFolder().getAbsolutePath(), "schematics") + File.separator;
     public final static int MIN_OFFSET_Y = 5;
 
-    public static void Create(Player player, CityProject cityProject, int difficultyID) {
+    public static void create(Player player, int environmentRadius, IPlotRegionsAction plotRegionsAction) {
+        Polygonal2DRegion plotRegion;
+        Vector plotCenter;
+        CylinderRegion environmentRegion = null;
+
+        // Get WorldEdit selection of player
+        Region rawPlotRegion;
+        try {
+            rawPlotRegion = Objects.requireNonNull(WorldEdit.getInstance().getSessionManager().findByName(player.getName())).getSelection(
+                    Objects.requireNonNull(WorldEdit.getInstance().getSessionManager().findByName(player.getName())).getSelectionWorld());
+        } catch (NullPointerException | IncompleteRegionException ex) {
+            player.sendMessage(Utils.getErrorMessageFormat("Please select a plot using WorldEdit!"));
+            return;
+        }
+
+        // Create plot and environment regions
+        // Check if WorldEdit selection is polygonal
+        if (rawPlotRegion instanceof Polygonal2DRegion) {
+            // Cast WorldEdit region to polygonal region
+            plotRegion = (Polygonal2DRegion) rawPlotRegion;
+
+            // Check if the polygonal region is valid
+            if (plotRegion.getLength() > 100 || plotRegion.getWidth() > 100 || (plotRegion.getHeight() > 256 - MIN_OFFSET_Y)) {
+                player.sendMessage(Utils.getErrorMessageFormat("Please adjust your selection size!"));
+                return;
+            }
+
+            // Get plot minY and maxY
+            double offsetHeight = (256 - plotRegion.getHeight()) / 2d;
+            final int minYOffset = plotRegion.getMinimumY() - (int) Math.ceil(offsetHeight);
+            final int maxYOffset = plotRegion.getMaximumY() + (int) Math.floor(offsetHeight);
+            final int minY = plotRegion.getMinimumY() - MIN_OFFSET_Y;
+            final int maxY = maxYOffset + (int) Math.ceil(offsetHeight) - MIN_OFFSET_Y;
+
+            plotRegion.setMinimumY(minY);
+            plotRegion.setMaximumY(maxY);
+
+            // Create the environment selection
+            if (environmentRadius > 0) {
+                // Get min region size for environment radius
+                int radius = Math.max(plotRegion.getWidth() / 2 + environmentRadius, plotRegion.getLength() / 2 + environmentRadius);
+
+                // Create a new cylinder region with the size of the plot + the configured radius around it
+                Vector plotRegionCenter = plotRegion.getCenter();
+                environmentRegion = new CylinderRegion(
+                        plotRegion.getWorld(),
+                        new Vector(Math.floor(plotRegionCenter.getX()), plotRegionCenter.getY(), Math.floor(plotRegionCenter.getZ())),
+                        new Vector2D(radius, radius),
+                        minY,
+                        maxY
+                );
+
+                // Convert environment region to polygonal region and save points
+                final List<BlockVector2D> environmentRegionPoints = environmentRegion.polygonize(-1);
+                final AtomicInteger newYMin = new AtomicInteger(minY);
+
+                // Iterate over the points and check for the lowest Y value
+                final World world = player.getWorld();
+                environmentRegionPoints.forEach(p -> {
+                    int highestBlock = minYOffset;
+                    for (int y = minYOffset; y <= maxYOffset; y++) {
+                        if (world.getBlockAt(p.getBlockX(), y, p.getBlockZ()).getType() != Material.AIR) highestBlock = y;
+                    }
+                    if (highestBlock < newYMin.get()) newYMin.set(highestBlock);
+                });
+
+                // Update plot and environment min and max Y to new value if necessary
+                if (newYMin.get() < minY) {
+                    int heightDif = (minY - newYMin.get()) + MIN_OFFSET_Y;
+                    plotRegion.setMinimumY(newYMin.get() - MIN_OFFSET_Y);
+                    environmentRegion.setMinimumY(newYMin.get() - MIN_OFFSET_Y);
+                    plotRegion.setMaximumY(maxY - heightDif);
+                    environmentRegion.setMaximumY(maxY - heightDif);
+                }
+            }
+            plotCenter = plotRegion.getCenter();
+            plotRegionsAction.onSchematicsCreationComplete(plotRegion, environmentRegion, plotCenter);
+        } else {
+            player.sendMessage(Utils.getErrorMessageFormat("Please use polygonal selection to create a new plot!"));
+        }
+    }
+
+    public static void createPlot(Player player, CityProject cityProject, int difficultyID) {
         CompletableFuture.runAsync(() -> {
-            int plotID;
             boolean environmentEnabled;
 
-            Polygonal2DRegion plotRegion;
-            String plotFilePath;
-            Vector plotCenter;
-            CylinderRegion environmentRegion = null;
-            String environmentFilePath = null;
-
-            Connection connection = null;
-
-            try {
                 // Read the config
                 FileConfiguration config = PlotSystemTerra.getPlugin().getConfig();
                 environmentEnabled = config.getBoolean(ConfigPaths.ENVIRONMENT_ENABLED);
                 int environmentRadius = config.getInt(ConfigPaths.ENVIRONMENT_RADIUS);
 
+                create(player, environmentEnabled ? environmentRadius : -1, (plotRegion, environmentRegion, plotCenter) -> {
+                    int plotID;
+                    String plotFilePath;
+                    String environmentFilePath = null;
+                    Connection connection = null;
 
-                // Get WorldEdit selection of player
-                Region rawPlotRegion;
-                try {
-                    rawPlotRegion = Objects.requireNonNull(WorldEdit.getInstance().getSessionManager().findByName(player.getName())).getSelection(
-                            Objects.requireNonNull(WorldEdit.getInstance().getSessionManager().findByName(player.getName())).getSelectionWorld());
-                } catch (NullPointerException | IncompleteRegionException ex) {
-                    player.sendMessage(Utils.getErrorMessageFormat("Please select a plot using WorldEdit!"));
-                    return;
-                }
+                    try {
+                        // Check if selection contains sign
+                        if (!containsSign(plotRegion, player.getWorld())) {
+                            player.sendMessage(Utils.getErrorMessageFormat("Please place a minimum of one sign for the street side!"));
+                            return;
+                        }
 
 
-                // Create plot and environment regions
-                // Check if WorldEdit selection is polygonal
-                if (rawPlotRegion instanceof Polygonal2DRegion) {
-                    // Cast WorldEdit region to polygonal region
-                    plotRegion = (Polygonal2DRegion) rawPlotRegion;
+                        // Inform player about the plot creation
+                        player.sendMessage(Utils.getInfoMessageFormat("Creating plot..."));
 
-                    // Check if the polygonal region is valid
-                    if (plotRegion.getLength() > 100 || plotRegion.getWidth() > 100 || (plotRegion.getHeight() > 256 - MIN_OFFSET_Y)) {
-                        player.sendMessage(Utils.getErrorMessageFormat("Please adjust your selection size!"));
-                        return;
-                    }
 
-                    // Get plot minY and maxY
-                    double offsetHeight = (256 - plotRegion.getHeight()) / 2d;
-                    final int minYOffset = plotRegion.getMinimumY() - (int) Math.ceil(offsetHeight);
-                    final int maxYOffset = plotRegion.getMaximumY() + (int) Math.floor(offsetHeight);
-                    final int minY = plotRegion.getMinimumY() - MIN_OFFSET_Y;
-                    final int maxY = maxYOffset + (int) Math.ceil(offsetHeight) - MIN_OFFSET_Y;
+                        // Convert polygon outline data to string
+                        String polyOutline;
+                        List<String> points = new ArrayList<>();
 
-                    plotRegion.setMinimumY(minY);
-                    plotRegion.setMaximumY(maxY);
+                        for (BlockVector2D point : plotRegion.getPoints())
+                            points.add(point.getX() + "," + point.getZ());
+                        polyOutline = StringUtils.join(points, "|");
 
-                    // Create the environment selection
-                    if (environmentEnabled) {
-                        // Get min region size for environment radius
-                        int radius = Math.max(plotRegion.getWidth() / 2 + environmentRadius, plotRegion.getLength() / 2 + environmentRadius);
 
-                        // Create a new cylinder region with the size of the plot + the configured radius around it
-                        Vector plotRegionCenter = plotRegion.getCenter();
-                        environmentRegion = new CylinderRegion(
-                                plotRegion.getWorld(),
-                                new Vector(Math.floor(plotRegionCenter.getX()), plotRegionCenter.getY(), Math.floor(plotRegionCenter.getZ())),
-                                new Vector2D(radius, radius),
-                                minY,
-                                maxY
-                        );
+                        // Insert into database
+                        connection = DatabaseConnection.getConnection();
 
-                        // Convert environment region to polygonal region and save points
-                        final List<BlockVector2D> environmentRegionPoints = environmentRegion.polygonize(-1);
-                        final AtomicInteger newYMin = new AtomicInteger(minY);
+                        if (connection != null) {
+                            connection.setAutoCommit(false);
 
-                        // Iterate over the points and check for the lowest Y value
-                        final World world = player.getWorld();
-                        environmentRegionPoints.forEach(p -> {
-                            int highestBlock = minYOffset;
-                            for (int y = minYOffset; y <= maxYOffset; y++) {
-                                if (world.getBlockAt(p.getBlockX(), y, p.getBlockZ()).getType() != Material.AIR) highestBlock = y;
+                            try (PreparedStatement stmt = Objects.requireNonNull(connection).prepareStatement("INSERT INTO plotsystem_plots (city_project_id, difficulty_id, mc_coordinates, outline, create_date, create_player, version) VALUES (?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+                                stmt.setInt(1, cityProject.getID());
+                                stmt.setInt(2, difficultyID);
+                                stmt.setString(3, plotCenter.getX() + "," + plotCenter.getY() + "," + plotCenter.getZ());
+                                stmt.setString(4, polyOutline);
+                                stmt.setDate(5, java.sql.Date.valueOf(LocalDate.now()));
+                                stmt.setString(6, player.getUniqueId().toString());
+                                stmt.setDouble(7, PLOT_VERSION);
+                                stmt.executeUpdate();
+
+                                // Get the id of the new plot
+                                try (ResultSet rs = stmt.getGeneratedKeys()) {
+                                    if (rs.next()) {
+                                        plotID = rs.getInt(1);
+                                    } else throw new SQLException("Could not obtain generated key");
+                                }
                             }
-                            if (highestBlock < newYMin.get()) newYMin.set(highestBlock);
-                        });
+                        } else throw new SQLException("Could not connect to database");
 
-                        // Update plot and environment min and max Y to new value if necessary
-                        if (newYMin.get() < minY) {
-                            int heightDif = (minY - newYMin.get()) + MIN_OFFSET_Y;
-                            plotRegion.setMinimumY(newYMin.get() - MIN_OFFSET_Y);
-                            environmentRegion.setMinimumY(newYMin.get() - MIN_OFFSET_Y);
-                            plotRegion.setMaximumY(maxY - heightDif);
-                            environmentRegion.setMaximumY(maxY - heightDif);
+
+                        // Save plot and environment regions to schematic files
+                        // Get plot schematic file path
+                        plotFilePath = createPlotSchematic(plotRegion, Paths.get(schematicsPath, String.valueOf(cityProject.getServerID()), String.valueOf(cityProject.getID()), plotID + ".schematic").toString());
+
+                        if (plotFilePath == null) {
+                            Bukkit.getLogger().log(Level.SEVERE, "Could not create plot schematic file!");
+                            player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
+                            return;
                         }
-                    }
-                    plotCenter = plotRegion.getCenter();
-                } else {
-                    player.sendMessage(Utils.getErrorMessageFormat("Please use polygonal selection to create a new plot!"));
-                    return;
-                }
 
+                        // Get environment schematic file path
+                        if (environmentEnabled) {
+                            environmentFilePath = createPlotSchematic(environmentRegion, Paths.get(schematicsPath, String.valueOf(cityProject.getServerID()), String.valueOf(cityProject.getID()), plotID + "-env.schematic").toString());
 
-                // Check if selection contains sign
-                if (!containsSign(plotRegion, player.getWorld())) {
-                    player.sendMessage(Utils.getErrorMessageFormat("Please place a minimum of one sign for the street side!"));
-                    return;
-                }
-
-
-                // Inform player about the plot creation
-                player.sendMessage(Utils.getInfoMessageFormat("Creating plot..."));
-
-
-                // Convert polygon outline data to string
-                String polyOutline;
-                List<String> points = new ArrayList<>();
-
-                for (BlockVector2D point : plotRegion.getPoints())
-                    points.add(point.getX() + "," + point.getZ());
-                polyOutline = StringUtils.join(points, "|");
-
-
-                // Insert into database
-                connection = DatabaseConnection.getConnection();
-
-                if (connection != null) {
-                    connection.setAutoCommit(false);
-
-                    try (PreparedStatement stmt = Objects.requireNonNull(connection).prepareStatement("INSERT INTO plotsystem_plots (city_project_id, difficulty_id, mc_coordinates, outline, create_date, create_player, version) VALUES (?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
-                        stmt.setInt(1, cityProject.getID());
-                        stmt.setInt(2, difficultyID);
-                        stmt.setString(3, plotCenter.getX() + "," + plotCenter.getY() + "," + plotCenter.getZ());
-                        stmt.setString(4, polyOutline);
-                        stmt.setDate(5, java.sql.Date.valueOf(LocalDate.now()));
-                        stmt.setString(6, player.getUniqueId().toString());
-                        stmt.setDouble(7, PLOT_VERSION);
-                        stmt.executeUpdate();
-
-                        // Get the id of the new plot
-                        try (ResultSet rs = stmt.getGeneratedKeys()) {
-                            if (rs.next()) {
-                                plotID = rs.getInt(1);
-                            } else throw new SQLException("Could not obtain generated key");
+                            if (environmentFilePath == null) {
+                                Bukkit.getLogger().log(Level.SEVERE, "Could not create environment schematic file!");
+                                player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
+                                return;
+                            }
                         }
-                    }
-                } else throw new SQLException("Could not connect to database");
 
 
-                // Save plot and environment regions to schematic files
-                // Get plot schematic file path
-                plotFilePath = createPlotSchematic(plotRegion, plotID + "", cityProject);
-
-                if (plotFilePath == null) {
-                    Bukkit.getLogger().log(Level.SEVERE, "Could not create plot schematic file!");
-                    player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
-                    return;
-                }
-
-                // Get environment schematic file path
-                if (environmentEnabled) {
-                    environmentFilePath = createPlotSchematic(environmentRegion, plotID + "-env", cityProject);
-
-                    if (environmentFilePath == null) {
-                        Bukkit.getLogger().log(Level.SEVERE, "Could not create environment schematic file!");
-                        player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
-                        return;
-                    }
-                }
+                        // Upload schematic files to SFTP/FTP server if enabled
+                        FTPConfiguration ftpConfiguration = cityProject.getFTPConfiguration();
+                        if (ftpConfiguration != null) {
+                            if (environmentEnabled) FTPManager.uploadSchematics(FTPManager.getFTPUrl(ftpConfiguration, cityProject.getID()), new File(plotFilePath), new File(environmentFilePath));
+                            else FTPManager.uploadSchematics(FTPManager.getFTPUrl(ftpConfiguration, cityProject.getID()), new File(plotFilePath));
+                        }
 
 
-                // Upload schematic files to SFTP/FTP server if enabled
-                FTPConfiguration ftpConfiguration = cityProject.getFTPConfiguration();
-                if (ftpConfiguration != null) {
-                    if (environmentEnabled) FTPManager.uploadSchematics(FTPManager.getFTPUrl(ftpConfiguration, cityProject.getID()), new File(plotFilePath), new File(environmentFilePath));
-                    else FTPManager.uploadSchematics(FTPManager.getFTPUrl(ftpConfiguration, cityProject.getID()), new File(plotFilePath));
-                }
+                        // Place plot markings on plot region
+                        placePlotMarker(plotRegion, player, plotID);
+                        // TODO: Change top blocks of the plot region to mark plot as created
 
 
-                // Place plot markings on plot region
-                placePlotMarker(plotRegion, player, plotID);
-                // TODO: Change top blocks of the plot region to mark plot as created
-
-
-                // Finalize database transaction
-                connection.commit();
-                connection.close();
-
-                player.sendMessage(Utils.getInfoMessageFormat("Successfully created new plot! §f(City: §6" + cityProject.getName() + " §f| Plot-ID: §6" + plotID + "§f)"));
-                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
-            } catch (Exception ex) {
-                try {
-                    if (connection != null) {
-                        connection.rollback();
+                        // Finalize database transaction
+                        connection.commit();
                         connection.close();
+
+                        player.sendMessage(Utils.getInfoMessageFormat("Successfully created new plot! §f(City: §6" + cityProject.getName() + " §f| Plot-ID: §6" + plotID + "§f)"));
+                        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
+                    } catch (Exception ex) {
+                        try {
+                            if (connection != null) {
+                                connection.rollback();
+                                connection.close();
+                            }
+                        } catch (SQLException sqlEx) {
+                            Bukkit.getLogger().log(Level.SEVERE, "A SQL error occurred!", sqlEx);
+                        }
+                        Bukkit.getLogger().log(Level.SEVERE, "An error occurred while creating plot!", ex);
+                        player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
                     }
-                } catch (SQLException sqlEx) {
-                    Bukkit.getLogger().log(Level.SEVERE, "A SQL error occurred!", sqlEx);
-                }
-                Bukkit.getLogger().log(Level.SEVERE, "An error occurred while creating plot!", ex);
-                player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
-            }
+                });
         });
     }
 
+    public static void createTutorialPlot(Player player, int environmentRadius) {
+        CompletableFuture.runAsync(() -> {
+            create(player, environmentRadius, (plotRegion, environmentRegion, plotCenter) -> {
+                try {
+                    // Inform player about the plot creation
+                    player.sendMessage(Utils.getInfoMessageFormat("Creating plot..."));
+
+
+                    // Convert polygon outline data to string
+                    String polyOutline;
+                    List<String> points = new ArrayList<>();
+
+                    for (BlockVector2D point : plotRegion.getPoints())
+                        points.add(point.getX() + "," + point.getZ());
+                    polyOutline = StringUtils.join(points, "|");
+                    Bukkit.getLogger().log(Level.INFO, "Tutorial plot outlines: " + polyOutline);
+
+                    // Save plot and environment regions to schematic files
+                    // Get plot schematic file path
+                    String plotFilePath = createPlotSchematic(plotRegion, Paths.get(schematicsPath, "tutorials", "id-stage.schematic").toString());
+
+                    if (plotFilePath == null) {
+                        Bukkit.getLogger().log(Level.SEVERE, "Could not create plot schematic file!");
+                        player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
+                        return;
+                    }
+                    Bukkit.getLogger().log(Level.INFO, "Tutorial plot schematic path: " + plotFilePath);
+
+                    // Get environment schematic file path
+                    if (environmentRadius > 0) {
+                        String environmentFilePath = createPlotSchematic(environmentRegion, Paths.get(schematicsPath, "tutorials", "id-env.schematic").toString());
+
+                        if (environmentFilePath == null) {
+                            Bukkit.getLogger().log(Level.SEVERE, "Could not create environment schematic file!");
+                            player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
+                            return;
+                        }
+                        Bukkit.getLogger().log(Level.INFO, "Tutorial environment schematic path: " + environmentFilePath);
+                    }
+
+                    player.sendMessage(Utils.getInfoMessageFormat("Successfully created new tutorial plot! Check your console for more information!"));
+                    player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
+                } catch (Exception ex) {
+                    Bukkit.getLogger().log(Level.SEVERE, "An error occurred while creating plot!", ex);
+                    player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));
+                }
+            });
+        });
+    }
 
 
 
@@ -251,9 +306,8 @@ public class PlotCreator {
      * @param region: Selected poly region of the player
      * @return the file path of the created schematic
      */
-    private static String createPlotSchematic(AbstractRegion region, String filename, CityProject cityProject) throws SQLException, IOException, WorldEditException {
+    private static String createPlotSchematic(AbstractRegion region, String filePath) throws IOException, WorldEditException {
         // Create File
-        String filePath = Paths.get(schematicsPath, String.valueOf(cityProject.getServerID()), String.valueOf(cityProject.getID()), filename + ".schematic").toString();
         File schematic = new File(filePath);
 
         // Delete file if exists
