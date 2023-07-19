@@ -12,12 +12,13 @@ public abstract class ConfigPaths {
 
     // API
     public static final String API = "api.";
-    public static final String API_URL = API + "url";
+    public static final String API_URL = API + "api-url";
     public static final String API_PORT = API + "port";
+    public static final String API_KEY = API + "api-key";
 
     // Database
     private static final String DATABASE = "database.";
-    public static final String DATABASE_URL = DATABASE + "url";
+    public static final String DATABASE_URL = DATABASE + "db-url";
     public static final String DATABASE_NAME = DATABASE + "dbname";
     public static final String DATABASE_USERNAME = DATABASE + "username";
     public static final String DATABASE_PASSWORD = DATABASE + "password";
