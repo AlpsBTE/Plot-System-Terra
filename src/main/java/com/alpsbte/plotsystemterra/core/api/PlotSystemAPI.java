@@ -20,11 +20,14 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.sk89q.worldedit.Vector;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpRequest.BodyPublisher;
+import java.net.http.HttpRequest.Builder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -51,8 +54,8 @@ public class PlotSystemAPI {
     private static String GET_PS_SERVERS_URL = "/api/plotsystem/teams/%API_KEY%/countries";
     private static String GET_PS_PlOTS_URL = "/api/plotsystem/teams/%API_KEY%/plots";
     private static String GET_PS_FTP_URL = "/api/plotsystem/teams/%API_KEY%/ftp";
-    private static String POST_PS_CREATE_PLOT_ORDER_URL = "/api/plotsystem/teams/%API_KEY%/ftp";
-    private static String GET_PS_CONFIRM_PLOT_ORDER_URL = "/api/plotsystem/teams/%API_KEY%/confirm/%ORDER%/confirm";
+    private static String POST_PS_CREATE_PLOT_ORDER_URL = "/api/plotsystem/teams/%API_KEY%/plots";
+    private static String GET_PS_CONFIRM_PLOT_ORDER_URL = "/api/plotsystem/teams/%API_KEY%/orders/%ORDER%/confirm";
 
     private static String PUT_PS_UPDATE_PLOT_URL = "/api/plotsystem/teams/%API_KEY%/plots";
 
@@ -60,71 +63,60 @@ public class PlotSystemAPI {
         this.host = host;
         this.port = port;
     }
-    // A function that returns the content of a GET Request from a given URL
-    private String httpGET(String endpoint) {
+    
+    private enum RequestMethod{GET, PUT, POST}
+
+    private String makeHttpRequest(RequestMethod method, String endpoint, String jsonBody) throws Exception{
         String apiUrl = host + endpoint;
-
+        
         HttpClient httpClient = HttpClient.newHttpClient();
-        HttpRequest httpRequest = HttpRequest.newBuilder()
-                .uri(URI.create(apiUrl))
-                .GET()
-                .build();
-        try {
-            HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
-            // Check if the request was successful (HTTP status code 200)
-            if (response.statusCode() == 200) {
-                String jsonResponse = response.body();
-                return jsonResponse;
-            } else {
-                Bukkit.getLogger().log(Level.SEVERE, "API request return error code (HTTP status): " + response.statusCode());
-                return null;
-            }
-        } catch (Exception e) {
-            Bukkit.getLogger().log(Level.SEVERE, "Exception occurred while making the API request: " + e.getMessage());
-            e.printStackTrace();
+        //build request. depending on type, add body and header
+        Builder b = HttpRequest.newBuilder().uri(URI.create(apiUrl));
+        BodyPublisher body = null;
+        if (jsonBody != null){
+            b = b.header("Content-Type", "application/json");
+            body = HttpRequest.BodyPublishers.ofString(jsonBody);
         }
+        HttpRequest request = null;
+        switch (method) {
+            case GET:
+                request = b.GET().build();                
+                break;
+            case PUT:
+                request = b.PUT(body).build();
+                break;
+            case POST:
+                request = b.POST(body).build();
+                break;
+        }
+       
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        return null;
-    }
-
-    private String httpPUT(String endpoint, String jsonBodyString) {
-        String apiUrl = host + endpoint;
-
-
-        
-        HttpClient httpClient = HttpClient.newHttpClient();
-        HttpRequest httpRequest = HttpRequest.newBuilder()
-                .uri(URI.create(apiUrl))
-                .header("Content-Type", "application/json")
-                .PUT(HttpRequest.BodyPublishers.ofString(jsonBodyString))
-                .build();
-        
-        try {
-            HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-
-            // Check if the request was successful (HTTP status code 200)
-            if (response.statusCode() == 200) {
-                String jsonResponse = response.body();
-                return jsonResponse;
-            } else {
-                String errorMessage = "API request return error code (HTTP status): " + response.statusCode();
-                System.out.println(errorMessage);
-
-                return null;
-            }
-        } catch (Exception e) {
-            String errorMessage = "Exception occurred while making the API request: " + e.getMessage();
+        // Check if the request was successful (HTTP status code 200)
+        if (response.statusCode() == 200) {
+            String jsonResponse = response.body();
+            return jsonResponse;
+        } else {
+            String errorMessage = "API HTTP request return error code (HTTP status): " + response.statusCode();
             System.out.println(errorMessage);
-            //Bukkit.getLogger().log(Level.SEVERE, "Exception occurred while making the API request: " + e.getMessage());
-            e.printStackTrace();
+            throw new IOException(errorMessage);
         }
 
-        return null;
+    }
+    // A function that returns the content of a GET Request from a given URL
+    private String httpGET(String endpoint) throws Exception{
+        return makeHttpRequest(RequestMethod.GET, endpoint, null);
+    }    
+    private String httpPUT(String endpoint, String jsonBodyString) throws Exception{
+        return makeHttpRequest(RequestMethod.PUT, endpoint, jsonBodyString);
+    }
+    private String httpPOST(String endpoint, String jsonBodyString) throws Exception{
+        return makeHttpRequest(RequestMethod.POST, endpoint, jsonBodyString);
     }
 
 
-    public int getPSBuilderCount(){
+    public int getPSBuilderCount() throws Exception{
         String jsonResponse = httpGET(GET_PS_BUILDERS_URL);
 
         //response looks like this: array with single object with "builders:X"
@@ -149,7 +141,7 @@ public class PlotSystemAPI {
         return -1;
     }
 
-    public List<Difficulty> getPSDifficulties(){
+    public List<Difficulty> getPSDifficulties() throws Exception{
         List<Difficulty> difficulties = new ArrayList<>();
         String jsonResponse = httpGET(GET_PS_DIFFICULTIES_URL);
 
@@ -181,7 +173,7 @@ public class PlotSystemAPI {
         return difficulties;
     }
 
-    public List<CityProject> getPSTeamCities(String teamApiKey){
+    public List<CityProject> getPSTeamCities(String teamApiKey) throws Exception{
         List<CityProject> cities = new ArrayList<>();
         String jsonResponse = httpGET(GET_PS_CITIES_URL.replace("%API_KEY%", teamApiKey));
         //List<Country> allCountries = getPSTeamCountries(teamApiKey);
@@ -216,7 +208,7 @@ public class PlotSystemAPI {
         return cities;
     }
 
-    public List<Country> getPSTeamCountries(String teamApiKey){
+    public List<Country> getPSTeamCountries(String teamApiKey) throws Exception{
         List<Country> countries = new ArrayList<>();
         String jsonResponse = httpGET(GET_PS_COUNTRIES_URL.replace("%API_KEY%", teamApiKey));
 
@@ -250,7 +242,7 @@ public class PlotSystemAPI {
         return countries;
     }
 
-    public List<Plot> getPSTeamPlots(String teamApiKey) {
+    public List<Plot> getPSTeamPlots(String teamApiKey) throws Exception {
         List<Plot> plots = new ArrayList<>();
         String jsonResponse = httpGET(GET_PS_PlOTS_URL.replace("%API_KEY%", teamApiKey));
 
@@ -300,7 +292,7 @@ public class PlotSystemAPI {
         return plots;
     }
     
-    public List<Server> getPSTeamServers(String teamApiKey) {
+    public List<Server> getPSTeamServers(String teamApiKey) throws Exception{
         List<Server> servers = new ArrayList<>();
         String jsonResponse = httpGET(GET_PS_SERVERS_URL.replace("%API_KEY%", teamApiKey));
 
@@ -329,7 +321,7 @@ public class PlotSystemAPI {
         return servers;
     }
     
-    public List<FTPConfiguration> getPSTeamFTPConfigurations(String teamApiKey) {
+    public List<FTPConfiguration> getPSTeamFTPConfigurations(String teamApiKey) throws Exception{
         List<FTPConfiguration> configs = new ArrayList<>();
         String jsonResponse = httpGET(GET_PS_FTP_URL.replace("%API_KEY%", teamApiKey));
 
@@ -378,7 +370,7 @@ public class PlotSystemAPI {
         }
         return configs;
     }
-    public void updatePSPlot(int plotID, List<String> changeList, String teamApiKey) {
+    public void updatePSPlot(int plotID, List<String> changeList, String teamApiKey) throws Exception{
         //Request body is an array with a single element, usind identifier and any parameters to change
         String requestBody = "[\n\t{\n\t\t\"id\": "+plotID+",\n\t\t"
                     + String.join(",\n\t\t", changeList ) +"\n\t}\n]";
@@ -388,6 +380,27 @@ public class PlotSystemAPI {
 
 
         //System.out.println(jsonResponse);
+    }
+    public int createPSPlot(boolean asOrder, int cityProjectID, int difficultyID, Vector plotCoords, String polyOutline, double plotVersion, String teamApiKey) throws Exception{
+        String vectorString = plotCoords.toString();
+        vectorString = vectorString.substring(1,vectorString.length()-1); //remove brackets
+        String requestBody = "[\n\t{\n"
+            +"\t\t\"city_project_id\": "+cityProjectID+",\n"
+            +"\t\t\"difficulty_id\": "+difficultyID+",\n"
+            +"\t\t\"mc_coordinates\": \""+vectorString+"\",\n"
+            +"\t\t\"outline\": \""+polyOutline+"\",\n"
+            +"\t\t\"version\": "+plotVersion+",\n"
+            +"\t\t\"is_order\": "+ (asOrder ? "true" : "false")+"\n"            
+            +"\n\t}\n]";
+        System.out.println("POST " +PUT_PS_UPDATE_PLOT_URL.replace("%API_KEY%", teamApiKey));
+        System.out.println("Body:\n" + requestBody);
+        String jsonResponse = httpPOST(POST_PS_CREATE_PLOT_ORDER_URL.replace("%API_KEY%", teamApiKey), requestBody);
+
+        // {
+        //     "order_id": "<uuid>ba1dffb7-0764-4bb6-b7ad-5a67e674d3bb",
+        //     "success": true
+        // }        
+        return -1;
     }
     
 
