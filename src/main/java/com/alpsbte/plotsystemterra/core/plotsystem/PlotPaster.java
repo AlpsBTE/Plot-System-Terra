@@ -1,7 +1,7 @@
 package com.alpsbte.plotsystemterra.core.plotsystem;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
-import com.alpsbte.plotsystemterra.core.DatabaseConnection;
+import com.alpsbte.plotsystemterra.core.Connection;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.alpsbte.plotsystemterra.utils.FTPManager;
 import com.sk89q.worldedit.*;
@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+
+import java.util.List;
 import java.util.logging.Level;
 
 public class PlotPaster extends Thread {
@@ -46,95 +46,85 @@ public class PlotPaster extends Thread {
     @Override
     public void run() {
         Bukkit.getScheduler().scheduleSyncRepeatingTask(PlotSystemTerra.getPlugin(), () -> {
-            try (ResultSet rs = DatabaseConnection.createStatement("SELECT id, city_project_id, mc_coordinates, version FROM plotsystem_plots WHERE status = 'completed' AND pasted = '0' LIMIT 20")
-                    .executeQuery()) {
+            Connection connection = PlotSystemTerra.getPlugin().getConnection();
+            try {
+
+                List<Plot> pastePlots = connection.getCompletedAndUnpastedPlots();
                 int pastedPlots = 0;
 
-                if (rs.isBeforeFirst()) {
-                    while (rs.next()) {
-                        int plotID = -1;
-                        try {
-                            plotID = rs.getInt(1);
-                            CityProject city = new CityProject(rs.getInt(2));
+                for (Plot plot : pastePlots){
+                        
+                    int plotID = plot.id;
+                    try{
+                        CityProject city = connection.getCityProject(plot.city_project_id);
+                        int serverID = connection.getServerID(city);
+                        String cityServerName = connection.getServer(serverID).name;
 
-                            try (ResultSet rsServer = DatabaseConnection.createStatement("SELECT name FROM plotsystem_servers WHERE id = ?")
-                                    .setValue(city.getServerID()).executeQuery()) {
+                            
+                        if (cityServerName.equals(serverName)) {
 
-                                if (rsServer.next()) {
-                                    String name = rsServer.getString(1);
-                                    if (name.equals(serverName)) {
-                                        String[] splitCoordinates = rs.getString(3).split(",");
-
-                                        Vector mcCoordinates = Vector.toBlockPoint(
-                                                Float.parseFloat(splitCoordinates[0]),
-                                                Float.parseFloat(splitCoordinates[1]),
-                                                Float.parseFloat(splitCoordinates[2])
-                                        );
-
-                                        double version = rs.getDouble(4);
-                                        if (rs.wasNull()) { version = 2; }
-
-                                        pastePlotSchematic(plotID, city, world, mcCoordinates, version , fastMode);
-                                        pastedPlots++;
-                                    }
-                                }
-
-                                DatabaseConnection.closeResultSet(rsServer);
-
-                            }
-                        } catch (Exception ex) {
-                            Bukkit.getLogger().log(Level.SEVERE, "An error occurred while pasting plot #" + plotID + "!", ex);
-                        }
+                            pastePlotSchematic(plotID, city, world, plot.mc_coordinates, plot.version, fastMode);
+                            pastedPlots++;
+                        }//endif city is on this server
+                        
+                    } catch (Exception ex) {
+                        Bukkit.getLogger().log(Level.SEVERE, "An error occurred while pasting plot #" + plotID + "!", ex);
                     }
 
-                    if (broadcastMessages && pastedPlots != 0) {
-                        Bukkit.broadcastMessage("§7§l>§a Pasted §6" + pastedPlots + " §aplot" + (pastedPlots > 1 ? "s" : "") + "!");
-                    }
+                }//endfor plots
+
+                if (broadcastMessages && pastedPlots != 0) {
+                    Bukkit.broadcastMessage("§7§l>§a Pasted §6" + pastedPlots + " §aplot" + (pastedPlots > 1 ? "s" : "") + "!");
                 }
 
-                DatabaseConnection.closeResultSet(rs);
-
-            } catch (SQLException ex) {
-                Bukkit.getLogger().log(Level.SEVERE, "A SQL error occurred!", ex);
-            }
+        } catch (Exception ex) {
+            Bukkit.getLogger().log(Level.SEVERE, "An error occurred while getting unpasted plots!", ex);
+        }
         }, 0L, 20L * pasteInterval);
     }
 
-    public static void pastePlotSchematic(int plotID, CityProject city, World world, Vector mcCoordinates, double plotVersion, boolean fastMode) throws IOException, WorldEditException, SQLException, URISyntaxException {
-        File outlineSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), String.valueOf(city.getID()), plotID + ".schematic").toFile();
-        File completedSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), "finishedSchematics", String.valueOf(city.getID()), plotID + ".schematic").toFile();
+    public static void pastePlotSchematic(int plotID, CityProject city, World world, Vector mcCoordinates, double plotVersion, boolean fastMode) throws IOException, WorldEditException, URISyntaxException {
+        Connection connection = PlotSystemTerra.getPlugin().getConnection();
+        try {
 
-        // Download from SFTP or FTP server if enabled
-        FTPConfiguration ftpConfiguration = city.getFTPConfiguration();
-        if (ftpConfiguration != null) {
-            Files.deleteIfExists(completedSchematic.toPath());
-            FTPManager.downloadSchematic(FTPManager.getFTPUrl(ftpConfiguration, city.getID()), completedSchematic);
-        }
+            int serverID = connection.getServerID(city);
+            File outlineSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(serverID), String.valueOf(city.id), plotID + ".schematic").toFile();
+            File completedSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(serverID), "finishedSchematics", String.valueOf(city.id), plotID + ".schematic").toFile();
 
-        if (outlineSchematic.exists() && completedSchematic.exists()) {
-            com.sk89q.worldedit.world.World weWorld = new BukkitWorld(world);
-            EditSession editSession = WorldEdit.getInstance().getEditSessionFactory().getEditSession(weWorld, -1);
-            if (fastMode) editSession.setFastMode(true);
-            editSession.enableQueue();
+            // Download from SFTP or FTP server if enabled
+            FTPConfiguration ftpConfiguration = connection.getFTPConfiguration(city);
+            if (ftpConfiguration != null) {
+                Files.deleteIfExists(completedSchematic.toPath());
+                FTPManager.downloadSchematic(FTPManager.getFTPUrl(ftpConfiguration, city.id), completedSchematic);
+            }
 
-            Clipboard outlineClipboard = ClipboardFormat.SCHEMATIC.getReader(Files.newInputStream(outlineSchematic.toPath())).read(weWorld.getWorldData());
-            Clipboard completedClipboard = ClipboardFormat.SCHEMATIC.getReader(Files.newInputStream(completedSchematic.toPath())).read(weWorld.getWorldData());
+            if (outlineSchematic.exists() && completedSchematic.exists()) {
+                com.sk89q.worldedit.world.World weWorld = new BukkitWorld(world);
+                EditSession editSession = WorldEdit.getInstance().getEditSessionFactory().getEditSession(weWorld, -1);
+                if (fastMode) editSession.setFastMode(true);
+                editSession.enableQueue();
 
-            Vector toPaste;
-            if (plotVersion >= 3) {
-                Vector plotOriginOutline = outlineClipboard.getOrigin();
-                toPaste = new Vector(plotOriginOutline.getX(), plotOriginOutline.getY(), plotOriginOutline.getZ());
-            } else toPaste = mcCoordinates;
+                Clipboard outlineClipboard = ClipboardFormat.SCHEMATIC.getReader(Files.newInputStream(outlineSchematic.toPath())).read(weWorld.getWorldData());
+                Clipboard completedClipboard = ClipboardFormat.SCHEMATIC.getReader(Files.newInputStream(completedSchematic.toPath())).read(weWorld.getWorldData());
 
-            Operation operation = new ClipboardHolder(completedClipboard, weWorld.getWorldData()).createPaste(editSession, weWorld.getWorldData())
-                    .to(toPaste).ignoreAirBlocks(true).build();
-            Operations.complete(operation);
-            editSession.flushQueue();
+                Vector toPaste;
+                if (plotVersion >= 3) {
+                    Vector plotOriginOutline = outlineClipboard.getOrigin();
+                    toPaste = new Vector(plotOriginOutline.getX(), plotOriginOutline.getY(), plotOriginOutline.getZ());
+                } else toPaste = mcCoordinates;
 
-            DatabaseConnection.createStatement("UPDATE plotsystem_plots SET pasted = '1' WHERE id = ?")
-                    .setValue(plotID).executeUpdate();
-        } else {
-            Bukkit.getLogger().log(Level.WARNING, "Could not find schematic file(s) of plot #" + plotID + "!");
+                Operation operation = new ClipboardHolder(completedClipboard, weWorld.getWorldData()).createPaste(editSession, weWorld.getWorldData())
+                        .to(toPaste).ignoreAirBlocks(true).build();
+                Operations.complete(operation);
+                editSession.flushQueue();
+
+
+                connection.setPlotPasted(plotID);
+            } else {
+                Bukkit.getLogger().log(Level.WARNING, "Could not find schematic file(s) of plot #" + plotID + "!");
+            }
+        } catch (Exception ex) {
+            Bukkit.getLogger().log(Level.WARNING, "Connection exception during pasting of plot #" + plotID + "!");
         }
     }
 }

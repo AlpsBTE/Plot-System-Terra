@@ -1,7 +1,7 @@
 package com.alpsbte.plotsystemterra.core.plotsystem;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
-import com.alpsbte.plotsystemterra.core.DatabaseConnection;
+import com.alpsbte.plotsystemterra.core.Connection;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.alpsbte.plotsystemterra.utils.FTPManager;
 import com.alpsbte.plotsystemterra.utils.Utils;
@@ -30,8 +30,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.*;
-import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -142,7 +140,7 @@ public class PlotCreator {
                     int plotID;
                     String plotFilePath;
                     String environmentFilePath = null;
-                    Connection connection = null;
+                    Connection connection = PlotSystemTerra.getPlugin().getConnection();
 
                     try {
                         // Check if selection contains sign
@@ -165,35 +163,15 @@ public class PlotCreator {
                         polyOutline = StringUtils.join(points, "|");
 
 
-                        // Insert into database
-                        connection = DatabaseConnection.getConnection();
-
-                        if (connection != null) {
-                            connection.setAutoCommit(false);
-
-                            try (PreparedStatement stmt = Objects.requireNonNull(connection).prepareStatement("INSERT INTO plotsystem_plots (city_project_id, difficulty_id, mc_coordinates, outline, create_date, create_player, version) VALUES (?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
-                                stmt.setInt(1, cityProject.getID());
-                                stmt.setInt(2, difficultyID);
-                                stmt.setString(3, plotCenter.getX() + "," + plotCenter.getY() + "," + plotCenter.getZ());
-                                stmt.setString(4, polyOutline);
-                                stmt.setDate(5, java.sql.Date.valueOf(LocalDate.now()));
-                                stmt.setString(6, player.getUniqueId().toString());
-                                stmt.setDouble(7, PLOT_VERSION);
-                                stmt.executeUpdate();
-
-                                // Get the id of the new plot
-                                try (ResultSet rs = stmt.getGeneratedKeys()) {
-                                    if (rs.next()) {
-                                        plotID = rs.getInt(1);
-                                    } else throw new SQLException("Could not obtain generated key");
-                                }
-                            }
-                        } else throw new SQLException("Could not connect to database");
-
+                        // Insert into database (as transaction, needs to be committed or canceled to finalze)
+                        
+                        plotID = connection.prepareCreatePlot(
+                            cityProject, difficultyID, plotCenter,polyOutline, player, PLOT_VERSION);
 
                         // Save plot and environment regions to schematic files
                         // Get plot schematic file path
-                        plotFilePath = createPlotSchematic(plotRegion, Paths.get(schematicsPath, String.valueOf(cityProject.getServerID()), String.valueOf(cityProject.getID()), plotID + ".schematic").toString());
+                        int serverID = connection.getServerID(cityProject);
+                        plotFilePath = createPlotSchematic(plotRegion, Paths.get(schematicsPath, String.valueOf(serverID), String.valueOf(cityProject.id), plotID + ".schematic").toString());
 
                         if (plotFilePath == null) {
                             Bukkit.getLogger().log(Level.SEVERE, "Could not create plot schematic file!");
@@ -203,7 +181,7 @@ public class PlotCreator {
 
                         // Get environment schematic file path
                         if (environmentEnabled) {
-                            environmentFilePath = createPlotSchematic(environmentRegion, Paths.get(schematicsPath, String.valueOf(cityProject.getServerID()), String.valueOf(cityProject.getID()), plotID + "-env.schematic").toString());
+                            environmentFilePath = createPlotSchematic(environmentRegion, Paths.get(schematicsPath, String.valueOf(serverID), String.valueOf(cityProject.id), plotID + "-env.schematic").toString());
 
                             if (environmentFilePath == null) {
                                 Bukkit.getLogger().log(Level.SEVERE, "Could not create environment schematic file!");
@@ -214,10 +192,10 @@ public class PlotCreator {
 
 
                         // Upload schematic files to SFTP/FTP server if enabled
-                        FTPConfiguration ftpConfiguration = cityProject.getFTPConfiguration();
+                        FTPConfiguration ftpConfiguration = connection.getFTPConfiguration(cityProject);
                         if (ftpConfiguration != null) {
-                            if (environmentEnabled) FTPManager.uploadSchematics(FTPManager.getFTPUrl(ftpConfiguration, cityProject.getID()), new File(plotFilePath), new File(environmentFilePath));
-                            else FTPManager.uploadSchematics(FTPManager.getFTPUrl(ftpConfiguration, cityProject.getID()), new File(plotFilePath));
+                            if (environmentEnabled) FTPManager.uploadSchematics(FTPManager.getFTPUrl(ftpConfiguration, cityProject.id), new File(plotFilePath), new File(environmentFilePath));
+                            else FTPManager.uploadSchematics(FTPManager.getFTPUrl(ftpConfiguration, cityProject.id), new File(plotFilePath));
                         }
 
 
@@ -227,19 +205,16 @@ public class PlotCreator {
 
 
                         // Finalize database transaction
-                        connection.commit();
-                        connection.close();
-
-                        player.sendMessage(Utils.getInfoMessageFormat("Successfully created new plot! §f(City: §6" + cityProject.getName() + " §f| Plot-ID: §6" + plotID + "§f)"));
+                        connection.commitPlot();
+                        
+                        player.sendMessage(Utils.getInfoMessageFormat("Successfully created new plot! §f(City: §6" + cityProject.name + " §f| Plot-ID: §6" + plotID + "§f)"));
                         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
                     } catch (Exception ex) {
                         try {
-                            if (connection != null) {
-                                connection.rollback();
-                                connection.close();
-                            }
-                        } catch (SQLException sqlEx) {
-                            Bukkit.getLogger().log(Level.SEVERE, "A SQL error occurred!", sqlEx);
+                            connection.rollbackPlot();
+                            
+                        } catch (Exception rollbackEx) {
+                            Bukkit.getLogger().log(Level.SEVERE, "An exception occured during rollback!", rollbackEx);
                         }
                         Bukkit.getLogger().log(Level.SEVERE, "An error occurred while creating plot!", ex);
                         player.sendMessage(Utils.getErrorMessageFormat("An error occurred while creating plot!"));

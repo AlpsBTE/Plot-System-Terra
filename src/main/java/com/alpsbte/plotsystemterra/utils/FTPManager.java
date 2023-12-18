@@ -33,11 +33,11 @@ public class FTPManager {
     }
 
     public static String getFTPUrl(FTPConfiguration ftpConfiguration, int cityID) throws URISyntaxException {
-        String schematicsPath = ftpConfiguration.getSchematicPath();
-        return new URI(ftpConfiguration.isSFTP() ? "sftp" : "ftp",
-                ftpConfiguration.getUsername() + ":" + ftpConfiguration.getPassword(),
-                ftpConfiguration.getAddress(),
-                ftpConfiguration.getPort(),
+        String schematicsPath = ftpConfiguration.schematics_path;
+        return new URI(ftpConfiguration.isSFTP ? "sftp" : "ftp",
+                ftpConfiguration.username + ":" + ftpConfiguration.password,
+                ftpConfiguration.address,
+                ftpConfiguration.port,
                 String.format("/%s/%s/%s/", schematicsPath == null ? DEFAULT_SCHEMATIC_PATH_LINUX : schematicsPath, "finishedSchematics", cityID),
                 null,
                 null).toString();

@@ -1,8 +1,11 @@
 package com.alpsbte.plotsystemterra.core.plotsystem;
 
-import com.alpsbte.plotsystemterra.core.DatabaseConnection;
+import com.alpsbte.plotsystemterra.PlotSystemTerra;
+import com.alpsbte.plotsystemterra.core.Connection;
 import com.alpsbte.plotsystemterra.utils.ItemBuilder;
 import com.alpsbte.plotsystemterra.utils.LoreBuilder;
+
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -13,10 +16,10 @@ import org.ipvp.canvas.mask.BinaryMask;
 import org.ipvp.canvas.mask.Mask;
 import org.ipvp.canvas.type.ChestMenu;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 
 public class CreatePlotMenu {
     private final Menu createPlotMenu = ChestMenu.builder(6).title("Create Plot").redraw(true).build();
@@ -125,40 +128,60 @@ public class CreatePlotMenu {
     }
 
     private List<CityProject> getCityProjects() {
-        List<CityProject> listProjects = new ArrayList<>();
+        try {
+            List<CityProject> listProjects = new ArrayList<>();
+            Connection connection = PlotSystemTerra.getPlugin().getConnection();
+            boolean success = connection.getAllCityProjects(listProjects);
 
-        int counter = 0;
-        try (ResultSet rs = DatabaseConnection.createStatement("SELECT id FROM plotsystem_city_projects").executeQuery()) {
-            while (rs.next()) {
-                CityProject city = new CityProject(rs.getInt(1));
-                createPlotMenu.getSlot(9 + counter).setItem(city.getItem());
+            int counter = 0;
+            for (CityProject city : listProjects){
+                Country cityCountry = connection.getCountry(city.country_id);
+                createPlotMenu.getSlot(9 + counter).setItem(city.getItem(cityCountry.head_id));
                 listProjects.add(city);
                 counter++;
             }
 
-            DatabaseConnection.closeResultSet(rs);
+            
+            if (!success){
+                createPlotMenu.getSlot(9 + counter).setItem(new ItemBuilder(Material.BARRIER)
+                    .setName("§c§lError")
+                    .setLore(new LoreBuilder()
+                            .addLine("Could not load city project.")
+                            .build())
+                .build());
+            }
 
-        } catch (SQLException ex) {
-            createPlotMenu.getSlot(9 + counter).setItem(new ItemBuilder(Material.BARRIER)
-                .setName("§c§lError")
-                .setLore(new LoreBuilder()
-                        .addLine("Could not load city project.")
-                        .build())
-            .build());
+            return listProjects;
+        } catch (Exception ex)
+        {
+            Bukkit.getLogger().log(Level.SEVERE, "An error occurred while reading all city projects!", ex);
+            return null;
         }
-
-        return listProjects;
     }
 
     private ItemStack getStats(Location coords) {
-        return new ItemBuilder((selectedCityID == -1) ? new ItemStack(Material.NAME_TAG) : cityProjects.get(selectedCityID).getItem())
-                .setName("§6§lSTATS")
-                .setLore(new LoreBuilder()
-                        .addLines("§bX: §7" + coords.getX(),
-                                  "§bY: §7" + coords.getY(),
-                                  "§bZ: §7" + coords.getZ(),
-                                  "§bCity: §7" + ((selectedCityID != -1) ? cityProjects.get(selectedCityID).getName() : "none"))
-                        .build())
-                .build();
+        //TODO double-check this line. cityProject.get() returns index in list, not by cityID!
+        //get country head
+        if (selectedCityID == -1){
+            return new ItemStack(Material.NAME_TAG);
+        }
+        try {
+            Connection connection = PlotSystemTerra.getPlugin().getConnection();            
+            CityProject city = cityProjects.get(selectedCityID); //TOTO fixme!
+            Country c = connection.getCountry(city.country_id);
+            return new ItemBuilder(cityProjects.get(selectedCityID).getItem(c.head_id))
+                    .setName("§6§lSTATS")
+                    .setLore(new LoreBuilder()
+                            .addLines("§bX: §7" + coords.getX(),
+                                    "§bY: §7" + coords.getY(),
+                                    "§bZ: §7" + coords.getZ(),
+                                    "§bCity: §7" +  city.name)
+                            .build())
+                    .build();
+        } catch (Exception ex){
+            Bukkit.getLogger().log(Level.SEVERE, "An error occurred while getting stats for location", ex);
+            
+            return null;
+        }
     }
 }

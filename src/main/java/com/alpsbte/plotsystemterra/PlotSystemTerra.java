@@ -3,8 +3,10 @@ package com.alpsbte.plotsystemterra;
 import com.alpsbte.plotsystemterra.commands.CMD_CreatePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PastePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PlotSystemTerra;
+import com.alpsbte.plotsystemterra.core.Connection;
 import com.alpsbte.plotsystemterra.core.DatabaseConnection;
 import com.alpsbte.plotsystemterra.core.EventListener;
+import com.alpsbte.plotsystemterra.core.NetworkAPIConnection;
 import com.alpsbte.plotsystemterra.core.config.ConfigManager;
 import com.alpsbte.plotsystemterra.core.config.ConfigNotImplementedException;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
@@ -16,15 +18,11 @@ import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.ipvp.canvas.MenuFunctionListener;
 
-import javax.xml.crypto.Data;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -44,6 +42,8 @@ public class PlotSystemTerra extends JavaPlugin {
     public String newVersion;
     public boolean updateInstalled = false;
     public Updater updater;
+
+    private Connection connection;
 
     @Override
     public void onEnable() {
@@ -88,10 +88,20 @@ public class PlotSystemTerra extends JavaPlugin {
             FileConfiguration configFile = PlotSystemTerra.getPlugin().getConfig();
 
             if(configFile.getString(ConfigPaths.DATA_MODE).equalsIgnoreCase(DataMode.DATABASE.toString())){
-                DatabaseConnection.InitializeDatabase();
+                connection = new DatabaseConnection();// DatabaseConnection.InitializeDatabase();
                 Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully initialized database connection.");
-            }
+            }else{
+                String teamApiKey = configFile.getString(ConfigPaths.API_KEY);
+                String apiHost = configFile.getString(ConfigPaths.API_URL);
+                
+                int apiPort = configFile.getInt(ConfigPaths.API_KEY);
 
+                connection = new NetworkAPIConnection(apiHost, apiPort, teamApiKey);
+                // String name = configFile.getString(ConfigPaths.DATABASE_NAME);
+                // String username = configFile.getString(ConfigPaths.DATABASE_USERNAME);
+                // String password = configFile.getString(ConfigPaths.DATABASE_PASSWORD);
+
+            }
 
 
         } catch (Exception ex) {
@@ -219,6 +229,10 @@ public class PlotSystemTerra extends JavaPlugin {
 
     public static PlotSystemTerra getPlugin() {
         return plugin;
+    }
+
+    public Connection getConnection(){
+        return connection;
     }
 
     public PlotPaster getPlotPaster() {
