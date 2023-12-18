@@ -96,6 +96,7 @@ public class PlotSystemAPI {
         HttpClient httpClient = HttpClient.newHttpClient();
         HttpRequest httpRequest = HttpRequest.newBuilder()
                 .uri(URI.create(apiUrl))
+                .header("Content-Type", "application/json")
                 .PUT(HttpRequest.BodyPublishers.ofString(jsonBodyString))
                 .build();
         
@@ -378,11 +379,15 @@ public class PlotSystemAPI {
         return configs;
     }
     public void updatePSPlot(int plotID, List<String> changeList, String teamApiKey) {
-        String requestBody = "[{"+ String.join(",", changeList ) +"}]";
-        String jsonResponse = httpPUT(PUT_PS_UPDATE_PLOT_URL.replace("%API_KEY%", teamApiKey), requestBody);
+        //Request body is an array with a single element, usind identifier and any parameters to change
+        String requestBody = "[\n\t{\n\t\t\"id\": "+plotID+",\n\t\t"
+                    + String.join(",\n\t\t", changeList ) +"\n\t}\n]";
+        // System.out.println("PUT " +PUT_PS_UPDATE_PLOT_URL.replace("%API_KEY%", teamApiKey));
+        // System.out.println("Body:\n" + requestBody);
+        httpPUT(PUT_PS_UPDATE_PLOT_URL.replace("%API_KEY%", teamApiKey), requestBody);
 
 
-        System.out.println(jsonResponse);
+        //System.out.println(jsonResponse);
     }
     
 
