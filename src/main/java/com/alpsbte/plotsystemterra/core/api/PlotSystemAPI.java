@@ -55,7 +55,7 @@ public class PlotSystemAPI {
     private static String GET_PS_PlOTS_URL = "/api/plotsystem/teams/%API_KEY%/plots";
     private static String GET_PS_FTP_URL = "/api/plotsystem/teams/%API_KEY%/ftp";
     private static String POST_PS_CREATE_PLOT_ORDER_URL = "/api/plotsystem/teams/%API_KEY%/plots";
-    private static String GET_PS_CONFIRM_PLOT_ORDER_URL = "/api/plotsystem/teams/%API_KEY%/orders/%ORDER%/confirm";
+    private static String GET_PS_CONFIRM_PLOT_ORDER_URL = "/api/plotsystem/teams/%API_KEY%/orders/%ORDER_ID%/confirm";
 
     private static String PUT_PS_UPDATE_PLOT_URL = "/api/plotsystem/teams/%API_KEY%/plots";
 
@@ -381,7 +381,22 @@ public class PlotSystemAPI {
 
         //System.out.println(jsonResponse);
     }
-    public int createPSPlot(boolean asOrder, int cityProjectID, int difficultyID, Vector plotCoords, String polyOutline, double plotVersion, String teamApiKey) throws Exception{
+
+    public class PlotCreateResult{
+        public PlotCreateResult(int plotID){
+            this.plotID = plotID;
+            this.transactionID = null;
+        }
+        public PlotCreateResult(int plotID, String transactionID)
+        {
+            this.plotID = plotID;
+            this.transactionID = transactionID;
+        }
+        public int plotID;
+        public String transactionID; //only used for creation with "asOrder = true" / transaction
+    }
+
+    public PlotCreateResult createPSPlot(boolean asTransaction, int cityProjectID, int difficultyID, Vector plotCoords, String polyOutline, double plotVersion, String teamApiKey) throws Exception{
         String vectorString = plotCoords.toString();
         vectorString = vectorString.substring(1,vectorString.length()-1); //remove brackets
         String requestBody = "[\n\t{\n"
@@ -390,17 +405,38 @@ public class PlotSystemAPI {
             +"\t\t\"mc_coordinates\": \""+vectorString+"\",\n"
             +"\t\t\"outline\": \""+polyOutline+"\",\n"
             +"\t\t\"version\": "+plotVersion+",\n"
-            +"\t\t\"is_order\": "+ (asOrder ? "true" : "false")+"\n"            
+            +"\t\t\"is_order\": "+ (asTransaction ? "true" : "false")+"\n"            
             +"\n\t}\n]";
         System.out.println("POST " +PUT_PS_UPDATE_PLOT_URL.replace("%API_KEY%", teamApiKey));
         System.out.println("Body:\n" + requestBody);
         String jsonResponse = httpPOST(POST_PS_CREATE_PLOT_ORDER_URL.replace("%API_KEY%", teamApiKey), requestBody);
 
+        //get plot id from json-response
+
+        JsonObject jsonObject = new JsonParser().parse(jsonResponse).getAsJsonObject();
+        int plotID = jsonObject.get("plot_id").getAsInt();
+        if (asTransaction){
+            String transactionID = jsonObject.get("order_id").getAsString();
+            return new PlotCreateResult(plotID, transactionID);
+        } else {
+            return new PlotCreateResult(plotID);
+        }
+        //is_order = false:
+        // {
+        //     "plot_id": "55",
+        //     "success": true
+        // }
+        //is_order = true
         // {
         //     "order_id": "<uuid>ba1dffb7-0764-4bb6-b7ad-5a67e674d3bb",
         //     "success": true
         // }        
-        return -1;
+    }
+    public void confirmTransaction(String currentTransactionID, String teamApiKey) throws Exception {
+        httpGET(GET_PS_CONFIRM_PLOT_ORDER_URL
+            .replace("%API_KEY%", teamApiKey)
+            .replace("%ORDER_ID%", currentTransactionID));
+
     }
     
 

@@ -116,6 +116,27 @@
             <version>22.0.0</version>
             <scope>compile</scope>
         </dependency>
+
+        <!-- Unit tests (only used for testing, will not appear in release/compile scope) -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.2.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-runner</artifactId>
+            <version>1.2.0</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- junit matcher for object value comparison -->
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>java-hamcrest</artifactId>
+            <version>2.0.0.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <!-- Plugin Build Settings -->
@@ -131,6 +152,8 @@
         </resources>
         <!-- IMPORTANT: Plugin Building Path -->
         <sourceDirectory>src/main/java</sourceDirectory>
+        <!-- testing / unit test directory (standard, does not need explicit tag)-->
+        <!-- <testDirectory>src/test/java</testDirectory> -->
         <!-- IMPORTANT: Output File Name -->
         <finalName>${project.artifactId}-${project.version}-${build.number}</finalName>
         <plugins>

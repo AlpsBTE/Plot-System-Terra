@@ -2,6 +2,7 @@ package com.alpsbte.plotsystemterra.core;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.api.PlotSystemAPI;
+import com.alpsbte.plotsystemterra.core.api.PlotSystemAPI.PlotCreateResult;
 import com.alpsbte.plotsystemterra.core.plotsystem.CityProject;
 import com.alpsbte.plotsystemterra.core.plotsystem.Country;
 import com.alpsbte.plotsystemterra.core.plotsystem.FTPConfiguration;
@@ -25,6 +26,7 @@ public class NetworkAPIConnection implements Connection{
     // private String host;
     // private int port;
     private PlotSystemAPI api;
+    private String currentTransactionID;
 
     public NetworkAPIConnection(String host, int port, String teamApiKey) {    
         // this.host = host;
@@ -50,7 +52,7 @@ public class NetworkAPIConnection implements Connection{
     @Override
     public boolean getAllCityProjects(List<CityProject> resultList) {
         try {
-            resultList = api.getPSTeamCities(teamApiKey);
+            resultList.addAll(api.getPSTeamCities(teamApiKey));
             return true;
         } catch (Exception ex) {
              return false;
@@ -59,8 +61,9 @@ public class NetworkAPIConnection implements Connection{
     
     @Override
     public int prepareCreatePlot(CityProject cityProject, int difficultyID, Vector plotCoords, String polyOutline, Player player, double plotVersion) throws Exception{
-        int newPlotID = api.createPSPlot(true, cityProject.id, difficultyID, plotCoords, polyOutline, plotVersion, teamApiKey);
-        return newPlotID;       
+        PlotCreateResult newPlot = api.createPSPlot(true, cityProject.id, difficultyID, plotCoords, polyOutline, plotVersion, teamApiKey);
+        this.currentTransactionID = newPlot.transactionID;
+        return newPlot.plotID;       
     }
 
 
@@ -68,19 +71,13 @@ public class NetworkAPIConnection implements Connection{
 
     @Override
     public void commitPlot() throws Exception{
-        //TODO implement
-        throw new RuntimeException("not yet implemented");
-        // getSqlConnection().commit();
-        // getSqlConnection().setAutoCommit(true);
+        //confirm transaction/order with order-id
+        api.confirmTransaction(this.currentTransactionID, teamApiKey);
     }
 
     @Override
     public void rollbackPlot() throws Exception{
-        //TODO implement
-        throw new RuntimeException("not yet implemented");
-        // getSqlConnection().rollback();
-        // getSqlConnection().setAutoCommit(true);
-        // getSqlConnection().close();
+        //nothing to do, the plot-creation order is never confirmed and does not need to be canceled
     }
 
 

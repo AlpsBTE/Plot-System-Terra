@@ -24,7 +24,7 @@ data-mode: API
 # If the data mode is set to API, the plugin will use the PlotSystem API to get the plot data
 # Documentation for the PlotSystem API: https://github.com/BuildTheEarth/PlotSystemAPI
 api:
-  api-url: psapi.buildtheearth.net
+  api-url: nwapi.buildtheearth.net
   port: 8080
   api-key: ffffffff-ffff-ffff-ffff-ffffffffffff
 

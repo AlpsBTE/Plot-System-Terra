@@ -29,17 +29,13 @@ public class DatabaseConnection implements Connection{
 
     private static int connectionClosed, connectionOpened;
 
-    public DatabaseConnection() throws ClassNotFoundException {
+    public DatabaseConnection(String dbURL, String dbName, String username, String password) throws ClassNotFoundException {
         
         Class.forName("org.mariadb.jdbc.Driver");
 
-        FileConfiguration configFile = PlotSystemTerra.getPlugin().getConfig();
-        String URL = configFile.getString(ConfigPaths.DATABASE_URL);
-        String name = configFile.getString(ConfigPaths.DATABASE_NAME);
-        String username = configFile.getString(ConfigPaths.DATABASE_USERNAME);
-        String password = configFile.getString(ConfigPaths.DATABASE_PASSWORD);
 
-        config.setJdbcUrl(URL + name);
+
+        config.setJdbcUrl(dbURL + dbName);
         config.setUsername(username);
         config.setPassword(password);
         config.addDataSourceProperty("cachePrepStmts", "true");
