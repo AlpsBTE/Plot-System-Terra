@@ -16,14 +16,12 @@ import com.alpsbte.plotsystemterra.core.plotsystem.Server;
 import com.sk89q.worldedit.Vector;
 
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import java.io.File;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertIterableEquals;
-import static org.hamcrest.MatcherAssert.assertThat; 
 import static org.hamcrest.Matchers.*;
 
 public class TestConnections {
@@ -36,8 +34,8 @@ public class TestConnections {
         String dbName = config.getString(ConfigPaths.DATABASE_NAME);
         String dbUusername = config.getString(ConfigPaths.DATABASE_USERNAME);
         String dbPassword = config.getString(ConfigPaths.DATABASE_PASSWORD);
-
-        return new DatabaseConnection(dbURL, dbName, dbUusername, dbPassword);
+        String teamApiKey = config.getString(ConfigPaths.API_KEY);
+        return new DatabaseConnection(dbURL, dbName, dbUusername, dbPassword, teamApiKey);
     }
 
     private NetworkAPIConnection createAPIconnection() throws Exception{
@@ -203,8 +201,10 @@ public class TestConnections {
         assertEquals(true, resultDB);
         assertEquals(true, resultAPI);
         assertEquals(citiesDB.size(), citiesAPI.size());
-        assertThat(citiesDB, containsInAnyOrder(citiesAPI));
-
+        //assertThat(citiesDB, containsInAnyOrder(citiesAPI));
+        for (CityProject cityDB : citiesDB){
+            assertThat(citiesAPI, hasItem(samePropertyValuesAs(cityDB)));
+        }
     }
 
     
@@ -223,8 +223,10 @@ public class TestConnections {
 
         List<Plot> plotsDB = db.getCompletedAndUnpastedPlots() ;
         List<Plot> plotsAPI = api.getCompletedAndUnpastedPlots() ;
-
-        assertThat(plotsDB, containsInAnyOrder(plotsAPI));
+        assertEquals(plotsDB.size(), plotsAPI.size());
+        for (Plot plotDB : plotsDB){
+            assertThat(plotsAPI, hasItem(samePropertyValuesAs(plotDB)));
+        }
     }
 
     @Test

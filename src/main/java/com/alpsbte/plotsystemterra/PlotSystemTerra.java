@@ -93,8 +93,9 @@ public class PlotSystemTerra extends JavaPlugin {
                 String name = configFile.getString(ConfigPaths.DATABASE_NAME);
                 String username = configFile.getString(ConfigPaths.DATABASE_USERNAME);
                 String password = configFile.getString(ConfigPaths.DATABASE_PASSWORD);
-
-                connection = new DatabaseConnection(URL, name, username, password);// DatabaseConnection.InitializeDatabase();
+                String teamApiKey = configFile.getString(ConfigPaths.API_KEY);
+                
+                connection = new DatabaseConnection(URL, name, username, password, teamApiKey);// DatabaseConnection.InitializeDatabase();
                 Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully initialized database connection.");
             }else{
                 String teamApiKey = configFile.getString(ConfigPaths.API_KEY);

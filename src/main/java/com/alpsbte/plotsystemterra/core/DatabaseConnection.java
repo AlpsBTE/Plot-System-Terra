@@ -12,7 +12,6 @@ import com.sk89q.worldedit.Vector;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.bukkit.Bukkit;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
 import java.sql.*;
@@ -28,9 +27,11 @@ public class DatabaseConnection implements Connection{
     private static HikariDataSource dataSource;
 
     private static int connectionClosed, connectionOpened;
+    private String teamAPIKey;
 
-    public DatabaseConnection(String dbURL, String dbName, String username, String password) throws ClassNotFoundException {
-        
+    public DatabaseConnection(String dbURL, String dbName, String username, String password, String teamAPIKey) throws ClassNotFoundException {
+        this.teamAPIKey = teamAPIKey;
+
         Class.forName("org.mariadb.jdbc.Driver");
 
 
@@ -218,10 +219,19 @@ public class DatabaseConnection implements Connection{
 
     @Override
     public boolean getAllCityProjects(List<CityProject> resultList) {
+        //FIXME limit query to cities from the current buildteam
 
-        try (ResultSet rs = createStatement("SELECT id FROM plotsystem_city_projects").executeQuery()) {
+        //try (ResultSet rs = createStatement("SELECT id FROM plotsystem_city_projects").executeQuery()) {
+        try (ResultSet rs = createStatement(
+            "SELECT cities.id as city_id " + //
+                "FROM plotsystem_city_projects cities " + //
+                "INNER JOIN plotsystem_buildteam_has_countries team_countries ON team_countries.country_id = cities.country_id " + //
+                "INNER JOIN plotsystem_buildteams teams ON teams.id = team_countries.buildteam_id " + //
+                "INNER JOIN plotsystem_api_keys apikeys ON apikeys.id = teams.api_key_id " + //
+                "WHERE apikeys.api_key = ?").setValue(this.teamAPIKey).executeQuery()) {
+        
             while (rs.next()) {
-                int cityID = rs.getInt(1);
+                int cityID = rs.getInt("city_id");
                 //CityProject city = new CityProject(rs.getInt(1));
                 resultList.add(getCityProject(cityID));
             }
@@ -229,6 +239,8 @@ public class DatabaseConnection implements Connection{
             closeResultSet(rs);
 
         } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+            ex.printStackTrace();
             return false;
         }
 
