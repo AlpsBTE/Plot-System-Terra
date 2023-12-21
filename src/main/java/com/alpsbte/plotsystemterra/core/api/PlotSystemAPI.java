@@ -52,19 +52,16 @@ public class PlotSystemAPI {
     private static String GET_PS_CITIES_URL = "/api/plotsystem/teams/%API_KEY%/cities";
     private static String GET_PS_COUNTRIES_URL = "/api/plotsystem/teams/%API_KEY%/countries";
     private static String GET_PS_SERVERS_URL = "/api/plotsystem/teams/%API_KEY%/countries";
-    private static String GET_PS_PlOTS_URL = "/api/plotsystem/teams/%API_KEY%/plots";
+    private static String PS_PlOTS_URL = "/api/plotsystem/teams/%API_KEY%/plots";//for GET, PUT, CREATE and POST
     private static String GET_PS_FTP_URL = "/api/plotsystem/teams/%API_KEY%/ftp";
-    private static String POST_PS_CREATE_PLOT_ORDER_URL = "/api/plotsystem/teams/%API_KEY%/plots";
-    private static String GET_PS_CONFIRM_PLOT_ORDER_URL = "/api/plotsystem/teams/%API_KEY%/orders/%ORDER_ID%/confirm";
 
-    private static String PUT_PS_UPDATE_PLOT_URL = "/api/plotsystem/teams/%API_KEY%/plots";
 
     public PlotSystemAPI(String host, int port){
         this.host = host;
         this.port = port;
     }
     
-    private enum RequestMethod{GET, PUT, POST}
+    private enum RequestMethod{GET, PUT, POST, DELETE}
 
     private String makeHttpRequest(RequestMethod method, String endpoint, String jsonBody) throws Exception{
         String apiUrl = host + endpoint;
@@ -84,10 +81,13 @@ public class PlotSystemAPI {
                 request = b.GET().build();                
                 break;
             case PUT:
-                request = b.PUT(body).build();
+                request = b.PUT(body).build();//identifier needs to be in endpoint as url parameter
                 break;
             case POST:
                 request = b.POST(body).build();
+                break;
+            case DELETE:
+                request = b.DELETE().build(); //identifier needs to be in endpoint as url parameter
                 break;
         }
        
@@ -113,6 +113,9 @@ public class PlotSystemAPI {
     }
     private String httpPOST(String endpoint, String jsonBodyString) throws Exception{
         return makeHttpRequest(RequestMethod.POST, endpoint, jsonBodyString);
+    }
+    private String httpDELETE(String endpoint) throws Exception{
+        return makeHttpRequest(RequestMethod.DELETE, endpoint, null);
     }
 
 
@@ -244,7 +247,7 @@ public class PlotSystemAPI {
 
     public List<Plot> getPSTeamPlots(String teamApiKey) throws Exception {
         List<Plot> plots = new ArrayList<>();
-        String jsonResponse = httpGET(GET_PS_PlOTS_URL.replace("%API_KEY%", teamApiKey));
+        String jsonResponse = httpGET(PS_PlOTS_URL.replace("%API_KEY%", teamApiKey));
 
 
 /** array of objects
@@ -372,31 +375,18 @@ public class PlotSystemAPI {
     }
     public void updatePSPlot(int plotID, List<String> changeList, String teamApiKey) throws Exception{
         //Request body is an array with a single element, usind identifier and any parameters to change
-        String requestBody = "[\n\t{\n\t\t\"id\": "+plotID+",\n\t\t"
+        String requestBody = "[\n\t{\n"
                     + String.join(",\n\t\t", changeList ) +"\n\t}\n]";
-        // System.out.println("PUT " +PUT_PS_UPDATE_PLOT_URL.replace("%API_KEY%", teamApiKey));
+        // System.out.println("PUT " +PUT_PS_UPDATE_PLOT_URL.replace("%API_KEY%", teamApiKey) + "?plot_id="+plotID);
         // System.out.println("Body:\n" + requestBody);
-        httpPUT(PUT_PS_UPDATE_PLOT_URL.replace("%API_KEY%", teamApiKey), requestBody);
+        httpPUT(PS_PlOTS_URL.replace("%API_KEY%", teamApiKey) + "?plot_id="+plotID, requestBody);
 
 
         //System.out.println(jsonResponse);
     }
 
-    public class PlotCreateResult{
-        public PlotCreateResult(int plotID){
-            this.plotID = plotID;
-            this.transactionID = null;
-        }
-        public PlotCreateResult(int plotID, String transactionID)
-        {
-            this.plotID = plotID;
-            this.transactionID = transactionID;
-        }
-        public int plotID;
-        public String transactionID; //only used for creation with "asOrder = true" / transaction
-    }
 
-    public PlotCreateResult createPSPlot(boolean asTransaction, int cityProjectID, int difficultyID, Vector plotCoords, String polyOutline, double plotVersion, String teamApiKey) throws Exception{
+    public int createPSPlot(int cityProjectID, int difficultyID, Vector plotCoords, String polyOutline, double plotVersion, String teamApiKey) throws Exception{
         String vectorString = plotCoords.toString();
         vectorString = vectorString.substring(1,vectorString.length()-1); //remove brackets
         String requestBody = "[\n\t{\n"
@@ -405,39 +395,25 @@ public class PlotSystemAPI {
             +"\t\t\"mc_coordinates\": \""+vectorString+"\",\n"
             +"\t\t\"outline\": \""+polyOutline+"\",\n"
             +"\t\t\"version\": "+plotVersion+",\n"
-            +"\t\t\"is_order\": "+ (asTransaction ? "true" : "false")+"\n"            
+            +"\t\t\"is_order\": false\n"            
             +"\n\t}\n]";
-        System.out.println("POST " +PUT_PS_UPDATE_PLOT_URL.replace("%API_KEY%", teamApiKey));
-        System.out.println("Body:\n" + requestBody);
-        String jsonResponse = httpPOST(POST_PS_CREATE_PLOT_ORDER_URL.replace("%API_KEY%", teamApiKey), requestBody);
+        //System.out.println("POST " +PS_PlOTS_URL.replace("%API_KEY%", teamApiKey));
+        //System.out.println("Body:\n" + requestBody);
+        String jsonResponse = httpPOST(PS_PlOTS_URL.replace("%API_KEY%", teamApiKey), requestBody);
 
         //get plot id from json-response
 
         JsonObject jsonObject = new JsonParser().parse(jsonResponse).getAsJsonObject();
         int plotID = jsonObject.get("plot_id").getAsInt();
-        if (asTransaction){
-            String transactionID = jsonObject.get("order_id").getAsString();
-            return new PlotCreateResult(plotID, transactionID);
-        } else {
-            return new PlotCreateResult(plotID);
-        }
-        //is_order = false:
-        // {
-        //     "plot_id": "55",
-        //     "success": true
-        // }
-        //is_order = true
-        // {
-        //     "order_id": "<uuid>ba1dffb7-0764-4bb6-b7ad-5a67e674d3bb",
-        //     "success": true
-        // }        
+        return plotID;     
     }
-    public void confirmTransaction(String currentTransactionID, String teamApiKey) throws Exception {
-        httpGET(GET_PS_CONFIRM_PLOT_ORDER_URL
-            .replace("%API_KEY%", teamApiKey)
-            .replace("%ORDER_ID%", currentTransactionID));
+
+    public void deletePSPlot(int plotID, String teamApiKey) throws Exception {
+        //System.out.println("DELETE " +PS_PlOTS_URL.replace("%API_KEY%", teamApiKey));
+        httpDELETE(PS_PlOTS_URL.replace("%API_KEY%", teamApiKey) + "?plot_id="+plotID);
 
     }
+
     
 
 }

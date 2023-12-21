@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import com.alpsbte.plotsystemterra.core.DatabaseConnection;
 import com.alpsbte.plotsystemterra.core.NetworkAPIConnection;
 import com.alpsbte.plotsystemterra.core.api.PlotSystemAPI;
-import com.alpsbte.plotsystemterra.core.api.PlotSystemAPI.PlotCreateResult;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.alpsbte.plotsystemterra.core.plotsystem.CityProject;
 import com.alpsbte.plotsystemterra.core.plotsystem.Country;
@@ -166,16 +165,13 @@ public class TestConnections {
         //Test PlostSystemAPI class 
         PlotSystemAPI api = new PlotSystemAPI(apiHost,8080);
             
-        //TEST plot direct creation
-        api.createPSPlot(false, 1,1,
+        //plot direct creation, returns plotID for potential undo/delete
+        int plotID = api.createPSPlot(1,1,
             new Vector(1.1,2.2,3.3),"4078352.0,-4550687.0|4078371.0,-4550675.0|4078370.0,-4550669.0", 
             3, team_apikey );
 
-        //Plot creation with order
-        PlotCreateResult createResult = api.createPSPlot(true, 1,1,
-            new Vector(6.6,2.2,3.3),"4078352.0,-4550687.0|4078371.0,-4550675.0|4078370.0,-4550669.0",
-            3, team_apikey );
-        api.confirmTransaction(createResult.transactionID, team_apikey);
+
+        api.deletePSPlot(plotID, team_apikey);
     }
 
     @Test

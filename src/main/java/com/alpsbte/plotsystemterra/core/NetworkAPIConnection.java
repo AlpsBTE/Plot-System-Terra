@@ -2,7 +2,6 @@ package com.alpsbte.plotsystemterra.core;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.api.PlotSystemAPI;
-import com.alpsbte.plotsystemterra.core.api.PlotSystemAPI.PlotCreateResult;
 import com.alpsbte.plotsystemterra.core.plotsystem.CityProject;
 import com.alpsbte.plotsystemterra.core.plotsystem.Country;
 import com.alpsbte.plotsystemterra.core.plotsystem.FTPConfiguration;
@@ -26,7 +25,7 @@ public class NetworkAPIConnection implements Connection{
     // private String host;
     // private int port;
     private PlotSystemAPI api;
-    private String currentTransactionID;
+    private int currentTransactionPlotID;
 
     public NetworkAPIConnection(String host, int port, String teamApiKey) {    
         // this.host = host;
@@ -61,9 +60,8 @@ public class NetworkAPIConnection implements Connection{
     
     @Override
     public int prepareCreatePlot(CityProject cityProject, int difficultyID, Vector plotCoords, String polyOutline, Player player, double plotVersion) throws Exception{
-        PlotCreateResult newPlot = api.createPSPlot(true, cityProject.id, difficultyID, plotCoords, polyOutline, plotVersion, teamApiKey);
-        this.currentTransactionID = newPlot.transactionID;
-        return newPlot.plotID;       
+        currentTransactionPlotID = api.createPSPlot(cityProject.id, difficultyID, plotCoords, polyOutline, plotVersion, teamApiKey);
+        return currentTransactionPlotID;       
     }
 
 
@@ -71,13 +69,14 @@ public class NetworkAPIConnection implements Connection{
 
     @Override
     public void commitPlot() throws Exception{
-        //confirm transaction/order with order-id
-        api.confirmTransaction(this.currentTransactionID, teamApiKey);
+        //nothing to do, plot was already created
+
     }
 
     @Override
     public void rollbackPlot() throws Exception{
-        //nothing to do, the plot-creation order is never confirmed and does not need to be canceled
+        //undo plot creation
+        api.deletePSPlot(this.currentTransactionPlotID, teamApiKey);
     }
 
 
