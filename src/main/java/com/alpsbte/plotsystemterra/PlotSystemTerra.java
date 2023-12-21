@@ -3,16 +3,18 @@ package com.alpsbte.plotsystemterra;
 import com.alpsbte.plotsystemterra.commands.CMD_CreatePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PastePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PlotSystemTerra;
-import com.alpsbte.plotsystemterra.core.Connection;
-import com.alpsbte.plotsystemterra.core.DatabaseConnection;
-import com.alpsbte.plotsystemterra.core.EventListener;
-import com.alpsbte.plotsystemterra.core.NetworkAPIConnection;
-import com.alpsbte.plotsystemterra.core.config.ConfigManager;
-import com.alpsbte.plotsystemterra.core.config.ConfigNotImplementedException;
-import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
-import com.alpsbte.plotsystemterra.core.config.DataMode;
-import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
-import com.alpsbte.plotsystemterra.utils.Updater;
+import com.alpsbte.alpslib.libpsterra.core.Connection;
+import com.alpsbte.alpslib.libpsterra.core.DatabaseConnection;
+import com.alpsbte.alpslib.libpsterra.core.EventListener;
+import com.alpsbte.alpslib.libpsterra.core.NetworkAPIConnection;
+import com.alpsbte.alpslib.libpsterra.core.config.ConfigManager;
+import com.alpsbte.alpslib.libpsterra.core.config.ConfigNotImplementedException;
+import com.alpsbte.alpslib.libpsterra.core.config.ConfigPaths;
+import com.alpsbte.alpslib.libpsterra.core.config.DataMode;
+import com.alpsbte.alpslib.libpsterra.core.plotsystem.PlotCreator;
+import com.alpsbte.alpslib.libpsterra.core.plotsystem.PlotPaster;
+import com.alpsbte.alpslib.libpsterra.utils.IUpdateReceiver;
+import com.alpsbte.alpslib.libpsterra.utils.Updater;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import org.bukkit.Bukkit;
@@ -29,7 +31,7 @@ import java.util.Scanner;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
-public class PlotSystemTerra extends JavaPlugin {
+public class PlotSystemTerra extends JavaPlugin implements IUpdateReceiver{
 
     public static int SPIGOT_PROJECT_ID = 105323;
 
@@ -44,6 +46,8 @@ public class PlotSystemTerra extends JavaPlugin {
     public Updater updater;
 
     private Connection connection;
+
+    private PlotCreator plotCreator;
 
     @Override
     public void onEnable() {
@@ -71,7 +75,7 @@ public class PlotSystemTerra extends JavaPlugin {
 
         // Load config, if it throws an exception disable plugin
         try {
-            configManager = new ConfigManager();
+            configManager = new ConfigManager(this);
             Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully loaded configuration file.");
         } catch (ConfigNotImplementedException ex) {
             Bukkit.getConsoleSender().sendMessage(errorPrefix + "Could not load configuration file.");
@@ -152,9 +156,10 @@ public class PlotSystemTerra extends JavaPlugin {
         String result = startUpdateChecker();
         Bukkit.getConsoleSender().sendMessage(ChatColor.GOLD + "Update-Checker: " + result);
 
+        this.plotCreator = new PlotCreator(this, connection);
 
         // Start checking for plots to paste
-        plotPaster = new PlotPaster();
+        plotPaster = new PlotPaster(this, connection);
         plotPaster.start();
 
         pluginEnabled = true;
@@ -205,7 +210,7 @@ public class PlotSystemTerra extends JavaPlugin {
     }
 
     public String checkForUpdates(){
-        updater = new Updater(this, SPIGOT_PROJECT_ID, this.getFile(), Updater.UpdateType.CHECK_DOWNLOAD, false);
+        updater = new Updater(this, SPIGOT_PROJECT_ID, this.getFile(), Updater.UpdateType.CHECK_DOWNLOAD, false, this);
         Updater.Result result = updater.getResult();
 
         String resultMessage = "";
@@ -221,6 +226,7 @@ public class PlotSystemTerra extends JavaPlugin {
         return resultMessage;
     }
 
+    @Override
     public void setUpdateInstalled(String newVersion) {
         this.newVersion = newVersion;
 
@@ -246,6 +252,9 @@ public class PlotSystemTerra extends JavaPlugin {
         return plotPaster;
     }
 
+    public PlotCreator getPlotCreator() {
+        return plotCreator;
+    }
     public static class DependencyManager {
 
         // List with all missing dependencies

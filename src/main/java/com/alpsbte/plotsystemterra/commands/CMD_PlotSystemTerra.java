@@ -1,7 +1,7 @@
 package com.alpsbte.plotsystemterra.commands;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
-import com.alpsbte.plotsystemterra.utils.ChatUtil;
+import com.alpsbte.alpslib.libpsterra.utils.ChatUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
