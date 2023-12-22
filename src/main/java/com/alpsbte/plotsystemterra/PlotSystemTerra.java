@@ -1,7 +1,7 @@
 package com.alpsbte.plotsystemterra;
 
-import com.alpsbte.plotsystemterra.commands.CMD_CreatePlot;
-import com.alpsbte.plotsystemterra.commands.CMD_PastePlot;
+import com.alpsbte.alpslib.libpsterra.commands.CMD_CreatePlot;
+import com.alpsbte.alpslib.libpsterra.commands.CMD_PastePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PlotSystemTerra;
 import com.alpsbte.alpslib.libpsterra.core.Connection;
 import com.alpsbte.alpslib.libpsterra.core.DatabaseConnection;
@@ -135,21 +135,6 @@ public class PlotSystemTerra extends JavaPlugin implements IUpdateReceiver{
             this.getServer().getPluginManager().disablePlugin(this);
             return;
         }
-
-        // Register commands
-        try {
-            this.getCommand("createplot").setExecutor(new CMD_CreatePlot());
-            this.getCommand("pasteplot").setExecutor(new CMD_PastePlot());
-            this.getCommand("plotsystemterra").setExecutor(new CMD_PlotSystemTerra());
-            Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully registered commands.");
-        } catch (Exception ex) {
-            Bukkit.getConsoleSender().sendMessage(errorPrefix + "Could not register commands.");
-            Bukkit.getLogger().log(Level.SEVERE, ex.getMessage(), ex);
-
-            this.getServer().getPluginManager().disablePlugin(this);
-            return;
-        }
-
         // Check for updates
         Bukkit.getConsoleSender().sendMessage(" ");
 
@@ -161,6 +146,22 @@ public class PlotSystemTerra extends JavaPlugin implements IUpdateReceiver{
         // Start checking for plots to paste
         plotPaster = new PlotPaster(this, connection);
         plotPaster.start();
+
+        // Register commands
+        try {
+            this.getCommand("createplot").setExecutor(new CMD_CreatePlot(plotCreator, connection, getConfig()));
+            this.getCommand("pasteplot").setExecutor(new CMD_PastePlot(plotPaster, connection, getConfig()));
+            this.getCommand("plotsystemterra").setExecutor(new CMD_PlotSystemTerra());
+            Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully registered commands.");
+        } catch (Exception ex) {
+            Bukkit.getConsoleSender().sendMessage(errorPrefix + "Could not register commands.");
+            Bukkit.getLogger().log(Level.SEVERE, ex.getMessage(), ex);
+
+            this.getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
+
 
         pluginEnabled = true;
         Bukkit.getConsoleSender().sendMessage(" ");
