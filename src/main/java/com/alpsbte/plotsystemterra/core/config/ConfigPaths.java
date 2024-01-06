@@ -19,7 +19,7 @@ public abstract class ConfigPaths {
     // Database
     private static final String DATABASE = "database.";
     public static final String DATABASE_URL = DATABASE + "db-url";
-    public static final String DATABASE_NAME = DATABASE + "dbname";
+    public static final String DATABASE_NAME = DATABASE + "db-name";
     public static final String DATABASE_USERNAME = DATABASE + "username";
     public static final String DATABASE_PASSWORD = DATABASE + "password";
 
@@ -38,11 +38,7 @@ public abstract class ConfigPaths {
 
 
     // FORMATTING
-    public static final String MESSAGE_PREFIX = "message-prefix";
-    public static final String MESSAGE_INFO_COLOUR = "info-colour";
-    public static final String MESSAGE_ERROR_COLOUR = "error-colour";
-
-
-    // CONFIG VERSION
-    public static final String CONFIG_VERSION = "config-version";
+    public static final String CHAT_FORMAT = "chat-format.";
+    public static final String CHAT_FORMAT_INFO_PREFIX = CHAT_FORMAT + "info-prefix";
+    public static final String CHAT_FORMAT_ALERT_PREFIX = CHAT_FORMAT + "alert-prefix";
 }

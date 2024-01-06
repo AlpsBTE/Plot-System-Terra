@@ -1,9 +1,8 @@
+name: Plot-System-Terra
+version: '3.0'
 main: com.alpsbte.plotsystemterra.PlotSystemTerra
-version: 3.0
-api-version: 1.12.2
-name: PlotSystem-Terra
-author: R3tuxn, Coppertine
-softdepend: [WorldEdit, HeadDatabase]
+api-version: '1.20'
+softdepend: [FastAsyncWorldEdit, WorldGuard, HeadDatabase]
 
 commands:
   createplot:

@@ -1,15 +1,20 @@
 package com.alpsbte.plotsystemterra.core.plotsystem;
 
+import com.alpsbte.alpslib.utils.head.AlpsHeadUtils;
+import com.alpsbte.alpslib.utils.item.ItemBuilder;
+import com.alpsbte.alpslib.utils.item.LoreBuilder;
 import com.alpsbte.plotsystemterra.core.DatabaseConnection;
-import com.alpsbte.plotsystemterra.utils.ItemBuilder;
-import com.alpsbte.plotsystemterra.utils.LoreBuilder;
-import com.alpsbte.plotsystemterra.utils.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.logging.Level;
+
+import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.format.NamedTextColor.AQUA;
+import static net.kyori.adventure.text.format.NamedTextColor.GRAY;
+import static net.kyori.adventure.text.format.TextDecoration.BOLD;
 
 public class CityProject {
 
@@ -100,10 +105,10 @@ public class CityProject {
     }
 
     public ItemStack getItem() {
-        return new ItemBuilder(Utils.getItemHead(headID))
-                .setName("§b§l" + name)
+        return new ItemBuilder(AlpsHeadUtils.getCustomHead(headID))
+                .setName(text(name, AQUA, BOLD))
                 .setLore(new LoreBuilder()
-                        .addLine("§bID: §7" + getID())
+                        .addLine(text("ID: ", AQUA).append(text(getID(), GRAY)))
                         .build())
                 .build();
     }

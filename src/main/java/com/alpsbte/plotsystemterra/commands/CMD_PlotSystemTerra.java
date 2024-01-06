@@ -1,16 +1,14 @@
 package com.alpsbte.plotsystemterra.commands;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
-import com.alpsbte.plotsystemterra.core.api.PlotSystemAPI;
 import com.alpsbte.plotsystemterra.utils.ChatUtil;
-import com.alpsbte.plotsystemterra.utils.Updater;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.List;
-import java.util.UUID;
+import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.format.NamedTextColor.RED;
 
 public class CMD_PlotSystemTerra implements CommandExecutor {
     @Override
@@ -25,17 +23,14 @@ public class CMD_PlotSystemTerra implements CommandExecutor {
 
         Player p = (Player) sender;
 
-        p.sendMessage("§cUsage: /plotsystemterra");
+        p.sendMessage(text("Usage: /plotsystemterra", RED));
         return true;
     }
 
     public static void sendPluginInfo(CommandSender sender){
-        ChatUtil.sendMessageBox(sender, "Plot System Terra Plugin", new Runnable() {
-            @Override
-            public void run() {
-                sender.sendMessage("§eCurrent Version: §7" + PlotSystemTerra.getPlugin().getDescription().getVersion());
-                sender.sendMessage("§eLatest Version: §7" + PlotSystemTerra.getPlugin().updater.getVersion());
-            }
+        ChatUtil.sendMessageBox(sender, "Plot System Terra Plugin", () -> {
+            sender.sendMessage("§eCurrent Version: §7" + PlotSystemTerra.getPlugin().getDescription().getVersion());
+            sender.sendMessage("§eLatest Version: §7" + PlotSystemTerra.getPlugin().updater.getVersion());
         });
     }
 }

@@ -4,13 +4,18 @@ import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.DatabaseConnection;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.alpsbte.plotsystemterra.utils.FTPManager;
+import com.fastasyncworldedit.core.FaweAPI;
 import com.sk89q.worldedit.*;
-import com.sk89q.worldedit.bukkit.BukkitWorld;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
-import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
+import com.sk89q.worldedit.function.mask.BlockTypeMask;
+import com.sk89q.worldedit.function.mask.Mask;
 import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldedit.session.ClipboardHolder;
+import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -65,10 +70,10 @@ public class PlotPaster extends Thread {
                                     if (name.equals(serverName)) {
                                         String[] splitCoordinates = rs.getString(3).split(",");
 
-                                        Vector mcCoordinates = Vector.toBlockPoint(
-                                                Float.parseFloat(splitCoordinates[0]),
-                                                Float.parseFloat(splitCoordinates[1]),
-                                                Float.parseFloat(splitCoordinates[2])
+                                        BlockVector3 mcCoordinates = Vector3.toBlockPoint(
+                                                Double.parseDouble(splitCoordinates[0]),
+                                                Double.parseDouble(splitCoordinates[1]),
+                                                Double.parseDouble(splitCoordinates[2])
                                         );
 
                                         double version = rs.getDouble(4);
@@ -100,9 +105,11 @@ public class PlotPaster extends Thread {
         }, 0L, 20L * pasteInterval);
     }
 
-    public static void pastePlotSchematic(int plotID, CityProject city, World world, Vector mcCoordinates, double plotVersion, boolean fastMode) throws IOException, WorldEditException, SQLException, URISyntaxException {
-        File outlineSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), String.valueOf(city.getID()), plotID + ".schematic").toFile();
-        File completedSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), "finishedSchematics", String.valueOf(city.getID()), plotID + ".schematic").toFile();
+    public static void pastePlotSchematic(int plotID, CityProject city, World world, BlockVector3 mcCoordinates, double plotVersion, boolean fastMode) throws IOException, WorldEditException, SQLException, URISyntaxException {
+        File outlineSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), String.valueOf(city.getID()), plotID + ".schem").toFile();
+        if (!outlineSchematic.exists()) outlineSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), String.valueOf(city.getID()), plotID + ".schematic").toFile();
+        File completedSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), "finishedSchematics", String.valueOf(city.getID()), plotID + ".schem").toFile();
+        if (!completedSchematic.exists()) completedSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), "finishedSchematics", String.valueOf(city.getID()), plotID + ".schematic").toFile();
 
         // Download from SFTP or FTP server if enabled
         FTPConfiguration ftpConfiguration = city.getFTPConfiguration();
@@ -112,27 +119,27 @@ public class PlotPaster extends Thread {
         }
 
         if (outlineSchematic.exists() && completedSchematic.exists()) {
-            com.sk89q.worldedit.world.World weWorld = new BukkitWorld(world);
-            EditSession editSession = WorldEdit.getInstance().getEditSessionFactory().getEditSession(weWorld, -1);
-            if (fastMode) editSession.setFastMode(true);
-            editSession.enableQueue();
+            try (EditSession editSession = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(world))) {
+                BlockVector3 toPaste;
+                if (plotVersion >= 3) {
+                    BlockVector3 plotOriginOutline = FaweAPI.load(outlineSchematic).getOrigin();
+                    toPaste = BlockVector3.at(plotOriginOutline.getX(), plotOriginOutline.getY(), plotOriginOutline.getZ());
+                } else toPaste = mcCoordinates;
 
-            Clipboard outlineClipboard = ClipboardFormat.SCHEMATIC.getReader(Files.newInputStream(outlineSchematic.toPath())).read(weWorld.getWorldData());
-            Clipboard completedClipboard = ClipboardFormat.SCHEMATIC.getReader(Files.newInputStream(completedSchematic.toPath())).read(weWorld.getWorldData());
+                Mask airMask = new BlockTypeMask(BukkitAdapter.adapt(world), BlockTypes.AIR);
+                editSession.setMask(airMask);
+                if (fastMode) editSession.setFastMode(true);
+                Clipboard completedClipboard = FaweAPI.load(completedSchematic);
 
-            Vector toPaste;
-            if (plotVersion >= 3) {
-                Vector plotOriginOutline = outlineClipboard.getOrigin();
-                toPaste = new Vector(plotOriginOutline.getX(), plotOriginOutline.getY(), plotOriginOutline.getZ());
-            } else toPaste = mcCoordinates;
+                Operation clipboardHolder = new ClipboardHolder(completedClipboard)
+                        .createPaste(editSession)
+                        .to(toPaste)
+                        .build();
+                Operations.complete(clipboardHolder);
 
-            Operation operation = new ClipboardHolder(completedClipboard, weWorld.getWorldData()).createPaste(editSession, weWorld.getWorldData())
-                    .to(toPaste).ignoreAirBlocks(true).build();
-            Operations.complete(operation);
-            editSession.flushQueue();
-
-            DatabaseConnection.createStatement("UPDATE plotsystem_plots SET pasted = '1' WHERE id = ?")
-                    .setValue(plotID).executeUpdate();
+                DatabaseConnection.createStatement("UPDATE plotsystem_plots SET pasted = '1' WHERE id = ?")
+                        .setValue(plotID).executeUpdate();
+            }
         } else {
             Bukkit.getLogger().log(Level.WARNING, "Could not find schematic file(s) of plot #" + plotID + "!");
         }

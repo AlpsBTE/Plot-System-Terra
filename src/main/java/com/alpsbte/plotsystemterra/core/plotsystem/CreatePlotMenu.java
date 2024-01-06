@@ -1,8 +1,9 @@
 package com.alpsbte.plotsystemterra.core.plotsystem;
 
+import com.alpsbte.alpslib.utils.item.ItemBuilder;
+import com.alpsbte.alpslib.utils.item.LoreBuilder;
 import com.alpsbte.plotsystemterra.core.DatabaseConnection;
-import com.alpsbte.plotsystemterra.utils.ItemBuilder;
-import com.alpsbte.plotsystemterra.utils.LoreBuilder;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -17,6 +18,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static net.kyori.adventure.text.Component.empty;
+import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.format.NamedTextColor.*;
+import static net.kyori.adventure.text.format.TextDecoration.BOLD;
 
 public class CreatePlotMenu {
     private final Menu createPlotMenu = ChestMenu.builder(6).title("Create Plot").redraw(true).build();
@@ -34,7 +40,7 @@ public class CreatePlotMenu {
 
     public Menu getCityProjectUI() {
         Mask mask = BinaryMask.builder(createPlotMenu)
-                .item(new ItemBuilder(Material.STAINED_GLASS_PANE, 1, (byte)7).setName(" ").build())
+                .item(new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE, 1).setName(Component.empty()).build())
                 .pattern("111101111") // First row
                 .pattern("000000000") // Second row
                 .pattern("000000000") // Third row
@@ -60,8 +66,8 @@ public class CreatePlotMenu {
         }
 
         createPlotMenu.getSlot(48).setItem(
-                new ItemBuilder(Material.WOOL, 1, (byte) 13)
-                        .setName("§a§lContinue")
+                new ItemBuilder(Material.GREEN_WOOL, 1)
+                        .setName(text("Continue", GREEN, BOLD))
                         .build());
         createPlotMenu.getSlot(48).setClickHandler((clickPlayer, clickInformation) -> {
             clickPlayer.closeInventory();
@@ -69,8 +75,8 @@ public class CreatePlotMenu {
         });
 
         createPlotMenu.getSlot(50).setItem(
-                new ItemBuilder(Material.WOOL, 1, (byte) 14)
-                        .setName("§c§lCancel")
+                new ItemBuilder(Material.RED_WOOL, 1)
+                        .setName(text("Cancel", GREEN, BOLD))
                         .build());
         createPlotMenu.getSlot(50).setClickHandler((clickPlayer, clickInformation) -> {
             clickPlayer.closeInventory();
@@ -84,7 +90,7 @@ public class CreatePlotMenu {
 
         // Set glass border
         Mask mask = BinaryMask.builder(createPlotMenu)
-                .item(new ItemBuilder(Material.STAINED_GLASS_PANE, 1, (byte)7).setName(" ").build())
+                .item(new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE, 1).setName(empty()).build())
                 .pattern("111111111") // First row
                 .pattern("000000000") // Second row
                 .pattern("111111111") // Third row
@@ -92,8 +98,8 @@ public class CreatePlotMenu {
         mask.apply(difficultyMenu);
 
         difficultyMenu.getSlot(10).setItem(
-                new ItemBuilder(Material.WOOL, 1, (byte) 5)
-                        .setName("§a§lEasy")
+                new ItemBuilder(Material.LIME_WOOL, 1)
+                        .setName(text("Easy", GREEN, BOLD))
                         .build()
         );
         difficultyMenu.getSlot(10).setClickHandler((clickPlayer, clickInformation) -> {
@@ -102,8 +108,8 @@ public class CreatePlotMenu {
         });
 
         difficultyMenu.getSlot(13).setItem(
-                new ItemBuilder(Material.WOOL, 1, (byte) 1)
-                        .setName("§6§lMedium")
+                new ItemBuilder(Material.ORANGE_WOOL, 1)
+                        .setName(text("Medium", GOLD, BOLD))
                         .build()
         );
         difficultyMenu.getSlot(13).setClickHandler((clickPlayer, clickInformation) -> {
@@ -112,8 +118,8 @@ public class CreatePlotMenu {
         });
 
         difficultyMenu.getSlot(16).setItem(
-                new ItemBuilder(Material.WOOL, 1, (byte) 14)
-                        .setName("§c§lHard")
+                new ItemBuilder(Material.RED_WOOL, 1)
+                        .setName(text("Hard", RED, BOLD))
                         .build()
         );
         difficultyMenu.getSlot(16).setClickHandler((clickPlayer, clickInformation) -> {
@@ -140,7 +146,7 @@ public class CreatePlotMenu {
 
         } catch (SQLException ex) {
             createPlotMenu.getSlot(9 + counter).setItem(new ItemBuilder(Material.BARRIER)
-                .setName("§c§lError")
+                .setName(text("Error", RED, BOLD))
                 .setLore(new LoreBuilder()
                         .addLine("Could not load city project.")
                         .build())
@@ -152,12 +158,12 @@ public class CreatePlotMenu {
 
     private ItemStack getStats(Location coords) {
         return new ItemBuilder((selectedCityID == -1) ? new ItemStack(Material.NAME_TAG) : cityProjects.get(selectedCityID).getItem())
-                .setName("§6§lSTATS")
+                .setName(text("STATS", GOLD, BOLD))
                 .setLore(new LoreBuilder()
-                        .addLines("§bX: §7" + coords.getX(),
-                                  "§bY: §7" + coords.getY(),
-                                  "§bZ: §7" + coords.getZ(),
-                                  "§bCity: §7" + ((selectedCityID != -1) ? cityProjects.get(selectedCityID).getName() : "none"))
+                        .addLines(text("X: ", AQUA).append(text(coords.getX(), GRAY)),
+                                text("Y: ", AQUA).append(text(coords.getY(), GRAY)),
+                                text("Z: ", AQUA).append(text(coords.getZ(), GRAY)),
+                                text("City: ", AQUA).append(text(((selectedCityID != -1) ? cityProjects.get(selectedCityID).getName() : "none"), GRAY)))
                         .build())
                 .build();
     }

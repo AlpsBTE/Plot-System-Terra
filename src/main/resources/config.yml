@@ -32,7 +32,7 @@ api:
 # The database must be a MariaDB/MySQL database
 database:
   db-url: jdbc:mariadb://adress:3306/
-  dbname: plotsystem
+  db-name: plotsystem
   username: plotsystem
   password: minecraft
 
@@ -59,10 +59,6 @@ server-name: default
 # The world name of the terra server in which the schematic should be pasted
 world-name: world
 
-# Use fast mode for WorldEdit when pasting plots
-# Read more here: https://minecraft-worldedit.fandom.com/wiki///fast
-fast-mode: true
-
 # Interval in which completed plots that have not yet been placed are checked
 # [interval] -> in seconds; default: 300 seconds (every 5 minutes)
 pasting-interval: 300
@@ -72,12 +68,12 @@ broadcast-info: true
 
 
 # -----------------------------------------------------
-# | Formatting: Info/Error message outputs
+# | Formatting: Info / Alert message prefix format
 # -----------------------------------------------------
-message-prefix: §7§l>>
-info-colour: §a
-error-colour: §c
+chat-format:
+  info-prefix: '<dark_gray>[<gold>PS</gold>] » </dark_gray>'
+  alert-prefix: '<dark_gray>[<gold>PS</gold>] » </dark_gray>'
 
 
 # NOTE: Do not change
-config-version: 1.6
+config-version: 2.0

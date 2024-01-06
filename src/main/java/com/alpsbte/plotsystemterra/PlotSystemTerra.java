@@ -1,34 +1,30 @@
 package com.alpsbte.plotsystemterra;
 
+import com.alpsbte.alpslib.io.YamlFileFactory;
+import com.alpsbte.alpslib.io.config.ConfigNotImplementedException;
 import com.alpsbte.plotsystemterra.commands.CMD_CreatePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PastePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.DatabaseConnection;
-import com.alpsbte.plotsystemterra.core.EventListener;
-import com.alpsbte.plotsystemterra.core.config.ConfigManager;
-import com.alpsbte.plotsystemterra.core.config.ConfigNotImplementedException;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
+import com.alpsbte.plotsystemterra.core.config.ConfigUtil;
 import com.alpsbte.plotsystemterra.core.config.DataMode;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
 import com.alpsbte.plotsystemterra.utils.Updater;
+import com.alpsbte.plotsystemterra.utils.Utils;
 import com.sk89q.worldedit.WorldEdit;
-import com.sk89q.worldedit.bukkit.WorldEditPlugin;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.ipvp.canvas.MenuFunctionListener;
+import org.jetbrains.annotations.NotNull;
 
-import javax.xml.crypto.Data;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 
 public class PlotSystemTerra extends JavaPlugin {
@@ -36,20 +32,18 @@ public class PlotSystemTerra extends JavaPlugin {
     public static int SPIGOT_PROJECT_ID = 105323;
 
     private static PlotSystemTerra plugin;
-    private ConfigManager configManager;
     private PlotPaster plotPaster;
 
     private boolean pluginEnabled = false;
     public String version;
     public String newVersion;
-    public boolean updateInstalled = false;
     public Updater updater;
 
     @Override
     public void onEnable() {
         System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.NoOpLog"); // Disable Logging
         plugin = this;
-        version = getDescription().getVersion();
+        version = getPluginMeta().getVersion();
 
         String successPrefix = ChatColor.DARK_GRAY + "[" + ChatColor.DARK_GREEN + "✔" + ChatColor.DARK_GRAY + "] " + ChatColor.GRAY;
         String errorPrefix = ChatColor.DARK_GRAY + "[" + ChatColor.RED + "X" + ChatColor.DARK_GRAY + "] " + ChatColor.GRAY;
@@ -69,19 +63,17 @@ public class PlotSystemTerra extends JavaPlugin {
         }
         Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully loaded required dependencies.");
 
-        // Load config, if it throws an exception disable plugin
+        // Init Config
         try {
-            configManager = new ConfigManager();
-            Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully loaded configuration file.");
+            YamlFileFactory.registerPlugin(this);
+            ConfigUtil.init();
         } catch (ConfigNotImplementedException ex) {
-            Bukkit.getConsoleSender().sendMessage(errorPrefix + "Could not load configuration file.");
-            Bukkit.getConsoleSender().sendMessage(ChatColor.YELLOW + "The config file must be configured!");
-
+            Bukkit.getLogger().log(Level.WARNING, "Could not load configuration file.");
+            Bukkit.getConsoleSender().sendMessage(Component.text("The config file must be configured!", NamedTextColor.YELLOW));
             this.getServer().getPluginManager().disablePlugin(this);
             return;
         }
-
-        this.configManager.reloadConfigs();
+        reloadConfig();
 
         // Initialize database connection
         try {
@@ -89,7 +81,7 @@ public class PlotSystemTerra extends JavaPlugin {
 
             if(configFile.getString(ConfigPaths.DATA_MODE).equalsIgnoreCase(DataMode.DATABASE.toString())){
                 DatabaseConnection.InitializeDatabase();
-                Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully initialized database connection.");
+                Bukkit.getConsoleSender().sendPlainMessage(successPrefix + "Successfully initialized database connection.");
             }
 
 
@@ -104,7 +96,6 @@ public class PlotSystemTerra extends JavaPlugin {
 
         // Register event listeners
         try {
-            this.getServer().getPluginManager().registerEvents(new EventListener(), this);
             this.getServer().getPluginManager().registerEvents(new MenuFunctionListener(), this);
             Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully registered event listeners.");
         } catch (Exception ex) {
@@ -162,28 +153,25 @@ public class PlotSystemTerra extends JavaPlugin {
     }
 
     @Override
-    public FileConfiguration getConfig() {
-        return this.configManager.getConfig();
+    public @NotNull FileConfiguration getConfig() {
+        return ConfigUtil.getInstance().configs[0];
     }
 
     @Override
     public void reloadConfig() {
-        this.configManager.reloadConfigs();
+        ConfigUtil.getInstance().reloadFiles();
+        ConfigUtil.getInstance().saveFiles();
+        Utils.ChatUtils.setChatFormat(getConfig().getString(ConfigPaths.CHAT_FORMAT_INFO_PREFIX),
+                getConfig().getString(ConfigPaths.CHAT_FORMAT_ALERT_PREFIX));
     }
 
     @Override
     public void saveConfig() {
-        this.configManager.saveConfigs();
+        ConfigUtil.getInstance().saveFiles();
     }
 
     private String startUpdateChecker(){
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
-            @Override
-            public void run() {
-                checkForUpdates();
-            }
-        }, 20*60*60,20*60*60);
-
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(this, this::checkForUpdates, 20*60*60,20*60*60);
         return checkForUpdates();
     }
 
@@ -237,8 +225,12 @@ public class PlotSystemTerra extends JavaPlugin {
         private static boolean checkForRequiredDependencies() {
             PluginManager pluginManager = plugin.getServer().getPluginManager();
 
-            if (!pluginManager.isPluginEnabled("WorldEdit")) {
-                missingDependencies.add("WorldEdit (V6.1.9)");
+            if (!pluginManager.isPluginEnabled("FastAsyncWorldEdit")) {
+                missingDependencies.add("FastAsyncWorldEdit");
+            }
+
+            if (!pluginManager.isPluginEnabled("WorldGuard")) {
+                missingDependencies.add("WorldGuard");
             }
 
             if (!pluginManager.isPluginEnabled("HeadDatabase")) {
@@ -253,13 +245,6 @@ public class PlotSystemTerra extends JavaPlugin {
          */
         public static WorldEdit getWorldEdit() {
             return WorldEdit.getInstance();
-        }
-
-        /**
-         * @return World Edit Plugin
-         */
-        public static WorldEditPlugin getWorldEditPlugin() {
-            return (WorldEditPlugin) Bukkit.getServer().getPluginManager().getPlugin("WorldEdit");
         }
     }
 }
