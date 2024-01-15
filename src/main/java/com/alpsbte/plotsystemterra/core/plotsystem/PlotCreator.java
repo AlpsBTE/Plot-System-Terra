@@ -26,8 +26,6 @@ import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.Directional;
 import org.bukkit.block.sign.Side;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -156,15 +154,14 @@ public class PlotCreator {
                     Connection connection = null;
 
                     try {
+                        // Inform player about the plot creation
+                        player.sendMessage(Utils.ChatUtils.getInfoFormat(text("Creating plot...")));
+
                         // Check if selection contains sign
                         if (!containsSign(plotRegion, player.getWorld())) {
                             player.sendMessage(Utils.ChatUtils.getAlertFormat(text("Please place a minimum of one sign for the street side!")));
                             return;
                         }
-
-
-                        // Inform player about the plot creation
-                        player.sendMessage(Utils.ChatUtils.getInfoFormat(text("Creating plot...")));
 
 
                         // Convert polygon outline data to string
@@ -360,14 +357,16 @@ public class PlotCreator {
                         if(block.getType().equals(Material.OAK_SIGN) || block.getType().equals(Material.OAK_WALL_SIGN)) {
                             hasSign = true;
 
-                            Sign sign = (Sign) block.getState();
-                            for (int s = 0; s < 4; s++) {
-                                if(s == 1) {
-                                    sign.getSide(Side.FRONT).line(s, text("Street Side", GOLD, BOLD));
-                                    sign.getSide(Side.BACK).line(s, text("Street Side", GOLD, BOLD));
+                            Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> {
+                                Sign sign = (Sign) block.getState();
+                                for (int s = 0; s < 4; s++) {
+                                    if(s == 1) {
+                                        sign.getSide(Side.FRONT).line(s, text("Street Side", GOLD, BOLD));
+                                        sign.getSide(Side.BACK).line(s, text("Street Side", GOLD, BOLD));
+                                    }
                                 }
-                            }
-                            sign.update();
+                                sign.update();
+                            });
                         }
                     }
                 }
@@ -392,8 +391,8 @@ public class PlotCreator {
             Block signBlock = player.getWorld().getBlockAt(highestBlock);
 
             Sign sign = (Sign) signBlock.getState();
-            BlockData matSign = sign.getBlockData();
-            ((Directional) matSign).setFacing(getPlayerFaceDirection(player));
+            org.bukkit.block.data.type.Sign matSign = (org.bukkit.block.data.type.Sign) sign.getBlockData();
+            matSign.setRotation(getPlayerFaceDirection(player));
             sign.setBlockData(matSign);
             sign.getSide(Side.FRONT).line(0,  text("ID: ", GRAY, BOLD).append(text(plotID, GOLD, BOLD)));
             sign.getSide(Side.FRONT).line(2,  text("Created By: ", GRAY, BOLD));

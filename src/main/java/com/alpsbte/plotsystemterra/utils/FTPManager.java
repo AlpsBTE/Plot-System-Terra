@@ -65,7 +65,8 @@ public class FTPManager {
         }
     }
 
-    public static void downloadSchematic(String ftpURL, File schematic) throws FileSystemException {
+    public static boolean downloadSchematic(String ftpURL, File schematic) throws FileSystemException {
+        boolean copiedFile = false;
         try (StandardFileSystemManager fileManager = new StandardFileSystemManager()) {
             fileManager.init();
 
@@ -77,10 +78,14 @@ public class FTPManager {
 
             // Get remote schematic and write it to local file
             FileObject remoteSchematic = remote.resolveFile(schematic.getName());
-            localSchematic.copyFrom(remoteSchematic, Selectors.SELECT_SELF);
+            if (remoteSchematic.exists()) {
+                localSchematic.copyFrom(remoteSchematic, Selectors.SELECT_SELF);
+                copiedFile = true;
+            }
 
             localSchematic.close();
             remoteSchematic.close();
         }
+        return copiedFile;
     }
 }

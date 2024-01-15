@@ -4,9 +4,9 @@ import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.DatabaseConnection;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.alpsbte.plotsystemterra.utils.FTPManager;
+import com.alpsbte.plotsystemterra.utils.Utils;
 import com.fastasyncworldedit.core.FaweAPI;
 import com.sk89q.worldedit.*;
-import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.function.mask.BlockTypeMask;
 import com.sk89q.worldedit.function.mask.Mask;
@@ -28,6 +28,10 @@ import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.logging.Level;
+
+import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.format.NamedTextColor.GOLD;
+import static net.kyori.adventure.text.format.NamedTextColor.GREEN;
 
 public class PlotPaster extends Thread {
 
@@ -79,54 +83,59 @@ public class PlotPaster extends Thread {
                                         double version = rs.getDouble(4);
                                         if (rs.wasNull()) { version = 2; }
 
-                                        pastePlotSchematic(plotID, city, world, mcCoordinates, version , fastMode);
-                                        pastedPlots++;
+                                        if (pastePlotSchematic(plotID, city, world, mcCoordinates, version , fastMode)) {
+                                            pastedPlots++;
+                                        }
                                     }
                                 }
-
                                 DatabaseConnection.closeResultSet(rsServer);
-
                             }
                         } catch (Exception ex) {
                             Bukkit.getLogger().log(Level.SEVERE, "An error occurred while pasting plot #" + plotID + "!", ex);
+                            DatabaseConnection.closeResultSet(rs);
                         }
                     }
 
                     if (broadcastMessages && pastedPlots != 0) {
-                        Bukkit.broadcastMessage("§7§l>§a Pasted §6" + pastedPlots + " §aplot" + (pastedPlots > 1 ? "s" : "") + "!");
+                        Bukkit.broadcast(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN)
+                                .append(text(pastedPlots, GOLD)
+                                .append(text(" plot" + (pastedPlots > 1 ? "s" : "") + "!", GREEN)))));
                     }
                 }
-
                 DatabaseConnection.closeResultSet(rs);
-
             } catch (SQLException ex) {
                 Bukkit.getLogger().log(Level.SEVERE, "A SQL error occurred!", ex);
             }
         }, 0L, 20L * pasteInterval);
     }
 
-    public static void pastePlotSchematic(int plotID, CityProject city, World world, BlockVector3 mcCoordinates, double plotVersion, boolean fastMode) throws IOException, WorldEditException, SQLException, URISyntaxException {
+    public static boolean pastePlotSchematic(int plotID, CityProject city, World world, BlockVector3 mcCoordinates, double plotVersion, boolean fastMode) throws IOException, WorldEditException, SQLException, URISyntaxException {
         File outlineSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), String.valueOf(city.getID()), plotID + ".schem").toFile();
         if (!outlineSchematic.exists()) outlineSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), String.valueOf(city.getID()), plotID + ".schematic").toFile();
         File completedSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), "finishedSchematics", String.valueOf(city.getID()), plotID + ".schem").toFile();
-        if (!completedSchematic.exists()) completedSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), "finishedSchematics", String.valueOf(city.getID()), plotID + ".schematic").toFile();
 
         // Download from SFTP or FTP server if enabled
         FTPConfiguration ftpConfiguration = city.getFTPConfiguration();
         if (ftpConfiguration != null) {
             Files.deleteIfExists(completedSchematic.toPath());
-            FTPManager.downloadSchematic(FTPManager.getFTPUrl(ftpConfiguration, city.getID()), completedSchematic);
+            if (!FTPManager.downloadSchematic(FTPManager.getFTPUrl(ftpConfiguration, city.getID()), completedSchematic)) {
+                completedSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), "finishedSchematics", String.valueOf(city.getID()), plotID + ".schematic").toFile();
+                Files.deleteIfExists(completedSchematic.toPath());
+                FTPManager.downloadSchematic(FTPManager.getFTPUrl(ftpConfiguration, city.getID()), completedSchematic);
+            }
         }
 
         if (outlineSchematic.exists() && completedSchematic.exists()) {
-            try (EditSession editSession = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(world))) {
+            try (EditSession editSession = WorldEdit.getInstance().newEditSession(FaweAPI.getWorld(world.getName()))) {
                 BlockVector3 toPaste;
                 if (plotVersion >= 3) {
-                    BlockVector3 plotOriginOutline = FaweAPI.load(outlineSchematic).getOrigin();
-                    toPaste = BlockVector3.at(plotOriginOutline.getX(), plotOriginOutline.getY(), plotOriginOutline.getZ());
+                    try (Clipboard clipboard = FaweAPI.load(outlineSchematic)) {
+                        BlockVector3 plotOriginOutline = clipboard.getOrigin();
+                        toPaste = BlockVector3.at(plotOriginOutline.getX(), plotOriginOutline.getY(), plotOriginOutline.getZ());
+                    }
                 } else toPaste = mcCoordinates;
 
-                Mask airMask = new BlockTypeMask(BukkitAdapter.adapt(world), BlockTypes.AIR);
+                Mask airMask = new BlockTypeMask(FaweAPI.getWorld(world.getName()), BlockTypes.AIR);
                 editSession.setMask(airMask);
                 if (fastMode) editSession.setFastMode(true);
                 Clipboard completedClipboard = FaweAPI.load(completedSchematic);
@@ -142,6 +151,8 @@ public class PlotPaster extends Thread {
             }
         } else {
             Bukkit.getLogger().log(Level.WARNING, "Could not find schematic file(s) of plot #" + plotID + "!");
+            return false;
         }
+        return true;
     }
 }

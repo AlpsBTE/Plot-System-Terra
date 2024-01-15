@@ -2,6 +2,7 @@ package com.alpsbte.plotsystemterra;
 
 import com.alpsbte.alpslib.io.YamlFileFactory;
 import com.alpsbte.alpslib.io.config.ConfigNotImplementedException;
+import com.alpsbte.alpslib.utils.head.AlpsHeadEventListener;
 import com.alpsbte.plotsystemterra.commands.CMD_CreatePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PastePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PlotSystemTerra;
@@ -97,6 +98,7 @@ public class PlotSystemTerra extends JavaPlugin {
         // Register event listeners
         try {
             this.getServer().getPluginManager().registerEvents(new MenuFunctionListener(), this);
+            this.getServer().getPluginManager().registerEvents(new AlpsHeadEventListener(), this);
             Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully registered event listeners.");
         } catch (Exception ex) {
             Bukkit.getConsoleSender().sendMessage(errorPrefix + "Could not register event listeners.");
@@ -227,10 +229,6 @@ public class PlotSystemTerra extends JavaPlugin {
 
             if (!pluginManager.isPluginEnabled("FastAsyncWorldEdit")) {
                 missingDependencies.add("FastAsyncWorldEdit");
-            }
-
-            if (!pluginManager.isPluginEnabled("WorldGuard")) {
-                missingDependencies.add("WorldGuard");
             }
 
             if (!pluginManager.isPluginEnabled("HeadDatabase")) {
