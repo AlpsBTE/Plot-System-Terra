@@ -392,7 +392,8 @@ public class PlotCreator {
 
             Sign sign = (Sign) signBlock.getState();
             org.bukkit.block.data.type.Sign matSign = (org.bukkit.block.data.type.Sign) sign.getBlockData();
-            matSign.setRotation(getPlayerFaceDirection(player));
+            BlockFace rotation = getPlayerFaceDirection(player);
+            matSign.setRotation(rotation == BlockFace.DOWN || rotation == BlockFace.UP ? BlockFace.NORTH : rotation);
             sign.setBlockData(matSign);
             sign.getSide(Side.FRONT).line(0,  text("ID: ", GRAY, BOLD).append(text(plotID, GOLD, BOLD)));
             sign.getSide(Side.FRONT).line(2,  text("Created By: ", GRAY, BOLD));
