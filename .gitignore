@@ -1,3 +1,4 @@
 target
 .vscode/settings.json
 src/test/resources/config.yml
+dependency-reduced-pom.xml

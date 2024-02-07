@@ -1,34 +1,18 @@
 package com.alpsbte.plotsystemterra;
 
-import com.alpsbte.alpslib.libpsterra.commands.CMD_CreatePlot;
-import com.alpsbte.alpslib.libpsterra.commands.CMD_PastePlot;
-import com.alpsbte.plotsystemterra.commands.CMD_PlotSystemTerra;
 import com.alpsbte.alpslib.libpsterra.core.Connection;
-import com.alpsbte.alpslib.libpsterra.core.DatabaseConnection;
-import com.alpsbte.alpslib.libpsterra.core.EventListener;
-import com.alpsbte.alpslib.libpsterra.core.NetworkAPIConnection;
+import com.alpsbte.alpslib.libpsterra.core.PSTerraSetup;
 import com.alpsbte.alpslib.libpsterra.core.config.ConfigManager;
-import com.alpsbte.alpslib.libpsterra.core.config.ConfigNotImplementedException;
-import com.alpsbte.alpslib.libpsterra.core.config.ConfigPaths;
-import com.alpsbte.alpslib.libpsterra.core.config.DataMode;
 import com.alpsbte.alpslib.libpsterra.core.plotsystem.PlotCreator;
 import com.alpsbte.alpslib.libpsterra.core.plotsystem.PlotPaster;
 import com.alpsbte.alpslib.libpsterra.utils.IUpdateReceiver;
 import com.alpsbte.alpslib.libpsterra.utils.Updater;
-import com.sk89q.worldedit.WorldEdit;
-import com.sk89q.worldedit.bukkit.WorldEditPlugin;
+import com.alpsbte.plotsystemterra.commands.CMD_PlotSystemTerra;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.ipvp.canvas.MenuFunctionListener;
-
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 
 public class PlotSystemTerra extends JavaPlugin implements IUpdateReceiver{
@@ -54,122 +38,38 @@ public class PlotSystemTerra extends JavaPlugin implements IUpdateReceiver{
         System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.NoOpLog"); // Disable Logging
         plugin = this;
         version = getDescription().getVersion();
-
-        String successPrefix = ChatColor.DARK_GRAY + "[" + ChatColor.DARK_GREEN + "✔" + ChatColor.DARK_GRAY + "] " + ChatColor.GRAY;
         String errorPrefix = ChatColor.DARK_GRAY + "[" + ChatColor.RED + "X" + ChatColor.DARK_GRAY + "] " + ChatColor.GRAY;
 
-        Bukkit.getConsoleSender().sendMessage(ChatColor.GOLD + "--------------- Plot-System-Terra V" + version + " ----------------");
-        Bukkit.getConsoleSender().sendMessage(ChatColor.DARK_GREEN + "Starting plugin...");
-        Bukkit.getConsoleSender().sendMessage(" ");
-
-        // Check for required dependencies, if it returns false disable plugin
-        if (!DependencyManager.checkForRequiredDependencies()) {
-            Bukkit.getConsoleSender().sendMessage(errorPrefix + "Could not load required dependencies.");
-            Bukkit.getConsoleSender().sendMessage(ChatColor.YELLOW + "Missing Dependencies:");
-            DependencyManager.missingDependencies.forEach(dependency -> Bukkit.getConsoleSender().sendMessage(ChatColor.YELLOW + " - " + dependency));
-
-            this.getServer().getPluginManager().disablePlugin(this);
-            return;
-        }
-        Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully loaded required dependencies.");
-
-        // Load config, if it throws an exception disable plugin
         try {
-            configManager = new ConfigManager(this);
-            Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully loaded configuration file.");
-        } catch (ConfigNotImplementedException ex) {
-            Bukkit.getConsoleSender().sendMessage(errorPrefix + "Could not load configuration file.");
-            Bukkit.getConsoleSender().sendMessage(ChatColor.YELLOW + "The config file must be configured!");
-
-            this.getServer().getPluginManager().disablePlugin(this);
-            return;
-        }
-
-        this.configManager.reloadConfigs();
-
-        // Initialize database connection
-        try {
-            FileConfiguration configFile = getConfig();
-
-            if(configFile.getString(ConfigPaths.DATA_MODE).equalsIgnoreCase(DataMode.DATABASE.toString())){
-
-                String URL = configFile.getString(ConfigPaths.DATABASE_URL);
-                String name = configFile.getString(ConfigPaths.DATABASE_NAME);
-                String username = configFile.getString(ConfigPaths.DATABASE_USERNAME);
-                String password = configFile.getString(ConfigPaths.DATABASE_PASSWORD);
-                String teamApiKey = configFile.getString(ConfigPaths.API_KEY);
-                
-                connection = new DatabaseConnection(URL, name, username, password, teamApiKey);// DatabaseConnection.InitializeDatabase();
-                Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully initialized database connection.");
-            }else{
-                String teamApiKey = configFile.getString(ConfigPaths.API_KEY);
-                String apiHost = configFile.getString(ConfigPaths.API_URL);
-                
-                int apiPort = configFile.getInt(ConfigPaths.API_KEY);
-
-                connection = new NetworkAPIConnection(apiHost, apiPort, teamApiKey);
-                // String name = configFile.getString(ConfigPaths.DATABASE_NAME);
-                // String username = configFile.getString(ConfigPaths.DATABASE_USERNAME);
-                // String password = configFile.getString(ConfigPaths.DATABASE_PASSWORD);
-
-            }
-
-
+            PSTerraSetup setup = PSTerraSetup.setupPlugin(this, version);
+            this.connection = setup.connection;
+            this.plotCreator = setup.plotCreator;
+            this.plotPaster = setup.plotPaster;
+            this.configManager = setup.configManager;
         } catch (Exception ex) {
-            Bukkit.getConsoleSender().sendMessage(errorPrefix + "Could not initialize database connection.");
+            Bukkit.getConsoleSender().sendMessage(errorPrefix + "Error setting up PlotSystemTerra: " + ex.getMessage());
             Bukkit.getLogger().log(Level.SEVERE, ex.getMessage(), ex);
 
             this.getServer().getPluginManager().disablePlugin(this);
             return;
         }
 
-        // Register event listeners
-        try {
-            this.getServer().getPluginManager().registerEvents(new EventListener(), this);
-            this.getServer().getPluginManager().registerEvents(new MenuFunctionListener(), this);
-            Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully registered event listeners.");
-        } catch (Exception ex) {
-            Bukkit.getConsoleSender().sendMessage(errorPrefix + "Could not register event listeners.");
-            Bukkit.getLogger().log(Level.SEVERE, ex.getMessage(), ex);
-
-            this.getServer().getPluginManager().disablePlugin(this);
-            return;
-        }
-        // Check for updates
-        Bukkit.getConsoleSender().sendMessage(" ");
+        plugin.getCommand("plotsystemterra").setExecutor(new CMD_PlotSystemTerra());
 
         String result = startUpdateChecker();
         Bukkit.getConsoleSender().sendMessage(ChatColor.GOLD + "Update-Checker: " + result);
 
-        this.plotCreator = new PlotCreator(this, connection);
-
-        // Start checking for plots to paste
-        plotPaster = new PlotPaster(this, connection);
-        plotPaster.start();
-
-        // Register commands
-        try {
-            this.getCommand("createplot").setExecutor(new CMD_CreatePlot(plotCreator, connection, getConfig()));
-            this.getCommand("pasteplot").setExecutor(new CMD_PastePlot(plotPaster, connection, getConfig()));
-            this.getCommand("plotsystemterra").setExecutor(new CMD_PlotSystemTerra());
-            Bukkit.getConsoleSender().sendMessage(successPrefix + "Successfully registered commands.");
-        } catch (Exception ex) {
-            Bukkit.getConsoleSender().sendMessage(errorPrefix + "Could not register commands.");
-            Bukkit.getLogger().log(Level.SEVERE, ex.getMessage(), ex);
-
-            this.getServer().getPluginManager().disablePlugin(this);
-            return;
-        }
-
-
-
-        pluginEnabled = true;
+        
         Bukkit.getConsoleSender().sendMessage(" ");
         Bukkit.getConsoleSender().sendMessage(ChatColor.DARK_GREEN + "Enabled Plot-System-Terra plugin.");
         Bukkit.getConsoleSender().sendMessage(ChatColor.GOLD + "------------------------------------------------------");
         Bukkit.getConsoleSender().sendMessage(ChatColor.DARK_GRAY + "> " + ChatColor.GRAY + "Made by " + ChatColor.RED + "Alps BTE (AT/CH/LI)");
         Bukkit.getConsoleSender().sendMessage(ChatColor.DARK_GRAY + "> " + ChatColor.GRAY + "GitHub: " + ChatColor.WHITE + "https://github.com/AlpsBTE/Plot-System-Terra");
         Bukkit.getConsoleSender().sendMessage(ChatColor.GOLD + "------------------------------------------------------");
+
+
+        pluginEnabled = true;
+        
     }
 
     @Override
@@ -256,41 +156,5 @@ public class PlotSystemTerra extends JavaPlugin implements IUpdateReceiver{
     public PlotCreator getPlotCreator() {
         return plotCreator;
     }
-    public static class DependencyManager {
-
-        // List with all missing dependencies
-        private final static List<String> missingDependencies = new ArrayList<>();
-
-        /**
-         * Check for all required dependencies and inform in console about missing dependencies
-         * @return True if all dependencies are present
-         */
-        private static boolean checkForRequiredDependencies() {
-            PluginManager pluginManager = plugin.getServer().getPluginManager();
-
-            if (!pluginManager.isPluginEnabled("WorldEdit")) {
-                missingDependencies.add("WorldEdit (V6.1.9)");
-            }
-
-            if (!pluginManager.isPluginEnabled("HeadDatabase")) {
-                missingDependencies.add("HeadDatabase");
-            }
-
-            return missingDependencies.isEmpty();
-        }
-
-        /**
-         * @return World Edit instance
-         */
-        public static WorldEdit getWorldEdit() {
-            return WorldEdit.getInstance();
-        }
-
-        /**
-         * @return World Edit Plugin
-         */
-        public static WorldEditPlugin getWorldEditPlugin() {
-            return (WorldEditPlugin) Bukkit.getServer().getPluginManager().getPlugin("WorldEdit");
-        }
-    }
+    
 }

@@ -6,7 +6,7 @@
 
     <groupId>com.alpsbte</groupId>
     <artifactId>PlotSystem-Terra</artifactId>
-    <version>3.0</version>
+    <version>3.1</version>
 
     <repositories>
         <!-- AlpsBTE Repo (WorldEdit, WorldGuard, FAWE) -->
@@ -33,7 +33,7 @@
         <dependency>
             <groupId>com.alpsbte.alpslib</groupId>
             <artifactId>alpslib-libpsterra</artifactId>
-            <version>1.0.0</version>
+            <version>1.1.0</version>
         </dependency>
 
         <!-- Spigot -->
