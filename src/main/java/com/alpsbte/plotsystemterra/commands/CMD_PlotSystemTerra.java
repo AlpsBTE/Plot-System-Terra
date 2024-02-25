@@ -1,16 +1,12 @@
 package com.alpsbte.plotsystemterra.commands;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
-import com.alpsbte.plotsystemterra.core.api.PlotSystemAPI;
-import com.alpsbte.plotsystemterra.utils.ChatUtil;
-import com.alpsbte.plotsystemterra.utils.Updater;
+import com.alpsbte.alpslib.libpsterra.utils.ChatUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.List;
-import java.util.UUID;
 
 public class CMD_PlotSystemTerra implements CommandExecutor {
     @Override
