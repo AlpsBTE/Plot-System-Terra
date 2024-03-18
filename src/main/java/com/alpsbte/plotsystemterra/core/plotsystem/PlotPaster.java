@@ -135,14 +135,13 @@ public class PlotPaster extends Thread {
                     }
                 } else toPaste = mcCoordinates;
 
-                Mask airMask = new BlockTypeMask(FaweAPI.getWorld(world.getName()), BlockTypes.AIR);
-                editSession.setMask(airMask);
                 if (fastMode) editSession.setFastMode(true);
                 Clipboard completedClipboard = FaweAPI.load(completedSchematic);
 
                 Operation clipboardHolder = new ClipboardHolder(completedClipboard)
                         .createPaste(editSession)
                         .to(toPaste)
+                        .ignoreAirBlocks(true)
                         .build();
                 Operations.complete(clipboardHolder);
 
