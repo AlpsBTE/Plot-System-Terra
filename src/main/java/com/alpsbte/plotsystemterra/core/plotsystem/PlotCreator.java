@@ -7,8 +7,7 @@ import com.alpsbte.plotsystemterra.utils.FTPManager;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import com.sk89q.worldedit.*;
 import com.sk89q.worldedit.extent.clipboard.BlockArrayClipboard;
-import com.sk89q.worldedit.extent.clipboard.Clipboard;
-import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
+import com.sk89q.worldedit.extent.clipboard.io.BuiltInClipboardFormat;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardWriter;
 import com.sk89q.worldedit.function.operation.ForwardExtentCopy;
 import com.sk89q.worldedit.function.operation.Operations;
@@ -16,10 +15,7 @@ import com.sk89q.worldedit.math.BlockVector2;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector2;
 import com.sk89q.worldedit.math.Vector3;
-import com.sk89q.worldedit.regions.AbstractRegion;
-import com.sk89q.worldedit.regions.CylinderRegion;
-import com.sk89q.worldedit.regions.Polygonal2DRegion;
-import com.sk89q.worldedit.regions.Region;
+import com.sk89q.worldedit.regions.*;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.*;
 import org.bukkit.Location;
@@ -328,14 +324,15 @@ public class PlotCreator {
             return null;
 
         // Store content of region in schematic
-        Clipboard cb = new BlockArrayClipboard(region);
-        cb.setOrigin(BlockVector3.at(region.getCenter().getX(), region.getMinimumPoint().getY(), region.getCenter().getZ()));
-        EditSession editSession = PlotSystemTerra.DependencyManager.getWorldEdit().getEditSessionFactory().getEditSession(region.getWorld(), -1);
-        ForwardExtentCopy forwardExtentCopy = new ForwardExtentCopy(editSession, region, cb, region.getMinimumPoint());
+        BlockArrayClipboard clipboard = new BlockArrayClipboard(region);
+        clipboard.setOrigin(BlockVector3.at(region.getCenter().getX(), region.getMinimumPoint().getY(), region.getCenter().getZ()));
+        ForwardExtentCopy forwardExtentCopy = new ForwardExtentCopy(
+                Objects.requireNonNull(region.getWorld()), region, clipboard, region.getMinimumPoint()
+        );
         Operations.complete(forwardExtentCopy);
 
-        try(ClipboardWriter writer = Objects.requireNonNull(ClipboardFormats.findByFile(schematic)).getWriter(new FileOutputStream(schematic, false))) {
-            writer.write(cb);
+        try (ClipboardWriter writer = BuiltInClipboardFormat.FAST_V2.getWriter(new FileOutputStream(schematic, false))) {
+            writer.write(clipboard);
         }
 
         return filePath;

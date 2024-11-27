@@ -6,7 +6,7 @@
 
     <groupId>com.alpsbte</groupId>
     <artifactId>PlotSystem-Terra</artifactId>
-    <version>3.0</version>
+    <version>3.1</version>
 
     <repositories>
         <repository>
@@ -32,7 +32,7 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.20.1-R0.1-SNAPSHOT</version>
+            <version>1.21.1-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -120,7 +120,7 @@
             <dependency>
                 <groupId>com.intellectualsites.bom</groupId>
                 <artifactId>bom-newest</artifactId>
-                <version>1.38</version>
+                <version>1.51</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
