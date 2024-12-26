@@ -25,8 +25,8 @@ import static net.kyori.adventure.text.format.NamedTextColor.*;
 import static net.kyori.adventure.text.format.TextDecoration.BOLD;
 
 public class CreatePlotMenu {
-    private final Menu createPlotMenu = ChestMenu.builder(6).title("Create Plot").redraw(true).build();
-    private final Menu difficultyMenu = ChestMenu.builder(3).title("Select Plot Difficulty").redraw(true).build();
+    private final Menu createPlotMenu = ChestMenu.builder(6).title(text("Create Plot")).redraw(true).build();
+    private final Menu difficultyMenu = ChestMenu.builder(3).title(text("Select Plot Difficulty")).redraw(true).build();
 
     private final List<CityProject> cityProjects = getCityProjects();
     private int selectedCityID = -1;
