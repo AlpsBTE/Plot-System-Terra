@@ -1,37 +1,36 @@
 package com.alpsbte.plotsystemterra.commands;
 
 import com.alpsbte.alpslib.utils.AlpsUtils;
+import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.plotsystem.CreatePlotMenu;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotCreator;
 import com.alpsbte.plotsystemterra.utils.Utils;
-import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-
-import java.util.logging.Level;
+import org.jetbrains.annotations.NotNull;
 
 import static net.kyori.adventure.text.Component.text;
 
 public class CMD_CreatePlot implements CommandExecutor {
     @Override
-    public boolean onCommand(CommandSender sender, Command cmd, String s, String[] args) {
-        if(sender instanceof Player) {
-            if(Utils.hasPermission(sender, "createplot")) {
-                try {
-                    if (args.length > 1) {
-                        if (args[0].equalsIgnoreCase("tutorial") && AlpsUtils.tryParseInt(args[1]) != null) {
-                            PlotCreator.createTutorialPlot(((Player) sender).getPlayer(), Integer.parseInt(args[1]));
-                            return true;
-                        }
-                    }
-                    new CreatePlotMenu(((Player) sender).getPlayer());
-                } catch (Exception ex) {
-                    Bukkit.getLogger().log(Level.SEVERE, "An error occurred while opening create plot menu!", ex);
-                    sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("An error occurred while opening create plot menu!")));
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String s, String @NotNull [] args) {
+        if (!(sender instanceof Player player)) return true;
+        if (!Utils.hasPermission(player, "createplot")) return true;
+
+        try {
+            if (args.length > 1) {
+                if (args[0].equalsIgnoreCase("tutorial") && AlpsUtils.tryParseInt(args[1]) != null) {
+                    PlotCreator.createTutorialPlot(player, Integer.parseInt(args[1]));
+                    return true;
                 }
             }
+            new CreatePlotMenu(player);
+        } catch (Exception ex) {
+            PlotSystemTerra.getPlugin().getComponentLogger()
+                    .error(text("An error occurred while opening create plot menu!"), ex);
+            player.sendMessage(Utils.ChatUtils.getAlertFormat(text("An error occurred while opening create plot menu!")));
         }
         return true;
     }

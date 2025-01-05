@@ -1,9 +1,11 @@
-package com.alpsbte.plotsystemterra.core.plotsystem;
+package com.alpsbte.plotsystemterra.core.model;
 
 import com.alpsbte.alpslib.utils.head.AlpsHeadUtils;
 import com.alpsbte.alpslib.utils.item.ItemBuilder;
 import com.alpsbte.alpslib.utils.item.LoreBuilder;
+import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.DatabaseConnection;
+import com.alpsbte.plotsystemterra.core.plotsystem.FTPConfiguration;
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
 
@@ -23,32 +25,11 @@ public class CityProject {
     private int countryID;
     private String headID;
 
-    public CityProject(int ID) {
-        this.ID = ID;
-
-        try (ResultSet rsCity = DatabaseConnection.createStatement("SELECT country_id, name FROM plotsystem_city_projects WHERE id = ?")
-                .setValue(ID).executeQuery()) {
-
-            if (rsCity.next()) {
-                this.countryID = rsCity.getInt(1);
-                this.name = rsCity.getString(2);
-            }
-
-            DatabaseConnection.closeResultSet(rsCity);
-
-            try (ResultSet rsCountry = DatabaseConnection.createStatement("SELECT head_id FROM plotsystem_countries WHERE id = ?")
-                    .setValue(countryID).executeQuery();) {
-
-                if (rsCountry.next()) {
-                    this.headID = rsCountry.getString(1);
-                }
-
-                DatabaseConnection.closeResultSet(rsCountry);
-
-            }
-        } catch (Exception ex) {
-            Bukkit.getLogger().log(Level.SEVERE, "An error occurred while getting country head!", ex);
-        }
+    public CityProject(int id, String name, int countryId, String headId) {
+        this.ID = id;
+        this.name = name;
+        this.countryID = countryId;
+        this.headID = headId;
     }
 
     public int getID() {

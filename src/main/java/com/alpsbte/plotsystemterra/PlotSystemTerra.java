@@ -10,6 +10,8 @@ import com.alpsbte.plotsystemterra.core.DatabaseConnection;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.alpsbte.plotsystemterra.core.config.ConfigUtil;
 import com.alpsbte.plotsystemterra.core.config.DataMode;
+import com.alpsbte.plotsystemterra.core.data.DataProvider;
+import com.alpsbte.plotsystemterra.core.database.DataProviderSQL;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
 import com.alpsbte.plotsystemterra.utils.Updater;
 import com.alpsbte.plotsystemterra.utils.Utils;
@@ -33,6 +35,7 @@ public class PlotSystemTerra extends JavaPlugin {
     public static int SPIGOT_PROJECT_ID = 105323;
 
     private static PlotSystemTerra plugin;
+    private static DataProvider dataProvider;
     private PlotPaster plotPaster;
 
     private boolean pluginEnabled = false;
@@ -94,6 +97,10 @@ public class PlotSystemTerra extends JavaPlugin {
             this.getServer().getPluginManager().disablePlugin(this);
             return;
         }
+
+        // Set data provider
+        //TODO: get from config
+        dataProvider = new DataProviderSQL();
 
         // Register event listeners
         try {
@@ -170,6 +177,11 @@ public class PlotSystemTerra extends JavaPlugin {
     @Override
     public void saveConfig() {
         ConfigUtil.getInstance().saveFiles();
+    }
+
+
+    public static DataProvider getDataProvider() {
+        return dataProvider;
     }
 
     private String startUpdateChecker(){

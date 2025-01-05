@@ -3,19 +3,17 @@ package com.alpsbte.plotsystemterra.core.plotsystem;
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.DatabaseConnection;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
+import com.alpsbte.plotsystemterra.core.model.CityProject;
 import com.alpsbte.plotsystemterra.utils.FTPManager;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import com.fastasyncworldedit.core.FaweAPI;
 import com.sk89q.worldedit.*;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
-import com.sk89q.worldedit.function.mask.BlockTypeMask;
-import com.sk89q.worldedit.function.mask.Mask;
 import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldedit.session.ClipboardHolder;
-import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -64,8 +62,7 @@ public class PlotPaster extends Thread {
                         int plotID = -1;
                         try {
                             plotID = rs.getInt(1);
-                            CityProject city = new CityProject(rs.getInt(2));
-
+                            CityProject city = PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProject(rs.getInt(2));
                             try (ResultSet rsServer = DatabaseConnection.createStatement("SELECT name FROM plotsystem_servers WHERE id = ?")
                                     .setValue(city.getServerID()).executeQuery()) {
 
@@ -131,7 +128,7 @@ public class PlotPaster extends Thread {
                 if (plotVersion >= 3) {
                     try (Clipboard clipboard = FaweAPI.load(outlineSchematic)) {
                         BlockVector3 plotOriginOutline = clipboard.getOrigin();
-                        toPaste = BlockVector3.at(plotOriginOutline.getX(), plotOriginOutline.getY(), plotOriginOutline.getZ());
+                        toPaste = BlockVector3.at(plotOriginOutline.x(), plotOriginOutline.y(), plotOriginOutline.z());
                     }
                 } else toPaste = mcCoordinates;
 
