@@ -21,7 +21,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.sql.SQLException;
 import java.util.List;
 
 import static net.kyori.adventure.text.Component.text;
@@ -77,10 +76,10 @@ public class PlotPaster extends Thread {
 
                 // paste schematic
                 try {
-                    if (pastePlotSchematic(plot.getId(), city, world, plot.getCompletedSchematic(), plot.getPlotVersion(), true)) {
+                    if (pastePlotSchematic(plot.getId(), city, world, plot.getCompletedSchematic(), plot.getPlotVersion(), fastMode)) {
                         pastedPlots++;
                     }
-                } catch (SQLException | URISyntaxException | IOException e) {
+                } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -93,7 +92,7 @@ public class PlotPaster extends Thread {
         }, 0L, 20L * pasteInterval);
     }
 
-    public static boolean pastePlotSchematic(int plotID, CityProject city, World world, byte[] completedSchematic, double plotVersion, boolean fastMode) throws IOException, WorldEditException, SQLException, URISyntaxException {
+    public static boolean pastePlotSchematic(int plotID, CityProject city, World world, byte[] completedSchematic, double plotVersion, boolean fastMode) throws IOException, WorldEditException {
         try (EditSession editSession = WorldEdit.getInstance().newEditSession(FaweAPI.getWorld(world.getName()))) {
             BlockVector3 toPaste;
             if (plotVersion >= 3) {

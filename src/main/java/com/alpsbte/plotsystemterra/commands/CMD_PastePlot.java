@@ -14,8 +14,6 @@ import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.sql.SQLException;
 
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.format.NamedTextColor.GOLD;
@@ -59,7 +57,7 @@ public class CMD_PastePlot implements CommandExecutor {
                 }
             } else
                 sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("Plot with the ID " + plotID + " is not completed!")));
-        } catch (DataException | SQLException | IOException | URISyntaxException e) {
+        } catch (DataException | IOException e) {
             PlotSystemTerra.getPlugin().getComponentLogger().error(text("An error occurred while pasting plot!"), e);
             sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("An error occurred while pasting plot!")));
         }

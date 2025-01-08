@@ -18,7 +18,6 @@ import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldedit.regions.*;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.*;
-import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
