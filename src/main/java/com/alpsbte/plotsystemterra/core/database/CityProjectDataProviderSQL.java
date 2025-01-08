@@ -16,9 +16,9 @@ public class CityProjectDataProviderSQL implements CityProjectDataProvider {
     public List<CityProject> getCityProjects() {
         List<CityProject> listProjects = new ArrayList<>();
 
-        try (ResultSet rs = DatabaseConnection.createStatement("SELECT id FROM plotsystem_city_projects").executeQuery()) {
+        try (ResultSet rs = DatabaseConnection.createStatement("SELECT city_project_id FROM city_project").executeQuery()) {
             while (rs.next()) {
-                CityProject city = PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProject(rs.getInt(1));
+                CityProject city = PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProject(rs.getString(1));
                 listProjects.add(city);
             }
 
@@ -31,34 +31,31 @@ public class CityProjectDataProviderSQL implements CityProjectDataProvider {
     }
 
     @Override
-    public CityProject getCityProject(int id) throws DataException {
-        int countryId;
-        String name;
-        String headId = null;
-        try (ResultSet rsCity = DatabaseConnection.createStatement("SELECT country_id, name FROM plotsystem_city_projects WHERE id = ?")
+    public CityProject getCityProject(String id) throws DataException {
+        String countryCode = null;
+        boolean isVisible;
+        String material = null;
+        String customModelData = null;
+        try (ResultSet rsCity = DatabaseConnection.createStatement("SELECT city.country_code, city.is_visible, c.material, c.custom_model_data " +
+                        "FROM city_project city " +
+                        "INNER JOIN country c " +
+                        "ON c.country_code = city.country_code " +
+                        "WHERE city.city_project_id = ?")
                 .setValue(id).executeQuery()) {
 
             if (!rsCity.next()) {
                 return null;
             }
 
-            countryId = rsCity.getInt(1);
-            name = rsCity.getString(2);
+            countryCode = rsCity.getString(1);
+            isVisible = rsCity.getBoolean(2);
+            material = rsCity.getString(3);
+            customModelData = rsCity.getString(4);
 
             DatabaseConnection.closeResultSet(rsCity);
-
-            try (ResultSet rsCountry = DatabaseConnection.createStatement("SELECT head_id FROM plotsystem_countries WHERE id = ?")
-                    .setValue(countryId).executeQuery()) {
-
-                if (rsCountry.next()) {
-                    headId = rsCountry.getString(1);
-                }
-
-                DatabaseConnection.closeResultSet(rsCountry);
-            }
         } catch (SQLException ex) {
             throw new DataException(ex.getMessage());
         }
-        return new CityProject(id, name, countryId, headId);
+        return new CityProject(id, countryCode, isVisible, material, customModelData);
     }
 }

@@ -1,8 +1,12 @@
 package com.alpsbte.plotsystemterra.utils;
 
 import com.alpsbte.alpslib.utils.AlpsUtils;
+import com.alpsbte.alpslib.utils.head.AlpsHeadUtils;
+import com.alpsbte.alpslib.utils.item.ItemBuilder;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
+import org.bukkit.inventory.ItemStack;
 
 import static net.kyori.adventure.text.format.NamedTextColor.*;
 
@@ -32,5 +36,18 @@ public class Utils {
 
     public static boolean hasPermission(CommandSender sender, String permissionNode) {
         return sender.hasPermission(permissionPrefix + "." + permissionNode);
+    }
+
+    public static ItemStack getConfiguredItem(String material, String customModelData) {
+        ItemStack base;
+        if (material.startsWith("head(") && material.endsWith(")")) {
+            String headId = material.substring(material.indexOf("(") + 1, material.lastIndexOf(")"));
+            base = AlpsHeadUtils.getCustomHead(headId);
+        } else {
+            Material mat = Material.getMaterial(material);
+            base = new ItemStack(mat == null ? Material.BARRIER : mat);
+        }
+
+        return new ItemBuilder(base).setItemModel(customModelData).build();
     }
 }

@@ -1,31 +1,28 @@
 package com.alpsbte.plotsystemterra.core.plotsystem;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
-import com.alpsbte.plotsystemterra.core.DatabaseConnection;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.alpsbte.plotsystemterra.core.model.CityProject;
-import com.alpsbte.plotsystemterra.utils.FTPManager;
+import com.alpsbte.plotsystemterra.core.model.Plot;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import com.fastasyncworldedit.core.FaweAPI;
 import com.sk89q.worldedit.*;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.extent.clipboard.io.BuiltInClipboardFormat;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
 import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
-import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import java.io.File;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.logging.Level;
+import java.util.List;
 
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.format.NamedTextColor.GOLD;
@@ -53,102 +50,106 @@ public class PlotPaster extends Thread {
     @Override
     public void run() {
         Bukkit.getScheduler().scheduleSyncRepeatingTask(PlotSystemTerra.getPlugin(), () -> {
-            try (ResultSet rs = DatabaseConnection.createStatement("SELECT id, city_project_id, mc_coordinates, version FROM plotsystem_plots WHERE status = 'completed' AND pasted = '0' LIMIT 20")
-                    .executeQuery()) {
-                int pastedPlots = 0;
+            int pastedPlots = 0;
+            List<Plot> plotsToPaste = PlotSystemTerra.getDataProvider().getPlotDataProvider().getPlotsToPaste();
 
-                if (rs.isBeforeFirst()) {
-                    while (rs.next()) {
-                        int plotID = -1;
-                        try {
-                            plotID = rs.getInt(1);
-                            CityProject city = PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProject(rs.getInt(2));
-                            try (ResultSet rsServer = DatabaseConnection.createStatement("SELECT name FROM plotsystem_servers WHERE id = ?")
-                                    .setValue(city.getServerID()).executeQuery()) {
+            for (Plot plot : plotsToPaste) {
+                // TODO: check if plot should be pasted on this server
+                CityProject city = PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProject(plot.getCityProjectId());
 
-                                if (rsServer.next()) {
-                                    String name = rsServer.getString(1);
-                                    if (name.equals(serverName)) {
-                                        String[] splitCoordinates = rs.getString(3).split(",");
+                // check mc version
+                int[] serverVersion = getMajorMinorPatch(Bukkit.getServer().getMinecraftVersion());
+                int[] plotMcVersion = getMajorMinorPatch(plot.getMcVersion());
 
-                                        BlockVector3 mcCoordinates = Vector3.toBlockPoint(
-                                                Double.parseDouble(splitCoordinates[0]),
-                                                Double.parseDouble(splitCoordinates[1]),
-                                                Double.parseDouble(splitCoordinates[2])
-                                        );
-
-                                        double version = rs.getDouble(4);
-                                        if (rs.wasNull()) { version = 2; }
-
-                                        if (pastePlotSchematic(plotID, city, world, mcCoordinates, version , fastMode)) {
-                                            pastedPlots++;
-                                        }
-                                    }
-                                }
-                                DatabaseConnection.closeResultSet(rsServer);
-                            }
-                        } catch (Exception ex) {
-                            Bukkit.getLogger().log(Level.SEVERE, "An error occurred while pasting plot #" + plotID + "!", ex);
-                            DatabaseConnection.closeResultSet(rs);
-                        }
-                    }
-
-                    if (broadcastMessages && pastedPlots != 0) {
-                        Bukkit.broadcast(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN)
-                                .append(text(pastedPlots, GOLD)
-                                .append(text(" plot" + (pastedPlots > 1 ? "s" : "") + "!", GREEN)))));
-                    }
+                if (serverVersion == null) {
+                    PlotSystemTerra.getPlugin().getComponentLogger().error(text("Invalid server version! Aborting plot pasting."));
+                    return;
                 }
-                DatabaseConnection.closeResultSet(rs);
-            } catch (SQLException ex) {
-                Bukkit.getLogger().log(Level.SEVERE, "A SQL error occurred!", ex);
+                if (plotMcVersion == null) {
+                    PlotSystemTerra.getPlugin().getComponentLogger().error(text("Invalid plot version for plot " + plot.getId() + "! Aborting plot pasting."));
+                    return;
+                }
+                if (isMMPVersionNewer(plotMcVersion, serverVersion)) {
+                    PlotSystemTerra.getPlugin().getComponentLogger().error(
+                            text("Plot " + plot.getId() + " was built on a newer minecraft version! Cannot paste plot! Please update to version " + plotMcVersion[0] + "." + plotMcVersion[1] + "." + plotMcVersion[2] + "!"));
+                    return;
+                }
+
+                // paste schematic
+                try {
+                    if (pastePlotSchematic(plot.getId(), city, world, plot.getCompletedSchematic(), plot.getPlotVersion(), true)) {
+                        pastedPlots++;
+                    }
+                } catch (SQLException | URISyntaxException | IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            if (broadcastMessages && pastedPlots != 0) {
+                Bukkit.broadcast(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN)
+                        .append(text(pastedPlots, GOLD)
+                                .append(text(" plot" + (pastedPlots > 1 ? "s" : "") + "!", GREEN)))));
             }
         }, 0L, 20L * pasteInterval);
     }
 
-    public static boolean pastePlotSchematic(int plotID, CityProject city, World world, BlockVector3 mcCoordinates, double plotVersion, boolean fastMode) throws IOException, WorldEditException, SQLException, URISyntaxException {
-        File outlineSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), String.valueOf(city.getID()), plotID + ".schem").toFile();
-        if (!outlineSchematic.exists()) outlineSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), String.valueOf(city.getID()), plotID + ".schematic").toFile();
-        File completedSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), "finishedSchematics", String.valueOf(city.getID()), plotID + ".schem").toFile();
-
-        // Download from SFTP or FTP server if enabled
-        FTPConfiguration ftpConfiguration = city.getFTPConfiguration();
-        if (ftpConfiguration != null) {
-            Files.deleteIfExists(completedSchematic.toPath());
-            if (!FTPManager.downloadSchematic(FTPManager.getFTPUrl(ftpConfiguration, city.getID()), completedSchematic)) {
-                completedSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), "finishedSchematics", String.valueOf(city.getID()), plotID + ".schematic").toFile();
-                Files.deleteIfExists(completedSchematic.toPath());
-                FTPManager.downloadSchematic(FTPManager.getFTPUrl(ftpConfiguration, city.getID()), completedSchematic);
+    public static boolean pastePlotSchematic(int plotID, CityProject city, World world, byte[] completedSchematic, double plotVersion, boolean fastMode) throws IOException, WorldEditException, SQLException, URISyntaxException {
+        try (EditSession editSession = WorldEdit.getInstance().newEditSession(FaweAPI.getWorld(world.getName()))) {
+            BlockVector3 toPaste;
+            if (plotVersion >= 3) {
+                ByteArrayInputStream inputStream = new ByteArrayInputStream(completedSchematic);
+                try (ClipboardReader reader = BuiltInClipboardFormat.SPONGE_V3_SCHEMATIC.getReader(inputStream)) {
+                    BlockVector3 plotOriginOutline = reader.read().getOrigin();
+                    toPaste = BlockVector3.at(plotOriginOutline.x(), plotOriginOutline.y(), plotOriginOutline.z());
+                }
+            } else {
+                PlotSystemTerra.getPlugin().getComponentLogger().error(text("Cannot paste plot! Plot version " + plotVersion + "is no longer supported! Must be at least 3!"));
+                return false;
             }
-        }
 
-        if (outlineSchematic.exists() && completedSchematic.exists()) {
-            try (EditSession editSession = WorldEdit.getInstance().newEditSession(FaweAPI.getWorld(world.getName()))) {
-                BlockVector3 toPaste;
-                if (plotVersion >= 3) {
-                    try (Clipboard clipboard = FaweAPI.load(outlineSchematic)) {
-                        BlockVector3 plotOriginOutline = clipboard.getOrigin();
-                        toPaste = BlockVector3.at(plotOriginOutline.x(), plotOriginOutline.y(), plotOriginOutline.z());
-                    }
-                } else toPaste = mcCoordinates;
+            if (fastMode) editSession.setFastMode(true);
 
-                if (fastMode) editSession.setFastMode(true);
-                Clipboard completedClipboard = FaweAPI.load(completedSchematic);
-
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(completedSchematic);
+            try (ClipboardReader reader = BuiltInClipboardFormat.SPONGE_V3_SCHEMATIC.getReader(inputStream)) {
+                Clipboard completedClipboard = reader.read();
                 Operation clipboardHolder = new ClipboardHolder(completedClipboard)
                         .createPaste(editSession)
                         .to(toPaste)
                         .ignoreAirBlocks(true)
                         .build();
                 Operations.complete(clipboardHolder);
-
-                DatabaseConnection.createStatement("UPDATE plotsystem_plots SET pasted = '1' WHERE id = ?")
-                        .setValue(plotID).executeUpdate();
             }
-        } else {
-            Bukkit.getLogger().log(Level.WARNING, "Could not find schematic file(s) of plot #" + plotID + "!");
-            return false;
+
+            PlotSystemTerra.getDataProvider().getPlotDataProvider().setPasted(plotID);
         }
         return true;
+    }
+
+    private static int[] getMajorMinorPatch(String version) {
+        int[] output = new int[3];
+        String[] versionArr = version.split("\\.");
+
+        // Invalid version!
+        if (versionArr.length < 1 || versionArr.length > 3) return null;
+
+        // Major
+        output[0] = Integer.parseInt(versionArr[0]);
+
+        // Minor
+        output[1] = (versionArr.length > 1) ? Integer.parseInt(versionArr[1]) : 0;
+
+        // Patch
+        output[2] = (versionArr.length > 2) ? Integer.parseInt(versionArr[2]) : 0;
+
+        return output;
+    }
+
+    private static boolean isMMPVersionNewer(int[] a, int[] b) {
+        for (int i = 0; i < 3; i++) {
+            if (a[i] > b[i]) return true; // A is newer than B
+            if (a[i] < b[i]) return false; // A is older than B
+        }
+
+        return false; // A and B are the same
     }
 }

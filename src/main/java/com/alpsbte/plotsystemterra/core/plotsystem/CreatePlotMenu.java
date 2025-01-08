@@ -102,7 +102,7 @@ public class CreatePlotMenu {
 
         difficultyMenu.getSlot(10).setClickHandler((clickPlayer, clickInformation) -> {
             clickPlayer.closeInventory();
-            PlotCreator.createPlot(clickPlayer, cityProject, 1);
+            PlotCreator.createPlot(clickPlayer, cityProject, "easy");
         });
 
         difficultyMenu.getSlot(13).setItem(
@@ -113,7 +113,7 @@ public class CreatePlotMenu {
 
         difficultyMenu.getSlot(13).setClickHandler((clickPlayer, clickInformation) -> {
             clickPlayer.closeInventory();
-            PlotCreator.createPlot(clickPlayer, cityProject, 2);
+            PlotCreator.createPlot(clickPlayer, cityProject, "medium");
         });
 
         difficultyMenu.getSlot(16).setItem(
@@ -124,7 +124,7 @@ public class CreatePlotMenu {
 
         difficultyMenu.getSlot(16).setClickHandler((clickPlayer, clickInformation) -> {
             clickPlayer.closeInventory();
-            PlotCreator.createPlot(clickPlayer, cityProject, 3);
+            PlotCreator.createPlot(clickPlayer, cityProject, "hard");
         });
 
         // Set City Project items
@@ -151,7 +151,7 @@ public class CreatePlotMenu {
                         .addLines(text("X: ", AQUA).append(text(coords.getX(), GRAY)),
                                 text("Y: ", AQUA).append(text(coords.getY(), GRAY)),
                                 text("Z: ", AQUA).append(text(coords.getZ(), GRAY)),
-                                text("City: ", AQUA).append(text(((selectedCityID != -1) ? cityProjects.get(selectedCityID).getName() : "none"), GRAY)))
+                                text("City: ", AQUA).append(text(((selectedCityID != -1) ? cityProjects.get(selectedCityID).getId() : "none"), GRAY)))
                         .build())
                 .build();
     }

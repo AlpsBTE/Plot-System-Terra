@@ -7,7 +7,6 @@ import com.alpsbte.plotsystemterra.core.model.Plot;
 import com.alpsbte.plotsystemterra.core.model.CityProject;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
 import com.alpsbte.plotsystemterra.utils.Utils;
-import com.sk89q.worldedit.math.BlockVector3;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -45,11 +44,6 @@ public class CMD_PastePlot implements CommandExecutor {
             if (plot.getStatus().equals("completed")) {
                 PlotPaster plotPaster = PlotSystemTerra.getPlugin().getPlotPaster();
 
-                BlockVector3 mcCoordinates = BlockVector3.at(
-                        Float.parseFloat(plot.getMcCoordinates()[0]),
-                        Float.parseFloat(plot.getMcCoordinates()[1]),
-                        Float.parseFloat(plot.getMcCoordinates()[2])
-                );
 
                 CityProject cityProject = PlotSystemTerra.getDataProvider().getCityProjectDataProvider()
                         .getCityProject(plot.getCityProjectId());
@@ -58,7 +52,7 @@ public class CMD_PastePlot implements CommandExecutor {
                         plotID,
                         cityProject,
                         plotPaster.world,
-                        mcCoordinates,
+                        plot.getCompletedSchematic(),
                         plot.getPlotVersion(),
                         plotPaster.fastMode)) {
                     Bukkit.broadcast(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN).append(text(1, GOLD).append(text(" plot!", GREEN)))));

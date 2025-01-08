@@ -4,7 +4,6 @@ import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.alpsbte.plotsystemterra.core.data.DataException;
 import com.alpsbte.plotsystemterra.core.model.CityProject;
-import com.alpsbte.plotsystemterra.utils.FTPManager;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import com.sk89q.worldedit.*;
 import com.sk89q.worldedit.extent.clipboard.BlockArrayClipboard;
@@ -27,13 +26,10 @@ import org.bukkit.block.sign.Side;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -134,7 +130,7 @@ public class PlotCreator {
         }
     }
 
-    public static void createPlot(Player player, CityProject cityProject, int difficultyID) {
+    public static void createPlot(Player player, CityProject cityProject, String difficultyId) {
         CompletableFuture.runAsync(() -> {
             boolean environmentEnabled;
 
@@ -144,8 +140,7 @@ public class PlotCreator {
             int environmentRadius = config.getInt(ConfigPaths.ENVIRONMENT_RADIUS);
 
             create(player, environmentEnabled ? environmentRadius : -1, (plotRegion, environmentRegion, plotCenter) -> {
-                String plotFilePath;
-                String environmentFilePath = null;
+                byte[] initialSchematic = null;
 
                 try {
                     // Inform player about the plot creation
@@ -165,54 +160,25 @@ public class PlotCreator {
                         points.add(point.x() + "," + point.z());
                     polyOutline = StringUtils.join(points, "|");
 
+                    initialSchematic = createPlotSchematic(environmentRegion);
+
                     // Insert into database
                     int createdPlotId = PlotSystemTerra.getDataProvider().getPlotDataProvider().createPlot(
-                            cityProject.getID(),
-                            difficultyID,
-                            plotCenter.x() + "," + plotCenter.y() + "," + plotCenter.z(),
+                            cityProject.getId(),
+                            difficultyId,
                             polyOutline,
-                            player.getUniqueId()
+                            player.getUniqueId(),
+                            initialSchematic
                     );
-
-                    // Save plot and environment regions to schematic files
-                    // Get plot schematic file path
-                    plotFilePath = createPlotSchematic(plotRegion, Paths.get(schematicsPath, String.valueOf(cityProject.getServerID()), String.valueOf(cityProject.getID()), createdPlotId + ".schem").toString());
-
-                    if (plotFilePath == null) {
-                        PlotSystemTerra.getPlugin().getComponentLogger().error(text("Could not create plot schematic file!"));
-                        player.sendMessage(Utils.ChatUtils.getAlertFormat(text("An error occurred while creating plot!")));
-                        return;
-                    }
-
-                    // Get environment schematic file path
-                    if (environmentEnabled) {
-                        environmentFilePath = createPlotSchematic(environmentRegion, Paths.get(schematicsPath, String.valueOf(cityProject.getServerID()), String.valueOf(cityProject.getID()), createdPlotId + "-env.schem").toString());
-
-                        if (environmentFilePath == null) {
-                            PlotSystemTerra.getPlugin().getComponentLogger().error(text("Could not create environment schematic file!"));
-                            player.sendMessage(Utils.ChatUtils.getAlertFormat(text("An error occurred while creating plot!")));
-                            return;
-                        }
-                    }
-
-                    // Upload schematic files to SFTP/FTP server if enabled
-                    FTPConfiguration ftpConfiguration = cityProject.getFTPConfiguration();
-                    if (ftpConfiguration != null) {
-                        if (environmentEnabled)
-                            FTPManager.uploadSchematics(FTPManager.getFTPUrl(ftpConfiguration, cityProject.getID()), new File(plotFilePath), new File(environmentFilePath));
-                        else
-                            FTPManager.uploadSchematics(FTPManager.getFTPUrl(ftpConfiguration, cityProject.getID()), new File(plotFilePath));
-                    }
-
 
                     // Place plot markings on plot region
                     placePlotMarker(plotRegion, player, createdPlotId);
                     // TODO: Change top blocks of the plot region to mark plot as created
 
                     player.sendMessage(Utils.ChatUtils.getInfoFormat(text("Successfully created new plot!", GREEN)
-                            .append(text(" (City: " + cityProject.getName() + " | Plot-Id: " + createdPlotId + ")", WHITE))));
+                            .append(text(" (City-Id: " + cityProject.getId() + " | Plot-Id: " + createdPlotId + ")", WHITE))));
                     player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
-                } catch (DataException | URISyntaxException | SQLException | IOException ex) {
+                } catch (DataException | IOException ex) {
                     PlotSystemTerra.getPlugin().getComponentLogger().error("An error occurred while creating plot!", ex);
                     player.sendMessage(Utils.ChatUtils.getAlertFormat(text("An error occurred while creating plot!")));
                 }
@@ -220,12 +186,12 @@ public class PlotCreator {
         });
     }
 
+    //TODO: clarify if still needed
     public static void createTutorialPlot(Player player, int environmentRadius) {
         CompletableFuture.runAsync(() -> create(player, environmentRadius, (plotRegion, environmentRegion, plotCenter) -> {
             try {
                 // Inform player about the plot creation
                 player.sendMessage(Utils.ChatUtils.getInfoFormat(text("Creating plot...")));
-
 
                 // Convert polygon outline data to string
                 String polyOutline;
@@ -238,25 +204,11 @@ public class PlotCreator {
 
                 // Save plot and environment regions to schematic files
                 // Get plot schematic file path
-                String plotFilePath = createPlotSchematic(plotRegion, Paths.get(schematicsPath, "tutorials", "id-stage.schematic").toString());
-
-                if (plotFilePath == null) {
-                    PlotSystemTerra.getPlugin().getComponentLogger().error("Could not create plot schematic file!");
-                    player.sendMessage(Utils.ChatUtils.getAlertFormat(text("An error occurred while creating plot!")));
-                    return;
-                }
-                PlotSystemTerra.getPlugin().getComponentLogger().info(text("Tutorial plot schematic path: " + plotFilePath));
+                byte[] plotFilePath = createPlotSchematic(plotRegion);
 
                 // Get environment schematic file path
                 if (environmentRadius > 0) {
-                    String environmentFilePath = createPlotSchematic(environmentRegion, Paths.get(schematicsPath, "tutorials", "id-env.schematic").toString());
-
-                    if (environmentFilePath == null) {
-                        PlotSystemTerra.getPlugin().getComponentLogger().error(text("Could not create environment schematic file!"));
-                        player.sendMessage(Utils.ChatUtils.getAlertFormat(text("An error occurred while creating plot!")));
-                        return;
-                    }
-                    PlotSystemTerra.getPlugin().getComponentLogger().info(text("Tutorial environment schematic path: " + environmentFilePath));
+                    byte[] environmentSchematic = createPlotSchematic(environmentRegion);
                 }
 
                 player.sendMessage(Utils.ChatUtils.getAlertFormat(text("Successfully created new tutorial plot! Check your console for more information!")));
@@ -273,20 +225,9 @@ public class PlotCreator {
      * Creates a plot schematic of a selected region from the player.
      *
      * @param region: Selected poly region of the player
-     * @return the file path of the created schematic
+     * @return the byte array of the created schematic
      */
-    private static String createPlotSchematic(AbstractRegion region, String filePath) throws IOException, WorldEditException {
-        // Create File
-        File schematic = new File(filePath);
-
-        // Delete file if exists
-        Files.deleteIfExists(schematic.getAbsoluteFile().toPath());
-        boolean createdDirs = schematic.getParentFile().mkdirs();
-        boolean createdFile = schematic.createNewFile();
-
-        if ((!schematic.getParentFile().exists() && !createdDirs) || (!schematic.exists() && !createdFile))
-            return null;
-
+    private static byte[] createPlotSchematic(AbstractRegion region) throws WorldEditException, IOException {
         // Store content of region in schematic
         BlockArrayClipboard clipboard = new BlockArrayClipboard(region);
         clipboard.setOrigin(BlockVector3.at(region.getCenter().x(), region.getMinimumPoint().y(), region.getCenter().z()));
@@ -295,11 +236,13 @@ public class PlotCreator {
         );
         Operations.complete(forwardExtentCopy);
 
-        try (ClipboardWriter writer = BuiltInClipboardFormat.FAST_V2.getWriter(new FileOutputStream(schematic, false))) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        try (ClipboardWriter writer = BuiltInClipboardFormat.FAST_V2.getWriter(outputStream)) {
             writer.write(clipboard);
         }
 
-        return filePath;
+        return outputStream.toByteArray();
     }
 
     /**
@@ -314,23 +257,21 @@ public class PlotCreator {
         for (int i = polyRegion.getMinimumPoint().x(); i <= polyRegion.getMaximumPoint().x(); i++) {
             for (int j = polyRegion.getMinimumPoint().y(); j <= polyRegion.getMaximumPoint().y(); j++) {
                 for (int k = polyRegion.getMinimumPoint().z(); k <= polyRegion.getMaximumPoint().z(); k++) {
-                    if (polyRegion.contains(BlockVector3.at(i, j, k))) {
-                        Block block = world.getBlockAt(i, j, k);
-                        if (block.getType().equals(Material.OAK_SIGN) || block.getType().equals(Material.OAK_WALL_SIGN)) {
-                            hasSign = true;
+                    if (!polyRegion.contains(BlockVector3.at(i, j, k))) continue;
+                    Block block = world.getBlockAt(i, j, k);
+                    if (!block.getType().equals(Material.OAK_SIGN) && !block.getType().equals(Material.OAK_WALL_SIGN))
+                        continue;
+                    hasSign = true;
 
-                            Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> {
-                                Sign sign = (Sign) block.getState();
-                                for (int s = 0; s < 4; s++) {
-                                    if (s == 1) {
-                                        sign.getSide(Side.FRONT).line(s, text("Street Side", GOLD, BOLD));
-                                        sign.getSide(Side.BACK).line(s, text("Street Side", GOLD, BOLD));
-                                    }
-                                }
-                                sign.update();
-                            });
+                    Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> {
+                        Sign sign = (Sign) block.getState();
+                        for (int s = 0; s < 4; s++) {
+                            if (s != 1) continue;
+                            sign.getSide(Side.FRONT).line(s, text("Street Side", GOLD, BOLD));
+                            sign.getSide(Side.BACK).line(s, text("Street Side", GOLD, BOLD));
                         }
-                    }
+                        sign.update();
+                    });
                 }
             }
         }
