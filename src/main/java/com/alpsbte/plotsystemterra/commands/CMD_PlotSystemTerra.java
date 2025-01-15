@@ -26,8 +26,11 @@ public class CMD_PlotSystemTerra implements CommandExecutor {
     }
 
     public static void sendPluginInfo(CommandSender sender) {
+        // there is no better way to do this according to the paper devs
+        //noinspection UnstableApiUsage
+        String pluginVersion = PlotSystemTerra.getPlugin().getPluginMeta().getVersion();
         ChatUtil.sendMessageBox(sender, "Plot System Terra Plugin", () -> {
-            sender.sendMessage("§eCurrent Version: §7" + PlotSystemTerra.getPlugin().getDescription().getVersion());
+            sender.sendMessage("§eCurrent Version: §7" + pluginVersion);
             sender.sendMessage("§eLatest Version: §7" + PlotSystemTerra.getPlugin().updater.getVersion());
         });
     }

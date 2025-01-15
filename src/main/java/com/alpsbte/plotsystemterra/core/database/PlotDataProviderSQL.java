@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-import static com.alpsbte.plotsystemterra.core.plotsystem.PlotCreator.PLOT_VERSION;
-
 public class PlotDataProviderSQL implements PlotDataProvider {
     @Override
     public Plot getPlot(int id) throws DataException {
@@ -48,13 +46,13 @@ public class PlotDataProviderSQL implements PlotDataProvider {
             if (connection != null) {
                 connection.setAutoCommit(false);
 
-                try (PreparedStatement stmt = Objects.requireNonNull(connection).prepareStatement("INSERT INTO plot (city_project_id, difficulty_id, outline_bounds, initial_schematic, plot_version, created_by) VALUES (?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+                try (PreparedStatement stmt = Objects.requireNonNull(connection).prepareStatement("INSERT INTO plot (city_project_id, difficulty_id, outline_bounds, initial_schematic, plot_version, created_by)" +
+                        "VALUES (?, ?, ?, ?, (SELECT si.current_plot_version FROM system_info si WHERE system_id = 1), ?)", Statement.RETURN_GENERATED_KEYS)) {
                     stmt.setString(1, cityProjectId);
                     stmt.setString(2, difficultyId);
                     stmt.setString(3, outlineBounds);
                     stmt.setBytes(4, initialSchematic);
-                    stmt.setDouble(5, PLOT_VERSION);
-                    stmt.setString(6, createPlayerUUID.toString());
+                    stmt.setString(5, createPlayerUUID.toString());
 
                     stmt.executeUpdate();
 

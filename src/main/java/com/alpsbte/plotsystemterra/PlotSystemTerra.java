@@ -36,7 +36,7 @@ import static net.kyori.adventure.text.format.NamedTextColor.*;
 
 public class PlotSystemTerra extends JavaPlugin {
 
-    public static int SPIGOT_PROJECT_ID = 105323;
+    public static final int SPIGOT_PROJECT_ID = 105323;
 
     private static PlotSystemTerra plugin;
     private static DataProvider dataProvider;
@@ -51,6 +51,9 @@ public class PlotSystemTerra extends JavaPlugin {
     public void onEnable() {
         System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.NoOpLog"); // Disable Logging
         plugin = this;
+
+        // there is no better way to do this according to the paper devs
+        //noinspection UnstableApiUsage
         version = getPluginMeta().getVersion();
 
         Component successPrefix = text("[", DARK_GRAY)
@@ -153,9 +156,11 @@ public class PlotSystemTerra extends JavaPlugin {
         }
 
         // Check for updates
-        Bukkit.getConsoleSender().sendMessage(empty());
-        String result = startUpdateChecker();
-        Bukkit.getConsoleSender().sendMessage(text("Update-Checker: " + result, GOLD));
+        if (ConfigUtil.getInstance().configs[0].getBoolean(ConfigPaths.CHECK_FOR_UPDATES)) {
+            Bukkit.getConsoleSender().sendMessage(empty());
+            String result = startUpdateChecker();
+            Bukkit.getConsoleSender().sendMessage(text("Update-Checker: " + result, GOLD));
+        }
 
         // Start checking for plots to paste
         plotPaster = new PlotPaster();
@@ -226,12 +231,7 @@ public class PlotSystemTerra extends JavaPlugin {
     public void setUpdateInstalled(String newVersion) {
         this.newVersion = newVersion;
 
-        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-            @Override
-            public void run() {
-                Updater.notifyUpdate(newVersion);
-            }
-        }, 20 * 5);
+        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> Updater.notifyUpdate(newVersion), 20 * 5);
 
     }
 

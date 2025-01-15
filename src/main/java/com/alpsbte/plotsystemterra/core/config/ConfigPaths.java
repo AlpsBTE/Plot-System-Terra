@@ -13,7 +13,6 @@ public abstract class ConfigPaths {
     // API
     public static final String API = "api.";
     public static final String API_URL = API + "api-url";
-    public static final String API_PORT = API + "port";
     public static final String API_KEY = API + "api-key";
 
     // Database
