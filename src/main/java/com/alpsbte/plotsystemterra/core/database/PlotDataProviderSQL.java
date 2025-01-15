@@ -1,6 +1,5 @@
 package com.alpsbte.plotsystemterra.core.database;
 
-import com.alpsbte.plotsystemterra.core.DatabaseConnection;
 import com.alpsbte.plotsystemterra.core.data.DataException;
 import com.alpsbte.plotsystemterra.core.data.PlotDataProvider;
 import com.alpsbte.plotsystemterra.core.model.Plot;
@@ -117,7 +116,6 @@ public class PlotDataProviderSQL implements PlotDataProvider {
         } catch (SQLException e) {
             throw new DataException(e.getMessage());
         }
-
         return plots;
     }
 }

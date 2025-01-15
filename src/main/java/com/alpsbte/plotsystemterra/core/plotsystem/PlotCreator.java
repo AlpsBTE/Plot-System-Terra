@@ -185,7 +185,7 @@ public class PlotCreator {
         });
     }
 
-    //TODO: clarify if still needed
+    //TODO: create schematic as file
     public static void createTutorialPlot(Player player, int environmentRadius) {
         CompletableFuture.runAsync(() -> create(player, environmentRadius, (plotRegion, environmentRegion, plotCenter) -> {
             try {

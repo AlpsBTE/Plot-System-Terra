@@ -1,4 +1,4 @@
-package com.alpsbte.plotsystemterra.core;
+package com.alpsbte.plotsystemterra.core.database;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;

@@ -6,7 +6,9 @@ import com.alpsbte.alpslib.utils.head.AlpsHeadEventListener;
 import com.alpsbte.plotsystemterra.commands.CMD_CreatePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PastePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PlotSystemTerra;
-import com.alpsbte.plotsystemterra.core.DatabaseConnection;
+import com.alpsbte.plotsystemterra.core.api.ApiConstants;
+import com.alpsbte.plotsystemterra.core.api.DataProviderAPI;
+import com.alpsbte.plotsystemterra.core.database.DatabaseConnection;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.alpsbte.plotsystemterra.core.config.ConfigUtil;
 import com.alpsbte.plotsystemterra.core.config.DataMode;
@@ -110,10 +112,13 @@ public class PlotSystemTerra extends JavaPlugin {
             return;
         }
 
+        // Initialize API constants
+        ApiConstants.updateApiConstants();
+
         // Set data provider
-        //TODO: implement api provider
         switch (dataMode) {
             case DATABASE -> dataProvider = new DataProviderSQL();
+            case API -> dataProvider = new DataProviderAPI();
             default -> {
                 getComponentLogger().error(text("No Data Provider has been set! Disabling plugin..."));
                 this.getServer().getPluginManager().disablePlugin(this);

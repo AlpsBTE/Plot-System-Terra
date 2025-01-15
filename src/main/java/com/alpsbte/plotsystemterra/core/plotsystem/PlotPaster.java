@@ -97,7 +97,7 @@ public class PlotPaster extends Thread {
             BlockVector3 toPaste;
             if (plotVersion >= 3) {
                 ByteArrayInputStream inputStream = new ByteArrayInputStream(completedSchematic);
-                try (ClipboardReader reader = BuiltInClipboardFormat.SPONGE_V3_SCHEMATIC.getReader(inputStream)) {
+                try (ClipboardReader reader = BuiltInClipboardFormat.FAST_V2.getReader(inputStream)) {
                     BlockVector3 plotOriginOutline = reader.read().getOrigin();
                     toPaste = BlockVector3.at(plotOriginOutline.x(), plotOriginOutline.y(), plotOriginOutline.z());
                 }
@@ -109,7 +109,7 @@ public class PlotPaster extends Thread {
             if (fastMode) editSession.setFastMode(true);
 
             ByteArrayInputStream inputStream = new ByteArrayInputStream(completedSchematic);
-            try (ClipboardReader reader = BuiltInClipboardFormat.SPONGE_V3_SCHEMATIC.getReader(inputStream)) {
+            try (ClipboardReader reader = BuiltInClipboardFormat.FAST_V2.getReader(inputStream)) {
                 Clipboard completedClipboard = reader.read();
                 Operation clipboardHolder = new ClipboardHolder(completedClipboard)
                         .createPaste(editSession)
