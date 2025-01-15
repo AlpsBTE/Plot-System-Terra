@@ -16,13 +16,15 @@ public class CityProject {
     private final boolean isVisible;
     private final String material;
     private final String customModelData;
+    private final String serverName;
 
-    public CityProject(String id, String countryCode, boolean isVisible, String material, String customModelData) {
+    public CityProject(String id, String countryCode, boolean isVisible, String material, String customModelData, String serverName) {
         this.id = id;
         this.countryCode = countryCode;
         this.isVisible = isVisible;
         this.material = material;
         this.customModelData = customModelData;
+        this.serverName = serverName;
     }
 
     public String getId() {
@@ -37,17 +39,13 @@ public class CityProject {
         return isVisible;
     }
 
-    public String getMaterial() {
-        return material;
-    }
-
-    public String getCustomModelData() {
-        return customModelData;
+    public String getServerName() {
+        return serverName;
     }
 
     public ItemStack getItem() {
         return new ItemBuilder(Utils.getConfiguredItem(material, customModelData))
-                .setName(text(id, AQUA, BOLD)) //TODO: get name from language system
+                .setName(text(id, AQUA, BOLD))
                 .setLore(new LoreBuilder()
                         .addLine(text("ID: ", AQUA).append(text(getId(), GRAY)))
                         .build())

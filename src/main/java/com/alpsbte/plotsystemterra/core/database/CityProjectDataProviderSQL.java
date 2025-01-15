@@ -31,30 +31,26 @@ public class CityProjectDataProviderSQL implements CityProjectDataProvider {
 
     @Override
     public CityProject getCityProject(String id) throws DataException {
-        String countryCode = null;
+        String countryCode, material, customModelData, serverName;
         boolean isVisible;
-        String material = null;
-        String customModelData = null;
-        try (ResultSet rsCity = DatabaseConnection.createStatement("SELECT city.country_code, city.is_visible, c.material, c.custom_model_data " +
+        try (ResultSet rsCity = DatabaseConnection.createStatement("SELECT city.country_code, city.is_visible, c.material, c.custom_model_data, city.serverName " +
                         "FROM city_project city " +
                         "INNER JOIN country c " +
                         "ON c.country_code = city.country_code " +
                         "WHERE city.city_project_id = ?")
                 .setValue(id).executeQuery()) {
 
-            if (!rsCity.next()) {
-                return null;
-            }
+            if (!rsCity.next()) return null;
 
             countryCode = rsCity.getString(1);
             isVisible = rsCity.getBoolean(2);
             material = rsCity.getString(3);
             customModelData = rsCity.getString(4);
-
+            serverName = rsCity.getString(5);
             DatabaseConnection.closeResultSet(rsCity);
         } catch (SQLException ex) {
             throw new DataException(ex.getMessage());
         }
-        return new CityProject(id, countryCode, isVisible, material, customModelData);
+        return new CityProject(id, countryCode, isVisible, material, customModelData, serverName);
     }
 }

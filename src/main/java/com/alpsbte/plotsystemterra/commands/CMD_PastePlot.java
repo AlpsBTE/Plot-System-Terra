@@ -47,7 +47,7 @@ public class CMD_PastePlot implements CommandExecutor {
                         .getCityProject(plot.getCityProjectId());
 
                 if (PlotPaster.pastePlotSchematic(
-                        plotID,
+                        plot,
                         cityProject,
                         plotPaster.world,
                         plot.getCompletedSchematic(),

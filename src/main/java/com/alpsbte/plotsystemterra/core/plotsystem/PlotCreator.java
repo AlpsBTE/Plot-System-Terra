@@ -28,7 +28,9 @@ import org.bukkit.entity.Player;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -139,7 +141,7 @@ public class PlotCreator {
             int environmentRadius = config.getInt(ConfigPaths.ENVIRONMENT_RADIUS);
 
             create(player, environmentEnabled ? environmentRadius : -1, (plotRegion, environmentRegion, plotCenter) -> {
-                byte[] initialSchematic = null;
+                byte[] initialSchematic;
 
                 try {
                     // Inform player about the plot creation
@@ -185,7 +187,6 @@ public class PlotCreator {
         });
     }
 
-    //TODO: create schematic as file
     public static void createTutorialPlot(Player player, int environmentRadius) {
         CompletableFuture.runAsync(() -> create(player, environmentRadius, (plotRegion, environmentRegion, plotCenter) -> {
             try {
@@ -203,11 +204,13 @@ public class PlotCreator {
 
                 // Save plot and environment regions to schematic files
                 // Get plot schematic file path
-                byte[] plotFilePath = createPlotSchematic(plotRegion);
+                byte[] plotSchematic = createPlotSchematic(plotRegion);
+                Files.write(Paths.get(schematicsPath, "tutorials", "id-stage.schematic"), plotSchematic, StandardOpenOption.CREATE);
 
                 // Get environment schematic file path
                 if (environmentRadius > 0) {
                     byte[] environmentSchematic = createPlotSchematic(environmentRegion);
+                    Files.write(Paths.get(schematicsPath, "tutorials", "id-env.schematic"), environmentSchematic, StandardOpenOption.CREATE);
                 }
 
                 player.sendMessage(Utils.ChatUtils.getAlertFormat(text("Successfully created new tutorial plot! Check your console for more information!")));

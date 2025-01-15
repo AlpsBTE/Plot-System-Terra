@@ -2,6 +2,8 @@ package com.alpsbte.plotsystemterra.commands;
 
 import com.alpsbte.alpslib.utils.AlpsUtils;
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
+import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
+import com.alpsbte.plotsystemterra.core.config.ConfigUtil;
 import com.alpsbte.plotsystemterra.core.plotsystem.CreatePlotMenu;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotCreator;
 import com.alpsbte.plotsystemterra.utils.Utils;
@@ -20,8 +22,10 @@ public class CMD_CreatePlot implements CommandExecutor {
         if (!Utils.hasPermission(player, "createplot")) return true;
 
         try {
-            // TODO: only on dev mode
-            if (args.length > 1 && args[0].equalsIgnoreCase("tutorial") && AlpsUtils.tryParseInt(args[1]) != null) {
+            if (ConfigUtil.getInstance().configs[0].getBoolean(ConfigPaths.DEV_MODE)
+                    && args.length > 1
+                    && args[0].equalsIgnoreCase("tutorial")
+                    && AlpsUtils.tryParseInt(args[1]) != null) {
                 PlotCreator.createTutorialPlot(player, Integer.parseInt(args[1]));
                 return true;
             }

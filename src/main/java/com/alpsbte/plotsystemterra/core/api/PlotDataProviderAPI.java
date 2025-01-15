@@ -90,8 +90,7 @@ public class PlotDataProviderAPI implements PlotDataProvider {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    // org.json.simple.JSONArray is marked as unchecked internally. can't do anything about this
+    @SuppressWarnings("unchecked") // org.json.simple.JSONArray is marked as unchecked internally. can't do anything about this
     @Override
     public List<Plot> getPlotsToPaste() throws DataException {
         List<Plot> output = new ArrayList<>();

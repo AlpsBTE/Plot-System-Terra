@@ -20,16 +20,15 @@ import org.bukkit.configuration.file.FileConfiguration;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Objects;
 
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.format.NamedTextColor.GOLD;
 import static net.kyori.adventure.text.format.NamedTextColor.GREEN;
 
 public class PlotPaster extends Thread {
-
-    private final String serverName;
+    private static String serverName = null;
 
     public final boolean fastMode;
     private final int pasteInterval;
@@ -39,9 +38,9 @@ public class PlotPaster extends Thread {
     public PlotPaster() {
         FileConfiguration config = PlotSystemTerra.getPlugin().getConfig();
 
-        this.serverName = config.getString(ConfigPaths.SERVER_NAME);
+        serverName = config.getString(ConfigPaths.SERVER_NAME);
         this.fastMode = config.getBoolean(ConfigPaths.FAST_MODE);
-        this.world = Bukkit.getWorld(config.getString(ConfigPaths.WORLD_NAME));
+        this.world = Bukkit.getWorld(Objects.requireNonNull(config.getString(ConfigPaths.WORLD_NAME)));
         this.pasteInterval = config.getInt(ConfigPaths.PASTING_INTERVAL);
         this.broadcastMessages = config.getBoolean(ConfigPaths.BROADCAST_INFO);
     }
@@ -53,30 +52,11 @@ public class PlotPaster extends Thread {
             List<Plot> plotsToPaste = PlotSystemTerra.getDataProvider().getPlotDataProvider().getPlotsToPaste();
 
             for (Plot plot : plotsToPaste) {
-                // TODO: check if plot should be pasted on this server
                 CityProject city = PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProject(plot.getCityProjectId());
-
-                // check mc version
-                int[] serverVersion = getMajorMinorPatch(Bukkit.getServer().getMinecraftVersion());
-                int[] plotMcVersion = getMajorMinorPatch(plot.getMcVersion());
-
-                if (serverVersion == null) {
-                    PlotSystemTerra.getPlugin().getComponentLogger().error(text("Invalid server version! Aborting plot pasting."));
-                    return;
-                }
-                if (plotMcVersion == null) {
-                    PlotSystemTerra.getPlugin().getComponentLogger().error(text("Invalid plot version for plot " + plot.getId() + "! Aborting plot pasting."));
-                    return;
-                }
-                if (isMMPVersionNewer(plotMcVersion, serverVersion)) {
-                    PlotSystemTerra.getPlugin().getComponentLogger().error(
-                            text("Plot " + plot.getId() + " was built on a newer minecraft version! Cannot paste plot! Please update to version " + plotMcVersion[0] + "." + plotMcVersion[1] + "." + plotMcVersion[2] + "!"));
-                    return;
-                }
 
                 // paste schematic
                 try {
-                    if (pastePlotSchematic(plot.getId(), city, world, plot.getCompletedSchematic(), plot.getPlotVersion(), fastMode)) {
+                    if (pastePlotSchematic(plot, city, world, plot.getCompletedSchematic(), plot.getPlotVersion(), fastMode)) {
                         pastedPlots++;
                     }
                 } catch (IOException e) {
@@ -92,7 +72,33 @@ public class PlotPaster extends Thread {
         }, 0L, 20L * pasteInterval);
     }
 
-    public static boolean pastePlotSchematic(int plotID, CityProject city, World world, byte[] completedSchematic, double plotVersion, boolean fastMode) throws IOException, WorldEditException {
+    public static boolean pastePlotSchematic(Plot plot, CityProject city, World world, byte[] completedSchematic, double plotVersion, boolean fastMode) throws IOException, WorldEditException {
+        // check server name
+        if (serverName == null) {
+            PlotSystemTerra.getPlugin().getComponentLogger().error(text("Server name is not configured properly! Unable to paste plots."));
+            return false;
+        }
+
+        if (serverName.equals(city.getServerName())) return false;
+
+        // check mc version
+        int[] serverVersion = getMajorMinorPatch(Bukkit.getServer().getMinecraftVersion());
+        int[] plotMcVersion = getMajorMinorPatch(plot.getMcVersion());
+
+        if (serverVersion == null) {
+            PlotSystemTerra.getPlugin().getComponentLogger().error(text("Invalid server version! Aborting plot pasting."));
+            return false;
+        }
+        if (plotMcVersion == null) {
+            PlotSystemTerra.getPlugin().getComponentLogger().error(text("Invalid plot version for plot " + plot.getId() + "! Aborting plot pasting."));
+            return false;
+        }
+        if (isMMPVersionNewer(plotMcVersion, serverVersion)) {
+            PlotSystemTerra.getPlugin().getComponentLogger().error(
+                    text("Plot " + plot.getId() + " was built on a newer minecraft version! Cannot paste plot! Please update to version " + plotMcVersion[0] + "." + plotMcVersion[1] + "." + plotMcVersion[2] + "!"));
+            return false;
+        }
+
         try (EditSession editSession = WorldEdit.getInstance().newEditSession(FaweAPI.getWorld(world.getName()))) {
             BlockVector3 toPaste;
             if (plotVersion >= 3) {
@@ -119,7 +125,7 @@ public class PlotPaster extends Thread {
                 Operations.complete(clipboardHolder);
             }
 
-            PlotSystemTerra.getDataProvider().getPlotDataProvider().setPasted(plotID);
+            PlotSystemTerra.getDataProvider().getPlotDataProvider().setPasted(plot.getId());
         }
         return true;
     }

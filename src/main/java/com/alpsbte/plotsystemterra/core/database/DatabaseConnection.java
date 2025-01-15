@@ -4,14 +4,14 @@ import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.logging.Level;
+
+import static net.kyori.adventure.text.Component.text;
 
 public class DatabaseConnection {
 
@@ -45,7 +45,7 @@ public class DatabaseConnection {
             try {
                 return dataSource.getConnection();
             } catch (SQLException ex) {
-                Bukkit.getLogger().log(Level.SEVERE, "Database connection failed!\n\n" + ex.getMessage());
+                PlotSystemTerra.getPlugin().getComponentLogger().error(text("Database connection failed!\n\n" + ex.getMessage()));
             }
             retries--;
         }
@@ -57,9 +57,9 @@ public class DatabaseConnection {
     }
 
     public static void closeResultSet(ResultSet resultSet) throws SQLException {
-        if(resultSet.isClosed()
-        && resultSet.getStatement().isClosed()
-        && resultSet.getStatement().getConnection().isClosed())
+        if (resultSet.isClosed()
+                && resultSet.getStatement().isClosed()
+                && resultSet.getStatement().getConnection().isClosed())
             return;
 
         resultSet.close();
@@ -68,8 +68,8 @@ public class DatabaseConnection {
 
         connectionClosed++;
 
-        if(connectionOpened > connectionClosed + 5)
-            Bukkit.getLogger().log(Level.SEVERE, "There are multiple database connections opened. Please report this issue.");
+        if (connectionOpened > connectionClosed + 5)
+            PlotSystemTerra.getPlugin().getComponentLogger().error(text("There are multiple database connections opened. Please report this issue."));
     }
 
     public static class StatementBuilder {

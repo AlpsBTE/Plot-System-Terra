@@ -53,7 +53,7 @@ public class PlotDataProviderSQL implements PlotDataProvider {
                     stmt.setString(2, difficultyId);
                     stmt.setString(3, outlineBounds);
                     stmt.setBytes(4, initialSchematic);
-                    stmt.setDouble(5, PLOT_VERSION); //TODO: switch to decimal
+                    stmt.setDouble(5, PLOT_VERSION);
                     stmt.setString(6, createPlayerUUID.toString());
 
                     stmt.executeUpdate();
