@@ -51,8 +51,7 @@ public class CMD_PastePlot implements CommandExecutor {
                         cityProject,
                         plotPaster.world,
                         plot.getCompletedSchematic(),
-                        plot.getPlotVersion(),
-                        plotPaster.fastMode)) {
+                        plot.getPlotVersion())) {
                     Bukkit.broadcast(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN).append(text(1, GOLD).append(text(" plot!", GREEN)))));
                 }
             } else

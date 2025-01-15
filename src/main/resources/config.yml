@@ -22,10 +22,9 @@ dev-mode: false
 data-mode: API
 
 # If the data mode is set to API, the plugin will use the PlotSystem API to get the plot data
-# Documentation for the PlotSystem API: https://github.com/BuildTheEarth/PlotSystemAPI
+# Documentation for the PlotSystem API: https://github.com/AlpsBTE/Plot-System-API
 api:
-  api-url: psapi.buildtheearth.net
-  port: 8080
+  api-url: https://plot.alps-bte.com/api/
   api-key: ffffffff-ffff-ffff-ffff-ffffffffffff
 
 # If the data mode is set to DATABASE, the plugin will use a database to get the plot data
@@ -76,4 +75,4 @@ chat-format:
 
 
 # NOTE: Do not change
-config-version: 2.0
+config-version: 3.0

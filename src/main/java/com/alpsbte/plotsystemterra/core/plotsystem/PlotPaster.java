@@ -29,8 +29,6 @@ import static net.kyori.adventure.text.format.NamedTextColor.GREEN;
 
 public class PlotPaster extends Thread {
     private static String serverName = null;
-
-    public final boolean fastMode;
     private final int pasteInterval;
     public final World world;
     private final boolean broadcastMessages;
@@ -39,7 +37,6 @@ public class PlotPaster extends Thread {
         FileConfiguration config = PlotSystemTerra.getPlugin().getConfig();
 
         serverName = config.getString(ConfigPaths.SERVER_NAME);
-        this.fastMode = config.getBoolean(ConfigPaths.FAST_MODE);
         this.world = Bukkit.getWorld(Objects.requireNonNull(config.getString(ConfigPaths.WORLD_NAME)));
         this.pasteInterval = config.getInt(ConfigPaths.PASTING_INTERVAL);
         this.broadcastMessages = config.getBoolean(ConfigPaths.BROADCAST_INFO);
@@ -56,7 +53,7 @@ public class PlotPaster extends Thread {
 
                 // paste schematic
                 try {
-                    if (pastePlotSchematic(plot, city, world, plot.getCompletedSchematic(), plot.getPlotVersion(), fastMode)) {
+                    if (pastePlotSchematic(plot, city, world, plot.getCompletedSchematic(), plot.getPlotVersion())) {
                         pastedPlots++;
                     }
                 } catch (IOException e) {
@@ -72,7 +69,7 @@ public class PlotPaster extends Thread {
         }, 0L, 20L * pasteInterval);
     }
 
-    public static boolean pastePlotSchematic(Plot plot, CityProject city, World world, byte[] completedSchematic, double plotVersion, boolean fastMode) throws IOException, WorldEditException {
+    public static boolean pastePlotSchematic(Plot plot, CityProject city, World world, byte[] completedSchematic, double plotVersion) throws IOException, WorldEditException {
         // check server name
         if (serverName == null) {
             PlotSystemTerra.getPlugin().getComponentLogger().error(text("Server name is not configured properly! Unable to paste plots."));
@@ -111,8 +108,6 @@ public class PlotPaster extends Thread {
                 PlotSystemTerra.getPlugin().getComponentLogger().error(text("Cannot paste plot! Plot version " + plotVersion + "is no longer supported! Must be at least 3!"));
                 return false;
             }
-
-            if (fastMode) editSession.setFastMode(true);
 
             ByteArrayInputStream inputStream = new ByteArrayInputStream(completedSchematic);
             try (ClipboardReader reader = BuiltInClipboardFormat.FAST_V2.getReader(inputStream)) {
