@@ -170,11 +170,9 @@ public class PlotCreator {
                             player.getUniqueId(),
                             initialSchematic
                     );
-
                     // Place plot markings on plot region
                     placePlotMarker(plotRegion, player, createdPlotId);
                     // TODO: Change top blocks of the plot region to mark plot as created
-
                     player.sendMessage(Utils.ChatUtils.getInfoFormat(text("Successfully created new plot!", GREEN)
                             .append(text(" (City-Id: " + cityProject.getId() + " | Plot-Id: " + createdPlotId + ")", WHITE))));
                     player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
@@ -220,7 +218,6 @@ public class PlotCreator {
             }
         }));
     }
-
 
     /**
      * Creates a plot schematic of a selected region from the player.

@@ -9,6 +9,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class CityProjectDataProviderSQL implements CityProjectDataProvider {
     @Override
@@ -27,6 +30,18 @@ public class CityProjectDataProviderSQL implements CityProjectDataProvider {
         }
 
         return listProjects;
+    }
+
+    @Override
+    public CompletableFuture<List<CityProject>> getCityProjectsAsync() throws DataException {
+        CompletableFuture<List<CityProject>> completableFuture = new CompletableFuture<>();
+        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+            executor.submit(() -> {
+                completableFuture.complete(getCityProjects());
+                return null;
+            });
+        }
+        return completableFuture;
     }
 
     @Override
@@ -52,5 +67,17 @@ public class CityProjectDataProviderSQL implements CityProjectDataProvider {
             throw new DataException(ex.getMessage());
         }
         return new CityProject(id, countryCode, isVisible, material, customModelData, serverName);
+    }
+
+    @Override
+    public CompletableFuture<CityProject> getCityProjectAsync(String id) throws DataException {
+        CompletableFuture<CityProject> completableFuture = new CompletableFuture<>();
+        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+            executor.submit(() -> {
+                completableFuture.complete(getCityProject(id));
+                return null;
+            });
+        }
+        return completableFuture;
     }
 }

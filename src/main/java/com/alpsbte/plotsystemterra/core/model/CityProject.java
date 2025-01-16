@@ -47,7 +47,7 @@ public class CityProject {
         return new ItemBuilder(Utils.getConfiguredItem(material, customModelData))
                 .setName(text(id, AQUA, BOLD))
                 .setLore(new LoreBuilder()
-                        .addLine(text("ID: ", AQUA).append(text(getId(), GRAY)))
+                        .addLine(text("ID: ", AQUA).append(text(id, GRAY)))
                         .build())
                 .build();
     }

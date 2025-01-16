@@ -9,6 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class PlotDataProviderSQL implements PlotDataProvider {
     @Override
@@ -35,6 +38,18 @@ public class PlotDataProviderSQL implements PlotDataProvider {
         } catch (SQLException e) {
             throw new DataException(e.getMessage());
         }
+    }
+
+    @Override
+    public CompletableFuture<Plot> getPlotAsync(int id) throws DataException {
+        CompletableFuture<Plot> completableFuture = new CompletableFuture<>();
+        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+            executor.submit(() -> {
+                completableFuture.complete(getPlot(id));
+                return null;
+            });
+        }
+        return completableFuture;
     }
 
     @Override
@@ -82,6 +97,18 @@ public class PlotDataProviderSQL implements PlotDataProvider {
     }
 
     @Override
+    public CompletableFuture<Integer> createPlotAsync(String cityProjectId, String difficultyId, String outlineBounds, UUID createPlayerUUID, byte[] initialSchematic) throws DataException {
+        CompletableFuture<Integer> completableFuture = new CompletableFuture<>();
+        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+            executor.submit(() -> {
+                completableFuture.complete(createPlot(cityProjectId, difficultyId, outlineBounds, createPlayerUUID, initialSchematic));
+                return null;
+            });
+        }
+        return completableFuture;
+    }
+
+    @Override
     public void setPasted(int id) throws DataException {
         try {
             DatabaseConnection.createStatement("UPDATE plot SET is_pasted = '1' WHERE plot_id = ?")
@@ -89,6 +116,19 @@ public class PlotDataProviderSQL implements PlotDataProvider {
         } catch (SQLException e) {
             throw new DataException(e.getMessage());
         }
+    }
+
+    @Override
+    public CompletableFuture<Void> setPastedAsync(int id) throws DataException {
+        CompletableFuture<Void> completableFuture = new CompletableFuture<>();
+        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+            executor.submit(() -> {
+                setPasted(id);
+                completableFuture.complete(null);
+                return null;
+            });
+        }
+        return completableFuture;
     }
 
     @Override
@@ -115,5 +155,17 @@ public class PlotDataProviderSQL implements PlotDataProvider {
             throw new DataException(e.getMessage());
         }
         return plots;
+    }
+
+    @Override
+    public CompletableFuture<List<Plot>> getPlotsToPasteAsync() throws DataException {
+        CompletableFuture<List<Plot>> completableFuture = new CompletableFuture<>();
+        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+            executor.submit(() -> {
+                completableFuture.complete(getPlotsToPaste());
+                return null;
+            });
+        }
+        return completableFuture;
     }
 }

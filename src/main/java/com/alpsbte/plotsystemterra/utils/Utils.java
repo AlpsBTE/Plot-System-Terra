@@ -47,7 +47,9 @@ public class Utils {
             Material mat = Material.getMaterial(material);
             base = new ItemStack(mat == null ? Material.BARRIER : mat);
         }
+        ItemBuilder builder = new ItemBuilder(base);
+        if (customModelData != null) builder.setItemModel(customModelData);
 
-        return new ItemBuilder(base).setItemModel(customModelData).build();
+        return builder.build();
     }
 }

@@ -5,6 +5,8 @@ import com.alpsbte.alpslib.utils.item.LoreBuilder;
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.data.DataException;
 import com.alpsbte.plotsystemterra.core.model.CityProject;
+import com.alpsbte.plotsystemterra.utils.Utils;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -16,6 +18,7 @@ import org.ipvp.canvas.mask.Mask;
 import org.ipvp.canvas.type.ChestMenu;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static net.kyori.adventure.text.Component.empty;
 import static net.kyori.adventure.text.Component.text;
@@ -26,18 +29,31 @@ public class CreatePlotMenu {
     private final Menu createPlotMenu = ChestMenu.builder(6).title(text("Create Plot")).redraw(true).build();
     private final Menu difficultyMenu = ChestMenu.builder(3).title(text("Select Plot Difficulty")).redraw(true).build();
 
-    private final List<CityProject> cityProjects;
+    private List<CityProject> cityProjects;
     private int selectedCityID = -1;
 
     private final Player player;
 
     public CreatePlotMenu(Player player) {
         this.player = player;
-        this.cityProjects = PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProjects();
-        getCityProjectUI().open(player);
+        player.sendMessage(Utils.ChatUtils.getInfoFormat(text("Fetching city project data...")));
+        CompletableFuture.supplyAsync(() -> PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProjects())
+                .exceptionally(e -> {
+                    player.sendMessage(Utils.ChatUtils.getAlertFormat(text("Could not fetch city project data!")));
+                    PlotSystemTerra.getPlugin().getComponentLogger().error(text("An error occurred fetching city project data"), e);
+                    return List.of();
+                })
+                .thenAccept(cityProjects -> {
+                    this.cityProjects = cityProjects;
+                    if (cityProjects.isEmpty()) {
+                        player.sendMessage(Utils.ChatUtils.getAlertFormat(text("No city projects were found for your build team!")));
+                        return;
+                    }
+                    Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), this::openCityProjectUI);
+                });
     }
 
-    public Menu getCityProjectUI() {
+    public void openCityProjectUI() {
         Mask mask = BinaryMask.builder(createPlotMenu)
                 .item(new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE, 1).setName(empty()).build())
                 .pattern("111101111") // First row
@@ -51,10 +67,24 @@ public class CreatePlotMenu {
 
         createPlotMenu.getSlot(4).setItem(getStats(player.getLocation()));
 
-        for(int i = 0; i < cityProjects.size(); i++) {
+        // Set City Project items
+        for (int i = 0; i < cityProjects.size(); i++) {
             int cityID = i;
+
+            ItemStack cityProjectItem;
+            try {
+                cityProjectItem = cityProjects.get(i).getItem();
+            } catch (DataException e) {
+                cityProjectItem = new ItemBuilder(Material.BARRIER)
+                        .setName(text("Error", RED, BOLD))
+                        .setLore(new LoreBuilder()
+                                .addLine("Could not load city project.")
+                                .build())
+                        .build();
+            }
+            createPlotMenu.getSlot(9 + i).setItem(cityProjectItem);
             createPlotMenu.getSlot(9 + i).setClickHandler((clickPlayer, clickInformation) -> {
-                if(selectedCityID != cityID) {
+                if (selectedCityID != cityID) {
                     selectedCityID = cityID;
                     createPlotMenu.getSlot(4).setItem(getStats(player.getLocation()));
 
@@ -79,7 +109,7 @@ public class CreatePlotMenu {
         createPlotMenu.getSlot(50).setClickHandler((clickPlayer, clickInformation)
                 -> clickPlayer.closeInventory());
 
-        return createPlotMenu;
+        createPlotMenu.open(player);
     }
 
     public Menu getDifficultyMenu() {
@@ -126,20 +156,6 @@ public class CreatePlotMenu {
             clickPlayer.closeInventory();
             PlotCreator.createPlot(clickPlayer, cityProject, "hard");
         });
-
-        // Set City Project items
-        for (int i = 0; i < cityProjects.size(); i++) {
-            try {
-                createPlotMenu.getSlot(9 + i).setItem(cityProjects.get(i).getItem());
-            } catch (DataException e) {
-                createPlotMenu.getSlot(9 + i).setItem(new ItemBuilder(Material.BARRIER)
-                        .setName(text("Error", RED, BOLD))
-                        .setLore(new LoreBuilder()
-                                .addLine("Could not load city project.")
-                                .build())
-                        .build());
-            }
-        }
 
         return difficultyMenu;
     }

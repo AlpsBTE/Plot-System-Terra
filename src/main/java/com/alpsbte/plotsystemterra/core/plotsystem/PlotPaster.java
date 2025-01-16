@@ -20,8 +20,12 @@ import org.bukkit.configuration.file.FileConfiguration;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.format.NamedTextColor.GOLD;
@@ -44,29 +48,12 @@ public class PlotPaster extends Thread {
 
     @Override
     public void run() {
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(PlotSystemTerra.getPlugin(), () -> {
-            int pastedPlots = 0;
-            List<Plot> plotsToPaste = PlotSystemTerra.getDataProvider().getPlotDataProvider().getPlotsToPaste();
-
-            for (Plot plot : plotsToPaste) {
-                CityProject city = PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProject(plot.getCityProjectId());
-
-                // paste schematic
-                try {
-                    if (pastePlotSchematic(plot, city, world, plot.getCompletedSchematic(), plot.getPlotVersion())) {
-                        pastedPlots++;
-                    }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            if (broadcastMessages && pastedPlots != 0) {
-                Bukkit.broadcast(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN)
-                        .append(text(pastedPlots, GOLD)
-                                .append(text(" plot" + (pastedPlots > 1 ? "s" : "") + "!", GREEN)))));
-            }
-        }, 0L, 20L * pasteInterval);
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(PlotSystemTerra.getPlugin(),
+                () -> PlotSystemTerra.getDataProvider()
+                        .getPlotDataProvider()
+                        .getPlotsToPasteAsync()
+                        .thenCompose(this::getPlotCityProjectHashMapAsync)
+                        .thenAccept(this::pasteCompletedPlots), 0L, 20L * pasteInterval);
     }
 
     public static boolean pastePlotSchematic(Plot plot, CityProject city, World world, byte[] completedSchematic, double plotVersion) throws IOException, WorldEditException {
@@ -120,9 +107,44 @@ public class PlotPaster extends Thread {
                 Operations.complete(clipboardHolder);
             }
 
-            PlotSystemTerra.getDataProvider().getPlotDataProvider().setPasted(plot.getId());
+            PlotSystemTerra.getDataProvider().getPlotDataProvider().setPastedAsync(plot.getId())
+                    .thenRun(() -> PlotSystemTerra.getPlugin().getComponentLogger().info(text("Plot #" + plot.getId() + " successfully marked as pasted!")));
         }
         return true;
+    }
+
+    private void pasteCompletedPlots(HashMap<Plot, CityProject> plotsToPaste) {
+        int pastedPlots = 0;
+        for (Plot plot : plotsToPaste.keySet()) {
+            // paste schematic
+            try {
+                if (pastePlotSchematic(plot, plotsToPaste.get(plot), world, plot.getCompletedSchematic(), plot.getPlotVersion())) {
+                    pastedPlots++;
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        if (broadcastMessages && pastedPlots != 0) {
+            Bukkit.broadcast(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN)
+                    .append(text(pastedPlots, GOLD)
+                            .append(text(" plot" + (pastedPlots > 1 ? "s" : "") + "!", GREEN)))));
+        }
+    }
+    private CompletableFuture<HashMap<Plot, CityProject>> getPlotCityProjectHashMapAsync(List<Plot> plots) {
+        CompletableFuture<HashMap<Plot, CityProject>> completableFuture = new CompletableFuture<>();
+        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+            executor.submit(() -> {
+                HashMap<Plot, CityProject> output = new HashMap<>();
+                for (Plot plot : plots) {
+                    output.put(plot, PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProject(plot.getCityProjectId()));
+                }
+                completableFuture.complete(output);
+                return null;
+            });
+        }
+        return completableFuture;
     }
 
     private static int[] getMajorMinorPatch(String version) {

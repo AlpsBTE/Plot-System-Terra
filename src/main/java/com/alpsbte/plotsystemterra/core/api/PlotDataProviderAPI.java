@@ -1,9 +1,11 @@
 package com.alpsbte.plotsystemterra.core.api;
 
+import com.alpsbte.alpslib.utils.AlpsUtils;
 import com.alpsbte.plotsystemterra.core.data.DataException;
 import com.alpsbte.plotsystemterra.core.data.PlotDataProvider;
 import com.alpsbte.plotsystemterra.core.model.Plot;
 import okhttp3.*;
+import org.enginehub.linbus.stream.token.LinToken;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -15,6 +17,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class PlotDataProviderAPI implements PlotDataProvider {
     @Override
@@ -50,6 +55,18 @@ public class PlotDataProviderAPI implements PlotDataProvider {
     }
 
     @Override
+    public CompletableFuture<Plot> getPlotAsync(int id) throws DataException {
+        CompletableFuture<Plot> completableFuture = new CompletableFuture<>();
+        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+            executor.submit(() -> {
+                completableFuture.complete(getPlot(id));
+                return null;
+            });
+        }
+        return completableFuture;
+    }
+
+    @Override
     public int createPlot(String cityProjectId, String difficultyId, String outlineBounds, UUID createPlayerUUID, byte[] initialSchematic) throws DataException {
         OkHttpClient client = new OkHttpClient().newBuilder().build();
         RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
@@ -57,7 +74,7 @@ public class PlotDataProviderAPI implements PlotDataProvider {
                 .addFormDataPart("difficultyId", difficultyId)
                 .addFormDataPart("outlineBounds", outlineBounds)
                 .addFormDataPart("createdBy", createPlayerUUID.toString())
-                .addFormDataPart("initialSchematic", null,
+                .addFormDataPart("initialSchematic", "initialSchematic.schematic",
                         RequestBody.create(initialSchematic, MediaType.parse("application/octet-stream")))
                 .build();
         Request request = new Request.Builder()
@@ -67,11 +84,28 @@ public class PlotDataProviderAPI implements PlotDataProvider {
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
-            if (response.code() != 201) throw new DataException("Invalid status code!: " + response.body().string());
-            return 1;
-        } catch (IOException e) {
+            if (response.code() != 200) throw new DataException("Invalid status code!: " + response.code() + " " + response.body().string());
+
+            JSONParser parser = new JSONParser();
+            JSONObject jsonObject = (JSONObject) parser.parse(response.body().string());
+
+            String stringId = jsonObject.get("id").toString();
+            return Integer.parseInt(stringId);
+        } catch (Exception e) {
             throw new DataException(e.getMessage());
         }
+    }
+
+    @Override
+    public CompletableFuture<Integer> createPlotAsync(String cityProjectId, String difficultyId, String outlineBounds, UUID createPlayerUUID, byte[] initialSchematic) throws DataException {
+        CompletableFuture<Integer> completableFuture = new CompletableFuture<>();
+        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+            executor.submit(() -> {
+                completableFuture.complete(createPlot(cityProjectId, difficultyId, outlineBounds, createPlayerUUID, initialSchematic));
+                return null;
+            });
+        }
+        return completableFuture;
     }
 
     @Override
@@ -90,7 +124,21 @@ public class PlotDataProviderAPI implements PlotDataProvider {
         }
     }
 
-    @SuppressWarnings("unchecked") // org.json.simple.JSONArray is marked as unchecked internally. can't do anything about this
+    @Override
+    public CompletableFuture<Void> setPastedAsync(int id) throws DataException {
+        CompletableFuture<Void> completableFuture = new CompletableFuture<>();
+        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+            executor.submit(() -> {
+                setPasted(id);
+                completableFuture.complete(null);
+                return null;
+            });
+        }
+        return completableFuture;
+    }
+
+    @SuppressWarnings("unchecked")
+    // org.json.simple.JSONArray is marked as unchecked internally. can't do anything about this
     @Override
     public List<Plot> getPlotsToPaste() throws DataException {
         List<Plot> output = new ArrayList<>();
@@ -128,5 +176,17 @@ public class PlotDataProviderAPI implements PlotDataProvider {
             throw new DataException(e.getMessage());
         }
         return output;
+    }
+
+    @Override
+    public CompletableFuture<List<Plot>> getPlotsToPasteAsync() throws DataException {
+        CompletableFuture<List<Plot>> completableFuture = new CompletableFuture<>();
+        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+            executor.submit(() -> {
+                completableFuture.complete(getPlotsToPaste());
+                return null;
+            });
+        }
+        return completableFuture;
     }
 }

@@ -15,6 +15,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class CityProjectDataProviderAPI implements CityProjectDataProvider {
 
@@ -54,6 +57,18 @@ public class CityProjectDataProviderAPI implements CityProjectDataProvider {
     }
 
     @Override
+    public CompletableFuture<List<CityProject>> getCityProjectsAsync() throws DataException {
+        CompletableFuture<List<CityProject>> completableFuture = new CompletableFuture<>();
+        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+            executor.submit(() -> {
+                completableFuture.complete(getCityProjects());
+                return null;
+            });
+        }
+        return completableFuture;
+    }
+
+    @Override
     public CityProject getCityProject(String id) throws DataException {
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpRequest request = HttpRequest.newBuilder()
@@ -80,5 +95,17 @@ public class CityProjectDataProviderAPI implements CityProjectDataProvider {
         } catch (IOException | InterruptedException | ParseException e) {
             throw new DataException(e.getMessage());
         }
+    }
+
+    @Override
+    public CompletableFuture<CityProject> getCityProjectAsync(String id) throws DataException {
+        CompletableFuture<CityProject> completableFuture = new CompletableFuture<>();
+        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+            executor.submit(() -> {
+                completableFuture.complete(getCityProject(id));
+                return null;
+            });
+        }
+        return completableFuture;
     }
 }
