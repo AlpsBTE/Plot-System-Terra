@@ -1,11 +1,9 @@
 package com.alpsbte.plotsystemterra.core.api;
 
-import com.alpsbte.alpslib.utils.AlpsUtils;
 import com.alpsbte.plotsystemterra.core.data.DataException;
 import com.alpsbte.plotsystemterra.core.data.PlotDataProvider;
 import com.alpsbte.plotsystemterra.core.model.Plot;
 import okhttp3.*;
-import org.enginehub.linbus.stream.token.LinToken;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -40,16 +38,18 @@ public class PlotDataProviderAPI implements PlotDataProvider {
 
             String status = (String) jsonObj.get("status");
             String cityProjectId = (String) jsonObj.get("cityProjectId");
-            double plotVersion = (double) jsonObj.get("plotVersion");
+            double plotVersion = ((Number) jsonObj.get("plotVersion")).doubleValue();
             String mcVersion = (String) jsonObj.get("mcVersion");
+            byte[] completedSchematic = Base64.getDecoder().decode((String) jsonObj.get("completedSchematic"));
             return new Plot(
                     id,
                     status,
                     cityProjectId,
                     plotVersion,
-                    mcVersion
+                    mcVersion,
+                    completedSchematic
             );
-        } catch (IOException | InterruptedException | ParseException e) {
+        } catch (Exception e) {
             throw new DataException(e.getMessage());
         }
     }
@@ -156,10 +156,10 @@ public class PlotDataProviderAPI implements PlotDataProvider {
             JSONArray jsonArray = (JSONArray) parser.parse(response.body());
             jsonArray.forEach(object -> {
                 JSONObject jsonObj = (JSONObject) object;
-                int id = (int) jsonObj.get("id");
+                int id = ((Number) jsonObj.get("id")).intValue();
                 String status = (String) jsonObj.get("status");
                 String cityProjectId = (String) jsonObj.get("cityProjectId");
-                double plotVersion = (double) jsonObj.get("plotVersion");
+                double plotVersion = ((Number) jsonObj.get("plotVersion")).doubleValue();
                 String mcVersion = (String) jsonObj.get("mcVersion");
                 byte[] completedSchematic = Base64.getDecoder().decode((String) jsonObj.get("completedSchematic"));
 

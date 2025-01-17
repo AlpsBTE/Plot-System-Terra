@@ -20,12 +20,10 @@ import org.bukkit.configuration.file.FileConfiguration;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.format.NamedTextColor.GOLD;
@@ -49,11 +47,27 @@ public class PlotPaster extends Thread {
     @Override
     public void run() {
         Bukkit.getScheduler().scheduleSyncRepeatingTask(PlotSystemTerra.getPlugin(),
-                () -> PlotSystemTerra.getDataProvider()
-                        .getPlotDataProvider()
-                        .getPlotsToPasteAsync()
-                        .thenCompose(this::getPlotCityProjectHashMapAsync)
-                        .thenAccept(this::pasteCompletedPlots), 0L, 20L * pasteInterval);
+                () -> CompletableFuture.runAsync(() -> {
+                    List<Plot> plots = PlotSystemTerra.getDataProvider().getPlotDataProvider().getPlotsToPaste();
+                    int pastedPlots = 0;
+                    for (Plot plot : plots) {
+                        CityProject cityProject = PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProject(plot.getCityProjectId());
+                        // paste schematic
+                        try {
+                            if (pastePlotSchematic(plot, cityProject, world, plot.getCompletedSchematic(), plot.getPlotVersion())) {
+                                pastedPlots++;
+                            }
+                        } catch (Exception e) {
+                            PlotSystemTerra.getPlugin().getComponentLogger().error(text("An error occurred while pasting plot #" + plot.getId()), e);
+                        }
+                    }
+
+                    if (broadcastMessages && pastedPlots != 0) {
+                        Bukkit.broadcast(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN)
+                                .append(text(pastedPlots, GOLD)
+                                        .append(text(" plot" + (pastedPlots > 1 ? "s" : "") + "!", GREEN)))));
+                    }
+                }).orTimeout((long) 60.0, TimeUnit.SECONDS), 0L, 20L * pasteInterval);
     }
 
     public static boolean pastePlotSchematic(Plot plot, CityProject city, World world, byte[] completedSchematic, double plotVersion) throws IOException, WorldEditException {
@@ -83,68 +97,39 @@ public class PlotPaster extends Thread {
             return false;
         }
 
-        try (EditSession editSession = WorldEdit.getInstance().newEditSession(FaweAPI.getWorld(world.getName()))) {
-            BlockVector3 toPaste;
-            if (plotVersion >= 3) {
+        Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> {
+            try (EditSession editSession = WorldEdit.getInstance().newEditSession(FaweAPI.getWorld(world.getName()))) {
+                BlockVector3 toPaste;
+                if (plotVersion >= 3) {
+                    ByteArrayInputStream inputStream = new ByteArrayInputStream(completedSchematic);
+                    try (ClipboardReader reader = BuiltInClipboardFormat.FAST_V2.getReader(inputStream)) {
+                        BlockVector3 plotOriginOutline = reader.read().getOrigin();
+                        toPaste = BlockVector3.at(plotOriginOutline.x(), plotOriginOutline.y(), plotOriginOutline.z());
+                    }
+                } else {
+                    PlotSystemTerra.getPlugin().getComponentLogger().error(text("Cannot paste plot! Plot version " + plotVersion + "is no longer supported! Must be at least 3!"));
+                    return;
+                }
+
                 ByteArrayInputStream inputStream = new ByteArrayInputStream(completedSchematic);
                 try (ClipboardReader reader = BuiltInClipboardFormat.FAST_V2.getReader(inputStream)) {
-                    BlockVector3 plotOriginOutline = reader.read().getOrigin();
-                    toPaste = BlockVector3.at(plotOriginOutline.x(), plotOriginOutline.y(), plotOriginOutline.z());
+                    Clipboard completedClipboard = reader.read();
+                    Operation clipboardHolder = new ClipboardHolder(completedClipboard)
+                            .createPaste(editSession)
+                            .to(toPaste)
+                            .ignoreAirBlocks(true)
+                            .build();
+                    Operations.complete(clipboardHolder);
                 }
-            } else {
-                PlotSystemTerra.getPlugin().getComponentLogger().error(text("Cannot paste plot! Plot version " + plotVersion + "is no longer supported! Must be at least 3!"));
-                return false;
-            }
 
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(completedSchematic);
-            try (ClipboardReader reader = BuiltInClipboardFormat.FAST_V2.getReader(inputStream)) {
-                Clipboard completedClipboard = reader.read();
-                Operation clipboardHolder = new ClipboardHolder(completedClipboard)
-                        .createPaste(editSession)
-                        .to(toPaste)
-                        .ignoreAirBlocks(true)
-                        .build();
-                Operations.complete(clipboardHolder);
-            }
+                PlotSystemTerra.getDataProvider().getPlotDataProvider().setPastedAsync(plot.getId())
+                        .thenRun(() -> PlotSystemTerra.getPlugin().getComponentLogger().info(text("Plot #" + plot.getId() + " successfully marked as pasted!")));
 
-            PlotSystemTerra.getDataProvider().getPlotDataProvider().setPastedAsync(plot.getId())
-                    .thenRun(() -> PlotSystemTerra.getPlugin().getComponentLogger().info(text("Plot #" + plot.getId() + " successfully marked as pasted!")));
-        }
+            } catch (Exception e) {
+                PlotSystemTerra.getPlugin().getComponentLogger().error(text("An error occurred while pasting plot #" + plot.getId()), e);
+            }
+        });
         return true;
-    }
-
-    private void pasteCompletedPlots(HashMap<Plot, CityProject> plotsToPaste) {
-        int pastedPlots = 0;
-        for (Plot plot : plotsToPaste.keySet()) {
-            // paste schematic
-            try {
-                if (pastePlotSchematic(plot, plotsToPaste.get(plot), world, plot.getCompletedSchematic(), plot.getPlotVersion())) {
-                    pastedPlots++;
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        if (broadcastMessages && pastedPlots != 0) {
-            Bukkit.broadcast(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN)
-                    .append(text(pastedPlots, GOLD)
-                            .append(text(" plot" + (pastedPlots > 1 ? "s" : "") + "!", GREEN)))));
-        }
-    }
-    private CompletableFuture<HashMap<Plot, CityProject>> getPlotCityProjectHashMapAsync(List<Plot> plots) {
-        CompletableFuture<HashMap<Plot, CityProject>> completableFuture = new CompletableFuture<>();
-        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
-            executor.submit(() -> {
-                HashMap<Plot, CityProject> output = new HashMap<>();
-                for (Plot plot : plots) {
-                    output.put(plot, PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProject(plot.getCityProjectId()));
-                }
-                completableFuture.complete(output);
-                return null;
-            });
-        }
-        return completableFuture;
     }
 
     private static int[] getMajorMinorPatch(String version) {

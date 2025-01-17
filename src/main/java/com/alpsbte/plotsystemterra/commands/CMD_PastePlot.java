@@ -14,6 +14,7 @@ import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.format.NamedTextColor.GOLD;
@@ -32,10 +33,15 @@ public class CMD_PastePlot implements CommandExecutor {
         int plotID = Integer.parseInt(args[0]);
 
         sender.sendMessage(Utils.ChatUtils.getInfoFormat(text("Fetching plot data...")));
-        PlotSystemTerra.getDataProvider().getPlotDataProvider().getPlotAsync(plotID)
-                .thenAccept(plot -> {
-                    plotValidation(sender, plot, plotID);
-                });
+        try {
+            CompletableFuture.supplyAsync(() -> PlotSystemTerra.getDataProvider().getPlotDataProvider().getPlot(plotID))
+                    .thenAccept(plot -> plotValidation(sender, plot, plotID)).exceptionally(e -> {
+                        sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("Plot with the ID " + plotID + " could not be found!")));
+                        return null;
+                    });
+        } catch (DataException e) {
+            sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("Plot with the ID " + plotID + " could not be found!")));
+        }
         return true;
     }
 
@@ -52,9 +58,7 @@ public class CMD_PastePlot implements CommandExecutor {
 
         sender.sendMessage(Utils.ChatUtils.getInfoFormat(text("Fetching city project data...")));
         PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProjectAsync(plot.getCityProjectId())
-                .thenAccept(cityProject -> {
-                    plotPasting(sender, plot, cityProject);
-                });
+                .thenAccept(cityProject -> Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> plotPasting(sender, plot, cityProject)));
     }
 
     private void plotPasting(CommandSender sender, Plot plot, CityProject cityProject) {
