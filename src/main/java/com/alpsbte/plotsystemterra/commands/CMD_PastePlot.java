@@ -13,7 +13,6 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 import static net.kyori.adventure.text.Component.text;
@@ -23,7 +22,7 @@ import static net.kyori.adventure.text.format.NamedTextColor.GREEN;
 public class CMD_PastePlot implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String s, String @NotNull [] args) {
-        if (!Utils.hasPermission(sender, "pasteplot")) return false;
+        if (!sender.hasPermission("plotsystem.pasteplot")) return false;
 
         if (args.length < 1 || AlpsUtils.tryParseInt(args[0]) == null) {
             sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("Incorrect Input! Try /pasteplot <ID>")));
@@ -58,23 +57,18 @@ public class CMD_PastePlot implements CommandExecutor {
 
         sender.sendMessage(Utils.ChatUtils.getInfoFormat(text("Fetching city project data...")));
         PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProjectAsync(plot.getCityProjectId())
-                .thenAccept(cityProject -> Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> plotPasting(sender, plot, cityProject)));
+                .thenAccept(cityProject -> Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> plotPasting(plot, cityProject)));
     }
 
-    private void plotPasting(CommandSender sender, Plot plot, CityProject cityProject) {
+    private void plotPasting(Plot plot, CityProject cityProject) {
         PlotPaster plotPaster = PlotSystemTerra.getPlugin().getPlotPaster();
-        try {
-            if (PlotPaster.pastePlotSchematic(
-                    plot,
-                    cityProject,
-                    plotPaster.world,
-                    plot.getCompletedSchematic(),
-                    plot.getPlotVersion())) {
-                Bukkit.broadcast(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN).append(text(1, GOLD).append(text(" plot!", GREEN)))));
-            }
-        } catch (IOException e) {
-            PlotSystemTerra.getPlugin().getComponentLogger().error(text("An error occurred while pasting plot!"), e);
-            sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("An error occurred while pasting plot!")));
+        if (PlotPaster.pastePlotSchematic(
+                plot,
+                cityProject,
+                plotPaster.world,
+                plot.getCompletedSchematic(),
+                plot.getPlotVersion())) {
+            Bukkit.broadcast(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN).append(text(1, GOLD).append(text(" plot!", GREEN)))));
         }
     }
 }

@@ -19,7 +19,6 @@ import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -70,7 +69,7 @@ public class PlotPaster extends Thread {
                 }).orTimeout((long) 60.0, TimeUnit.SECONDS), 0L, 20L * pasteInterval);
     }
 
-    public static boolean pastePlotSchematic(Plot plot, CityProject city, World world, byte[] completedSchematic, double plotVersion) throws IOException, WorldEditException {
+    public static boolean pastePlotSchematic(Plot plot, CityProject city, World world, byte[] completedSchematic, double plotVersion) throws WorldEditException {
         // check server name
         if (serverName == null) {
             PlotSystemTerra.getPlugin().getComponentLogger().error(text("Server name is not configured properly! Unable to paste plots."));

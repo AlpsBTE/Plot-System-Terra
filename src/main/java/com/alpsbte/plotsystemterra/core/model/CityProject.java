@@ -31,14 +31,6 @@ public class CityProject {
         return id;
     }
 
-    public String getCountryCode() {
-        return countryCode;
-    }
-
-    public boolean isVisible() {
-        return isVisible;
-    }
-
     public String getServerName() {
         return serverName;
     }
@@ -48,6 +40,8 @@ public class CityProject {
                 .setName(text(id, AQUA, BOLD))
                 .setLore(new LoreBuilder()
                         .addLine(text("ID: ", AQUA).append(text(id, GRAY)))
+                        .addLine(text("Country Code: ", AQUA).append(text(countryCode, GRAY)))
+                        .addLine(text("Is Visible?: ", AQUA).append(text(isVisible, GRAY)))
                         .build())
                 .build();
     }

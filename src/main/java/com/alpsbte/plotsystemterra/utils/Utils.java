@@ -5,17 +5,11 @@ import com.alpsbte.alpslib.utils.head.AlpsHeadUtils;
 import com.alpsbte.alpslib.utils.item.ItemBuilder;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
-import org.bukkit.command.CommandSender;
 import org.bukkit.inventory.ItemStack;
 
 import static net.kyori.adventure.text.format.NamedTextColor.*;
 
 public class Utils {
-    /**
-     * Prefix used for all command permissions.
-     */
-    public static final String permissionPrefix = "plotsystem";
-
     public static class ChatUtils {
         public static void setChatFormat(String infoPrefix, String alertPrefix) {
             ChatUtils.infoPrefix = AlpsUtils.deserialize(infoPrefix);
@@ -26,16 +20,12 @@ public class Utils {
         private static Component alertPrefix;
 
         public static Component getInfoFormat(Component infoComponent) {
-            return infoPrefix.append(infoComponent).color(GREEN);
+            return infoPrefix.append(infoComponent.color(GREEN));
         }
 
         public static Component getAlertFormat(Component alertComponent) {
-            return alertPrefix.append(alertComponent).color(RED);
+            return alertPrefix.append(alertComponent.color(RED));
         }
-    }
-
-    public static boolean hasPermission(CommandSender sender, String permissionNode) {
-        return sender.hasPermission(permissionPrefix + "." + permissionNode);
     }
 
     public static ItemStack getConfiguredItem(String material, String customModelData) {

@@ -19,7 +19,7 @@ public class CMD_CreatePlot implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String s, String @NotNull [] args) {
         if (!(sender instanceof Player player)) return true;
-        if (!Utils.hasPermission(player, "createplot")) return true;
+        if (!player.hasPermission("plotsystem.createplot")) return true;
 
         try {
             if (ConfigUtil.getInstance().configs[0].getBoolean(ConfigPaths.DEV_MODE)
