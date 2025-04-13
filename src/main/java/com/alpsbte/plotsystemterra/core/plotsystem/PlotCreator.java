@@ -49,7 +49,6 @@ public class PlotCreator {
     public final static int MIN_OFFSET_Y = 5;
 
     public static void create(Player player, int environmentRadius, IPlotRegionsAction plotRegionsAction) {
-        Polygonal2DRegion plotRegion;
         Vector3 plotCenter;
         CylinderRegion environmentRegion = null;
 
@@ -65,9 +64,7 @@ public class PlotCreator {
 
         // Create plot and environment regions
         // Check if WorldEdit selection is polygonal
-        if (rawPlotRegion instanceof Polygonal2DRegion) {
-            // Cast WorldEdit region to polygonal region
-            plotRegion = (Polygonal2DRegion) rawPlotRegion;
+        if (rawPlotRegion instanceof Polygonal2DRegion plotRegion) {
 
             // Check if the polygonal region is valid
             if (plotRegion.getLength() > 100 || plotRegion.getWidth() > 100 || (plotRegion.getHeight() > 256 - MIN_OFFSET_Y)) {

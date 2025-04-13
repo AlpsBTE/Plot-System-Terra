@@ -99,13 +99,7 @@ public class PlotPaster extends Thread {
         Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> {
             try (EditSession editSession = WorldEdit.getInstance().newEditSession(FaweAPI.getWorld(world.getName()))) {
                 BlockVector3 toPaste;
-                if (plotVersion >= 3) {
-                    ByteArrayInputStream inputStream = new ByteArrayInputStream(completedSchematic);
-                    try (ClipboardReader reader = BuiltInClipboardFormat.FAST_V2.getReader(inputStream)) {
-                        BlockVector3 plotOriginOutline = reader.read().getOrigin();
-                        toPaste = BlockVector3.at(plotOriginOutline.x(), plotOriginOutline.y(), plotOriginOutline.z());
-                    }
-                } else {
+                if (!(plotVersion >= 3)) {
                     PlotSystemTerra.getPlugin().getComponentLogger().error(text("Cannot paste plot! Plot version " + plotVersion + "is no longer supported! Must be at least 3!"));
                     return;
                 }
@@ -113,6 +107,11 @@ public class PlotPaster extends Thread {
                 ByteArrayInputStream inputStream = new ByteArrayInputStream(completedSchematic);
                 try (ClipboardReader reader = BuiltInClipboardFormat.FAST_V2.getReader(inputStream)) {
                     Clipboard completedClipboard = reader.read();
+                    BlockVector3 plotOriginOutline = completedClipboard.getOrigin();
+                    toPaste = BlockVector3.at(plotOriginOutline.x(), plotOriginOutline.y(), plotOriginOutline.z());
+                    PlotSystemTerra.getPlugin().getComponentLogger().info(text("Pasting plot at " + toPaste.toParserString()));
+
+
                     Operation clipboardHolder = new ClipboardHolder(completedClipboard)
                             .createPaste(editSession)
                             .to(toPaste)

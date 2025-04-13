@@ -20,6 +20,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.logging.Level;
 
+import static net.kyori.adventure.text.Component.empty;
 import static net.kyori.adventure.text.Component.text;
 
 
@@ -118,10 +119,11 @@ public class Updater {
             notifyUpdate(p, newVersion);
 
         // TODO: use components
-        Bukkit.getConsoleSender().sendMessage(" ");
+        Bukkit.getConsoleSender().sendMessage(empty());
+        Bukkit.getConsoleSender().sendMessage("§c[BuildTeam Plugin] §eThe server automatically installed a new update (v" + newVersion + ").");
         Bukkit.getConsoleSender().sendMessage("§c[BuildTeam Plugin] §eThe server automatically installed a new update (v" + newVersion + ").");
         Bukkit.getConsoleSender().sendMessage("§c>> §ePlease restart or reload the server to activate it.");
-        Bukkit.getConsoleSender().sendMessage(" ");
+        Bukkit.getConsoleSender().sendMessage(empty());
 
     }
 
@@ -129,10 +131,10 @@ public class Updater {
         if (p.hasPermission("plotsystem.notifyUpdate")) {
             p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0F, 1.0F);
             // TODO: use components
-            p.sendMessage("");
+            p.sendMessage(empty());
             p.sendMessage("§6§l[BuildTeam Plugin] §eThe server automatically installed a new update (v" + newVersion + ").");
             p.sendMessage("§6>> §ePlease restart or reload the server to activate it.");
-            p.sendMessage("");
+            p.sendMessage(empty());
         }
     }
 
@@ -189,8 +191,7 @@ public class Updater {
                 this.page--;
                 checkUpdate();
             } else if (jsonArray.size() < 10) {
-                if (logger)
-                    plugin.getLogger().info("Found " + jsonArray.size() + " versions.");
+                if (logger) plugin.getLogger().info("Found " + jsonArray.size() + " versions.");
                 element = jsonArray.get(jsonArray.size() - 1);
                 JsonObject object = element.getAsJsonObject();
                 element = object.get("name");
