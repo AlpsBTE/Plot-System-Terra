@@ -177,7 +177,13 @@ public class PlotCreator {
                 return false;
             }
         }
-        else return true;
+        else {
+            // TODO: Validate API
+            player.sendMessage(Utils.ChatUtils.getAlertFormat(text(
+                "Data Provider is set to API! Manually creating plot with this mode is not fully supported!", GOLD))
+            );
+            return true;
+        }
     }
 
     private static void createPlot(Player player, String cityProjectID, String difficultyId) {
