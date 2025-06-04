@@ -68,8 +68,17 @@ public class PlotCreator {
         if (rawPlotRegion instanceof Polygonal2DRegion plotRegion) {
 
             // Check if the polygonal region is valid
-            if (plotRegion.getLength() > 100 || plotRegion.getWidth() > 100 || (plotRegion.getHeight() > 256 - MIN_OFFSET_Y)) {
-                player.sendMessage(Utils.ChatUtils.getAlertFormat(text("Please adjust your selection size!")));
+            String text = "Please adjust your selection size!";
+            if (plotRegion.getLength() > 100 ) {
+                player.sendMessage(Utils.ChatUtils.getAlertFormat(text(text + " Lenght is " + plotRegion.getLength() + " and can only be smaller than 100.!")));
+                return;
+            }
+            if (plotRegion.getWidth() > 100) {
+                player.sendMessage(Utils.ChatUtils.getAlertFormat(text(text + " Width is " + plotRegion.getWidth() + " and can only be smaller than 100.!")));
+                return;
+            }
+            if (plotRegion.getHeight() > 256 - MIN_OFFSET_Y) {
+                player.sendMessage(Utils.ChatUtils.getAlertFormat(text(text + " Height is " + plotRegion.getHeight() + " and can only be smaller than 256 - " + MIN_OFFSET_Y + "!")));
                 return;
             }
 

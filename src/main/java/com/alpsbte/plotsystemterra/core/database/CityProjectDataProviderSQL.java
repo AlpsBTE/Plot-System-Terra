@@ -48,7 +48,7 @@ public class CityProjectDataProviderSQL implements CityProjectDataProvider {
     public CityProject getCityProject(String id) throws DataException {
         String countryCode, material, customModelData, serverName;
         boolean isVisible;
-        try (ResultSet rsCity = DatabaseConnection.createStatement("SELECT city.country_code, city.is_visible, c.material, c.custom_model_data, city.serverName " +
+        try (ResultSet rsCity = DatabaseConnection.createStatement("SELECT city.country_code, city.is_visible, c.material, c.custom_model_data, city.server_name " +
                         "FROM city_project city " +
                         "INNER JOIN country c " +
                         "ON c.country_code = city.country_code " +
