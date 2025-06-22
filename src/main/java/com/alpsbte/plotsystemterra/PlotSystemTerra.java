@@ -15,7 +15,6 @@ import com.alpsbte.plotsystemterra.core.config.DataMode;
 import com.alpsbte.plotsystemterra.core.data.DataProvider;
 import com.alpsbte.plotsystemterra.core.database.DataProviderSQL;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
-import com.alpsbte.plotsystemterra.utils.Updater;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import com.sk89q.worldedit.WorldEdit;
 import net.kyori.adventure.text.Component;
@@ -35,17 +34,12 @@ import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.format.NamedTextColor.*;
 
 public class PlotSystemTerra extends JavaPlugin {
-
-    public static final int SPIGOT_PROJECT_ID = 105323;
-
     private static PlotSystemTerra plugin;
     private static DataProvider dataProvider;
     private PlotPaster plotPaster;
 
     private boolean pluginEnabled = false;
     public String version;
-    public String newVersion;
-    public Updater updater;
 
     @Override
     public void onEnable() {
@@ -155,13 +149,6 @@ public class PlotSystemTerra extends JavaPlugin {
             return;
         }
 
-        // Check for updates
-        if (ConfigUtil.getInstance().configs[0].getBoolean(ConfigPaths.CHECK_FOR_UPDATES)) {
-            Bukkit.getConsoleSender().sendMessage(empty());
-            String result = startUpdateChecker();
-            Bukkit.getConsoleSender().sendMessage(text("Update-Checker: " + result, GOLD));
-        }
-
         // Start checking for plots to paste
         plotPaster = new PlotPaster();
         plotPaster.start();
@@ -210,32 +197,6 @@ public class PlotSystemTerra extends JavaPlugin {
         return dataProvider;
     }
 
-    private String startUpdateChecker() {
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(this, this::checkForUpdates, 20 * 60 * 60, 20 * 60 * 60);
-        return checkForUpdates();
-    }
-
-    public String checkForUpdates() {
-        updater = new Updater(this, SPIGOT_PROJECT_ID, this.getFile(), Updater.UpdateType.CHECK_DOWNLOAD, false);
-        Updater.Result result = updater.getResult();
-
-        return switch (result) {
-            case BAD_ID -> "Failed to update the plugin: Wrong Spigot ID.";
-            case FAILED -> "Failed to update the plugin.";
-            case NO_UPDATE -> "The plugin is up to date.";
-            case SUCCESS -> "Plugin successfully updated to version " + updater.getVersion() + ".";
-            case UPDATE_FOUND -> "Found an update (v" + updater.getVersion() + ") for the plugin.";
-        };
-    }
-
-    public void setUpdateInstalled(String newVersion) {
-        this.newVersion = newVersion;
-
-        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> Updater.notifyUpdate(newVersion), 20 * 5);
-
-    }
-
-
     public static PlotSystemTerra getPlugin() {
         return plugin;
     }
@@ -247,7 +208,7 @@ public class PlotSystemTerra extends JavaPlugin {
     public static class DependencyManager {
 
         // List with all missing dependencies
-        private final static List<String> missingDependencies = new ArrayList<>();
+        private static final List<String> missingDependencies = new ArrayList<>();
 
         /**
          * Check for all required dependencies and inform in console about missing dependencies

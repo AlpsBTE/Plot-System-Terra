@@ -6,7 +6,7 @@
 
     <groupId>com.alpsbte</groupId>
     <artifactId>PlotSystem-Terra</artifactId>
-    <version>3.1</version>
+    <version>5.0</version>
 
     <repositories>
         <repository>
