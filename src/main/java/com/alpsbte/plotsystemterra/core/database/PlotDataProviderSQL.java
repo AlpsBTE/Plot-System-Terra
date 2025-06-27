@@ -16,7 +16,7 @@ import java.util.concurrent.Executors;
 public class PlotDataProviderSQL implements PlotDataProvider {
     @Override
     public Plot getPlot(int id) throws DataException {
-        try (ResultSet rs = DatabaseConnection.createStatement("SELECT status, city_project_id, plot_version, mc_version FROM plot WHERE id = ?")
+        try (ResultSet rs = DatabaseConnection.createStatement("SELECT status, city_project_id, plot_version, mc_version FROM plot WHERE plot_id = ?")
                 .setValue(id).executeQuery()) {
 
             if (!rs.next()) return null;
@@ -136,7 +136,7 @@ public class PlotDataProviderSQL implements PlotDataProvider {
         List<Plot> plots = new ArrayList<>();
 
         try (ResultSet rs = DatabaseConnection
-                .createStatement("SELECT plot_id, status, city_project_id, plot_version, mc_version, completed_schematic FROM plot WHERE status = 'completed' AND is_pasted = '0' LIMIT 20")
+                .createStatement("SELECT plot_id, status, city_project_id, plot_version, mc_version, complete_schematic FROM plot WHERE status = 'completed' AND is_pasted = '0' LIMIT 20")
                 .executeQuery()) {
             if (!rs.next()) return plots;
 
