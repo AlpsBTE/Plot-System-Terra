@@ -5,6 +5,8 @@ import com.alpsbte.plotsystemterra.core.data.CityProjectDataProvider;
 import com.alpsbte.plotsystemterra.core.data.DataException;
 import com.alpsbte.plotsystemterra.core.model.CityProject;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -26,7 +28,7 @@ public class CityProjectDataProviderSQL implements CityProjectDataProvider {
 
             DatabaseConnection.closeResultSet(rs);
         } catch (SQLException ex) {
-            throw new DataException(ex.getMessage());
+            throw new DataException(ex.getMessage(), ex);
         }
 
         return listProjects;
@@ -47,13 +49,20 @@ public class CityProjectDataProviderSQL implements CityProjectDataProvider {
     @Override
     public CityProject getCityProject(String id) throws DataException {
         String countryCode, material, customModelData, serverName;
+        Connection con = DatabaseConnection.getConnection();
+        if (con == null) {
+            throw new DataException("Database connection is null.");
+        }
         boolean isVisible;
-        try (ResultSet rsCity = DatabaseConnection.createStatement("SELECT city.country_code, city.is_visible, c.material, c.custom_model_data, city.server_name " +
-                        "FROM city_project city " +
-                        "INNER JOIN country c " +
-                        "ON c.country_code = city.country_code " +
-                        "WHERE city.city_project_id = ?")
-                .setValue(id).executeQuery()) {
+
+            try (PreparedStatement ps = con.prepareStatement("SELECT city.country_code, city.is_visible, c.material, c.custom_model_data, city.server_name " +
+                    "FROM city_project city " +
+                    "INNER JOIN country c " +
+                    "ON c.country_code = city.country_code " +
+                    "WHERE city.city_project_id = ?")) {
+            ps.setString(1, id);
+
+            ResultSet rsCity = ps.executeQuery();
 
             if (!rsCity.next()) return null;
 
@@ -64,7 +73,7 @@ public class CityProjectDataProviderSQL implements CityProjectDataProvider {
             serverName = rsCity.getString(5);
             DatabaseConnection.closeResultSet(rsCity);
         } catch (SQLException ex) {
-            throw new DataException(ex.getMessage());
+            throw new DataException(ex.getMessage(), ex);
         }
         return new CityProject(id, countryCode, isVisible, material, customModelData, serverName);
     }
