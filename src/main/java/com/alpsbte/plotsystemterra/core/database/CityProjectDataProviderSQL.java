@@ -1,5 +1,30 @@
+/*
+ *  The MIT License (MIT)
+ *
+ *  Copyright © 2021-2025, Alps BTE <bte.atchli@gmail.com>
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
 package com.alpsbte.plotsystemterra.core.database;
 
+import com.alpsbte.alpslib.io.database.DatabaseConnection;
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.data.CityProjectDataProvider;
 import com.alpsbte.plotsystemterra.core.data.DataException;
@@ -20,13 +45,12 @@ public class CityProjectDataProviderSQL implements CityProjectDataProvider {
     public List<CityProject> getCityProjects() {
         List<CityProject> listProjects = new ArrayList<>();
 
-        try (ResultSet rs = DatabaseConnection.createStatement("SELECT city_project_id FROM city_project").executeQuery()) {
+        try (var statement = DatabaseConnection.getConnection().createStatement()) {
+            ResultSet rs = statement.executeQuery("SELECT city_project_id FROM city_project");
             while (rs.next()) {
                 CityProject city = PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProject(rs.getString(1));
                 listProjects.add(city);
             }
-
-            DatabaseConnection.closeResultSet(rs);
         } catch (SQLException ex) {
             throw new DataException(ex.getMessage(), ex);
         }
@@ -47,12 +71,10 @@ public class CityProjectDataProviderSQL implements CityProjectDataProvider {
     }
 
     @Override
-    public CityProject getCityProject(String id) throws DataException {
+    public CityProject getCityProject(String id) throws DataException, SQLException {
         String countryCode, material, customModelData, serverName;
         Connection con = DatabaseConnection.getConnection();
-        if (con == null) {
-            throw new DataException("Database connection is null.");
-        }
+
         boolean isVisible;
 
             try (PreparedStatement ps = con.prepareStatement("SELECT city.country_code, city.is_visible, c.material, c.custom_model_data, city.server_name " +
@@ -71,7 +93,6 @@ public class CityProjectDataProviderSQL implements CityProjectDataProvider {
             material = rsCity.getString(3);
             customModelData = rsCity.getString(4);
             serverName = rsCity.getString(5);
-            DatabaseConnection.closeResultSet(rsCity);
         } catch (SQLException ex) {
             throw new DataException(ex.getMessage(), ex);
         }

@@ -1,10 +1,40 @@
+/*
+ *  The MIT License (MIT)
+ *
+ *  Copyright © 2021-2025, Alps BTE <bte.atchli@gmail.com>
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
 package com.alpsbte.plotsystemterra.core.database;
 
+import com.alpsbte.alpslib.io.database.DatabaseConnection;
 import com.alpsbte.plotsystemterra.core.data.DataException;
 import com.alpsbte.plotsystemterra.core.data.PlotDataProvider;
 import com.alpsbte.plotsystemterra.core.model.Plot;
+import org.jetbrains.annotations.NotNull;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -27,8 +57,6 @@ public class PlotDataProviderSQL implements PlotDataProvider {
             String cityProjectId = rs.getString(2);
             double plotVersion = rs.getDouble(3);
             String mcVersion = rs.getString(4);
-
-            DatabaseConnection.closeResultSet(rs);
 
             return new Plot(
                     id,
@@ -55,12 +83,11 @@ public class PlotDataProviderSQL implements PlotDataProvider {
     }
 
     @Override
-    public int createPlot(String cityProjectId, String difficultyId, String outlineBounds, UUID createPlayerUUID, byte[] initialSchematic) throws DataException {
+    public int createPlot(String cityProjectId, String difficultyId, String outlineBounds, @NotNull UUID createPlayerUUID, byte[] initialSchematic) throws DataException {
         int createdPlotId;
-
-        Connection connection = DatabaseConnection.getConnection();
+        Connection connection = null;
         try {
-            if (connection != null) {
+            connection = DatabaseConnection.getConnection();
                 connection.setAutoCommit(false);
 
                 try (PreparedStatement stmt = Objects.requireNonNull(connection).prepareStatement("INSERT INTO plot (city_project_id, difficulty_id, outline_bounds, initial_schematic, plot_version, created_by)" +
@@ -80,20 +107,20 @@ public class PlotDataProviderSQL implements PlotDataProvider {
                         } else throw new DataException("Could not obtain generated key");
                     }
                 }
-            } else throw new DataException("Could not connect to database");
 
             // Finalize database transaction
             connection.commit();
-            connection.close();
-        } catch (SQLException e) {
-            try {
-                connection.rollback();
-                connection.close();
-            } catch (SQLException ex) {
-                throw new DataException(ex.getMessage(), e);
+        } catch (SQLException | DataException e) {
+
+            if (connection != null) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    throw new DataException("Failed to rollback transaction: " + rollbackEx.getMessage(), rollbackEx);
+                }
             }
 
-            throw new DataException(e.getMessage());
+            throw new DataException(e.getMessage(), e);
         }
         return createdPlotId;
     }
@@ -136,9 +163,8 @@ public class PlotDataProviderSQL implements PlotDataProvider {
     public List<Plot> getPlotsToPaste() throws DataException {
         List<Plot> plots = new ArrayList<>();
 
-        try (ResultSet rs = DatabaseConnection
-                .createStatement("SELECT plot_id, status, city_project_id, plot_version, mc_version, complete_schematic FROM plot WHERE status = 'completed' AND is_pasted = '0' LIMIT 20")
-                .executeQuery()) {
+        try (var s = DatabaseConnection.getConnection().createStatement()) {
+            ResultSet rs = s.executeQuery("SELECT plot_id, status, city_project_id, plot_version, mc_version, complete_schematic FROM plot WHERE status = 'completed' AND is_pasted = '0' LIMIT 20");
             if (!rs.next()) return plots;
 
             int id = rs.getInt(1);

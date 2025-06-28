@@ -1,7 +1,33 @@
+/*
+ *  The MIT License (MIT)
+ *
+ *  Copyright © 2021-2025, Alps BTE <bte.atchli@gmail.com>
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
 package com.alpsbte.plotsystemterra;
 
 import com.alpsbte.alpslib.io.YamlFileFactory;
 import com.alpsbte.alpslib.io.config.ConfigNotImplementedException;
+import com.alpsbte.alpslib.io.database.DatabaseConfigPaths;
+import com.alpsbte.alpslib.io.database.DatabaseConnection;
 import com.alpsbte.alpslib.utils.head.AlpsHeadEventListener;
 import com.alpsbte.plotsystemterra.commands.CMD_CreatePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PastePlot;
@@ -13,7 +39,6 @@ import com.alpsbte.plotsystemterra.core.config.ConfigUtil;
 import com.alpsbte.plotsystemterra.core.config.DataMode;
 import com.alpsbte.plotsystemterra.core.data.DataProvider;
 import com.alpsbte.plotsystemterra.core.database.DataProviderSQL;
-import com.alpsbte.plotsystemterra.core.database.DatabaseConnection;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import net.kyori.adventure.text.Component;
@@ -78,7 +103,7 @@ public class PlotSystemTerra extends JavaPlugin {
         // Initialize database connection
         try {
             if (dataMode == DataMode.DATABASE) {
-                DatabaseConnection.InitializeDatabase();
+                DatabaseConnection.initializeDatabase(DatabaseConfigPaths.getConfig(getConfig()), getComponentLogger());
                 getComponentLogger().info(successPrefix.append(text("Successfully initialized database connection.")));
             }
         } catch (Exception ex) {
