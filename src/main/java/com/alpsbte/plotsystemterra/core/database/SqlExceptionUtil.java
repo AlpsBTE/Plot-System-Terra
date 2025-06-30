@@ -22,18 +22,38 @@
  *  SOFTWARE.
  */
 
-package com.alpsbte.plotsystemterra.core.data;
+package com.alpsbte.plotsystemterra.core.database;
 
-public class DataException extends RuntimeException {
-    public DataException(String message) {
-        super(message);
+import com.alpsbte.plotsystemterra.core.data.DataException;
+import org.jetbrains.annotations.NotNull;
+
+import java.sql.SQLException;
+
+public class SqlExceptionUtil {
+
+    public static <T> T handle(@NotNull SqlExceptionUtil.CheckedSupplier<T> supplier) {
+        try {
+            return supplier.get();
+        } catch (SQLException e) {
+            throw new DataException(e.getMessage(), e);
+        }
     }
 
-    public DataException(String message, Throwable cause) {
-        super(message, cause);
+    public static void handle(@NotNull SqlExceptionUtil.Supplier supplier) {
+        try {
+            supplier.get();
+        } catch (SQLException e) {
+            throw new DataException(e.getMessage(), e);
+        }
     }
 
-    public DataException(Throwable cause) {
-        super(cause);
+    @FunctionalInterface
+    public interface CheckedSupplier<T> {
+        T get() throws SQLException;
+    }
+
+    @FunctionalInterface
+    public interface Supplier {
+        void get() throws SQLException;
     }
 }

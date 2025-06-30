@@ -24,30 +24,24 @@
 
 package com.alpsbte.plotsystemterra.core.database;
 
-import com.alpsbte.alpslib.io.database.DatabaseConnection;
+import com.alpsbte.alpslib.io.database.SqlHelper;
 import com.alpsbte.plotsystemterra.core.data.DataException;
 import com.alpsbte.plotsystemterra.core.data.PlotDataProvider;
 import com.alpsbte.plotsystemterra.core.model.Plot;
 import org.jetbrains.annotations.NotNull;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-public class PlotDataProviderSQL implements PlotDataProvider {
+public class PlotDataProviderSQL extends PlotDataProvider {
+
     @Override
     public Plot getPlot(int id) throws DataException {
-        try (PreparedStatement ps = Objects.requireNonNull(DatabaseConnection.getConnection()).prepareStatement("SELECT status, city_project_id, plot_version, mc_version FROM plot WHERE plot_id = ?")) {
+        String queryGetPlot = "SELECT status, city_project_id, plot_version, mc_version FROM plot WHERE plot_id = ?";
 
+        return SqlExceptionUtil.handle(() -> SqlHelper.runQuery(queryGetPlot, ps -> {
             ps.setInt(1, id);
             ResultSet rs = ps.executeQuery();
 
@@ -65,134 +59,65 @@ public class PlotDataProviderSQL implements PlotDataProvider {
                     plotVersion,
                     mcVersion
             );
-        } catch (SQLException e) {
-            throw new DataException(e.getMessage(), e);
-        }
+        }));
     }
 
     @Override
-    public CompletableFuture<Plot> getPlotAsync(int id) throws DataException {
-        CompletableFuture<Plot> completableFuture = new CompletableFuture<>();
-        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
-            executor.submit(() -> {
-                completableFuture.complete(getPlot(id));
-                return null;
-            });
-        }
-        return completableFuture;
-    }
+    public int createPlot(String cityProjectId, String difficultyId, String outlineBounds,
+                          @NotNull UUID createPlayerUUID, byte[] initialSchematic) throws DataException {
 
-    @Override
-    public int createPlot(String cityProjectId, String difficultyId, String outlineBounds, @NotNull UUID createPlayerUUID, byte[] initialSchematic) throws DataException {
-        int createdPlotId;
-        Connection connection = null;
-        try {
-            connection = DatabaseConnection.getConnection();
-                connection.setAutoCommit(false);
+        String queryInsert = "INSERT INTO plot (city_project_id, difficulty_id, outline_bounds, initial_schematic, plot_version, created_by)" +
+                "VALUES (?, ?, ?, ?, (SELECT si.current_plot_version FROM system_info si WHERE system_id = 1), ?)";
 
-                try (PreparedStatement stmt = Objects.requireNonNull(connection).prepareStatement("INSERT INTO plot (city_project_id, difficulty_id, outline_bounds, initial_schematic, plot_version, created_by)" +
-                        "VALUES (?, ?, ?, ?, (SELECT si.current_plot_version FROM system_info si WHERE system_id = 1), ?)", Statement.RETURN_GENERATED_KEYS)) {
-                    stmt.setString(1, cityProjectId);
-                    stmt.setString(2, difficultyId);
-                    stmt.setString(3, outlineBounds);
-                    stmt.setBytes(4, initialSchematic);
-                    stmt.setString(5, createPlayerUUID.toString());
+        return SqlExceptionUtil.handle(() -> SqlHelper.runInsertQuery(queryInsert, ps -> {
+            ps.setString(1, cityProjectId);
+            ps.setString(2, difficultyId);
+            ps.setString(3, outlineBounds);
+            ps.setBytes(4, initialSchematic);
+            ps.setString(5, createPlayerUUID.toString());
 
-                    stmt.executeUpdate();
-
-                    // Get the id of the new plot
-                    try (ResultSet rs = stmt.getGeneratedKeys()) {
-                        if (rs.next()) {
-                            createdPlotId = rs.getInt(1);
-                        } else throw new DataException("Could not obtain generated key");
-                    }
-                }
-
-            // Finalize database transaction
-            connection.commit();
-        } catch (SQLException | DataException e) {
-
-            if (connection != null) {
-                try {
-                    connection.rollback();
-                } catch (SQLException rollbackEx) {
-                    throw new DataException("Failed to rollback transaction: " + rollbackEx.getMessage(), rollbackEx);
-                }
+            int affectedRows = ps.executeUpdate();
+            if (affectedRows == 0) {
+                throw new DataException("Creating plot failed, no rows affected.");
             }
 
-            throw new DataException(e.getMessage(), e);
-        }
-        return createdPlotId;
-    }
-
-    @Override
-    public CompletableFuture<Integer> createPlotAsync(String cityProjectId, String difficultyId, String outlineBounds, UUID createPlayerUUID, byte[] initialSchematic) throws DataException {
-        CompletableFuture<Integer> completableFuture = new CompletableFuture<>();
-        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
-            executor.submit(() -> {
-                completableFuture.complete(createPlot(cityProjectId, difficultyId, outlineBounds, createPlayerUUID, initialSchematic));
-                return null;
-            });
-        }
-        return completableFuture;
+            // Get the id of the new plot
+            ResultSet rs = ps.getGeneratedKeys();
+            if (rs.next()) {
+                return rs.getInt(1);
+            } else {
+                throw new DataException("Could not obtain generated key");
+            }
+        }));
     }
 
     @Override
     public void setPasted(int id) throws DataException {
-        try (PreparedStatement ps = Objects.requireNonNull(DatabaseConnection.getConnection()).prepareStatement("UPDATE plot SET is_pasted = '1' WHERE plot_id = ?")){
-            ps.setInt(1, id);
-        } catch (SQLException e) {
-            throw new DataException(e.getMessage(), e);
-        }
-    }
+        String queryUpdatePasted = "UPDATE plot SET is_pasted = '1' WHERE plot_id = ?";
 
-    @Override
-    public CompletableFuture<Void> setPastedAsync(int id) throws DataException {
-        CompletableFuture<Void> completableFuture = new CompletableFuture<>();
-        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
-            executor.submit(() -> {
-                setPasted(id);
-                completableFuture.complete(null);
-                return null;
-            });
-        }
-        return completableFuture;
+        SqlExceptionUtil.handle(() -> SqlHelper.runStatement(queryUpdatePasted, ps -> ps.setInt(1, id)));
     }
 
     @Override
     public List<Plot> getPlotsToPaste() throws DataException {
-        List<Plot> plots = new ArrayList<>();
+        String queryPlotsToPaste = "SELECT plot_id, status, city_project_id, plot_version, mc_version, " +
+                "complete_schematic FROM plot WHERE status = 'completed' AND is_pasted = '0' LIMIT 20";
 
-        try (var s = DatabaseConnection.getConnection().createStatement()) {
-            ResultSet rs = s.executeQuery("SELECT plot_id, status, city_project_id, plot_version, mc_version, complete_schematic FROM plot WHERE status = 'completed' AND is_pasted = '0' LIMIT 20");
-            if (!rs.next()) return plots;
+        return SqlExceptionUtil.handle(() -> SqlHelper.runQuery(queryPlotsToPaste, ps -> {
+            List<Plot> plots = new ArrayList<>();
+            ResultSet rs = ps.executeQuery();
 
-            int id = rs.getInt(1);
-            String status = rs.getString(2);
-            String cityProjectId = rs.getString(3);
-            double plotVersion = rs.getDouble(4);
-            String mcVersion = rs.getString(5);
-            byte[] completedSchematic = rs.getBytes(6);
+            while (rs.next()) {
+                int id = rs.getInt(1);
+                String status = rs.getString(2);
+                String cityProjectId = rs.getString(3);
+                double plotVersion = rs.getDouble(4);
+                String mcVersion = rs.getString(5);
+                byte[] completedSchematic = rs.getBytes(6);
 
-            plots.add(new Plot(
-               id, status, cityProjectId, plotVersion, mcVersion, completedSchematic
-            ));
-
-        } catch (SQLException e) {
-            throw new DataException(e.getMessage(), e);
-        }
-        return plots;
-    }
-
-    @Override
-    public CompletableFuture<List<Plot>> getPlotsToPasteAsync() throws DataException {
-        CompletableFuture<List<Plot>> completableFuture = new CompletableFuture<>();
-        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
-            executor.submit(() -> {
-                completableFuture.complete(getPlotsToPaste());
-                return null;
-            });
-        }
-        return completableFuture;
+                plots.add(new Plot(id, status, cityProjectId, plotVersion, mcVersion, completedSchematic));
+            }
+            return plots;
+        }));
     }
 }

@@ -26,13 +26,10 @@ package com.alpsbte.plotsystemterra;
 
 import com.alpsbte.alpslib.io.YamlFileFactory;
 import com.alpsbte.alpslib.io.config.ConfigNotImplementedException;
-import com.alpsbte.alpslib.io.database.DatabaseConfigPaths;
-import com.alpsbte.alpslib.io.database.DatabaseConnection;
 import com.alpsbte.alpslib.utils.head.AlpsHeadEventListener;
 import com.alpsbte.plotsystemterra.commands.CMD_CreatePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PastePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PlotSystemTerra;
-import com.alpsbte.plotsystemterra.core.api.ApiConstants;
 import com.alpsbte.plotsystemterra.core.api.DataProviderAPI;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.alpsbte.plotsystemterra.core.config.ConfigUtil;
@@ -100,29 +97,20 @@ public class PlotSystemTerra extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
         }
 
-        // Initialize database connection
+        // Set data provider
         try {
-            if (dataMode == DataMode.DATABASE) {
-                DatabaseConnection.initializeDatabase(DatabaseConfigPaths.getConfig(getConfig()), getComponentLogger());
-                getComponentLogger().info(successPrefix.append(text("Successfully initialized database connection.")));
+            switch (dataMode) {
+                case DATABASE -> dataProvider = new DataProviderSQL(this, successPrefix);
+                case API -> dataProvider = new DataProviderAPI();
+                default -> {
+                    getComponentLogger().error(text("No Data Provider has been set! Disabling plugin..."));
+                    this.getServer().getPluginManager().disablePlugin(this);
+                }
             }
         } catch (Exception ex) {
-            getComponentLogger().error(errorPrefix.append(text("Could not initialize database connection.")), ex);
+            getComponentLogger().error(errorPrefix.append(text("Could not initialize data provider.")), ex);
             this.getServer().getPluginManager().disablePlugin(this);
             return;
-        }
-
-        // Initialize API constants
-        ApiConstants.updateApiConstants();
-
-        // Set data provider
-        switch (dataMode) {
-            case DATABASE -> dataProvider = new DataProviderSQL();
-            case API -> dataProvider = new DataProviderAPI();
-            default -> {
-                getComponentLogger().error(text("No Data Provider has been set! Disabling plugin..."));
-                this.getServer().getPluginManager().disablePlugin(this);
-            }
         }
 
         // Register event listeners
