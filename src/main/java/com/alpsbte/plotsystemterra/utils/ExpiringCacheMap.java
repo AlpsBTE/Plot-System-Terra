@@ -3,22 +3,50 @@ package com.alpsbte.plotsystemterra.utils;
 import java.lang.ref.WeakReference;
 import java.util.*;
 
+/**
+ * HashMap cache with time-based expiration of entries.
+ *
+ * <p>Entries can be added with an expiration time, after which they will be
+ * automatically removed by a background cleanup thread if not refreshed.</p>
+ *
+ * <p>{@link ExpiringCacheMap#runExpiryThread()} must be called
+ * once during application startup to clear expired cache automatically.</p>
+ *
+ * @param <K> the type of keys maintained by this map
+ * @param <V> the type of cached values
+ */
 public class ExpiringCacheMap<K, V> extends HashMap<K, V> {
 
-    static {
-        // Plugin's caching thread
-        // Detect expired cache and remove from the HashMap
-        new ExpiryThread().start();
-    }
+    private static final ExpiryThread expiryThread = new ExpiryThread();
 
     private final HashMap<K, Long> expiryTimes = new HashMap<>();
     private final long expiryDelay;
 
+    /**
+     * Starts the global expiration thread for cleaning up expired entries
+     * from all active {@link ExpiringCacheMap} instances.
+     *
+     * <p>Note: If {@link ExpiringCacheMap} is used without calling this method,
+     * expired entries will remain in memory and will not be cleaned automatically.</p>
+     */
+    public static void runExpiryThread() {
+        if(!expiryThread.isAlive())
+            expiryThread.start();
+    }
+
+    /**
+     * Create a new expiry map with default expiry duration.
+     *
+     * @param expiryDelayMillis The default expiry time in milliseconds
+     */
     public ExpiringCacheMap(long expiryDelayMillis) {
         this.expiryDelay = expiryDelayMillis;
         ExpiryThread.references.add(new WeakReference<>(this));
     }
 
+    /**
+     * Put new key-value pair with the default expiry duration.
+     */
     @Override
     public V put(K key, V value) {
         synchronized (expiryTimes) {
@@ -27,19 +55,9 @@ public class ExpiringCacheMap<K, V> extends HashMap<K, V> {
         return super.put(key, value);
     }
 
-    @SuppressWarnings("UnusedReturnValue")
-    public V putNotExpiring(K key, V value) {
-        return super.put(key, value);
-    }
-
-    public V putExpiring(K key, V value, long expiryTime) {
-        if (expiryTime < System.currentTimeMillis()) throw new IllegalArgumentException("The expiry time must be in the future");
-        synchronized (expiryTimes) {
-            expiryTimes.put(key, expiryTime);
-        }
-        return super.put(key, value);
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public V remove(Object key) {
         synchronized (expiryTimes) {
@@ -48,16 +66,65 @@ public class ExpiringCacheMap<K, V> extends HashMap<K, V> {
         return super.remove(key);
     }
 
+    /**
+     * Inserts a key-value pair into the cache without setting an expiration time.
+     *
+     * @param key   the key to put
+     * @param value the value to put
+     * @return the previous value associated with the key, or {@code null} if there was none
+     */
+    public V putNotExpiring(K key, V value) {
+        return super.put(key, value);
+    }
+
+    /**
+     * Inserts a key-value pair into the cache with a specific absolute expiration time.
+     *
+     * @param key         the key to cache
+     * @param value       the value to cache
+     * @param expiryTime  the absolute time (in millis since epoch) at which the entry should expire
+     * @return the previous value associated with the key, or {@code null} if there was none
+     * @throws IllegalArgumentException if {@code expiryTime} is in the past
+     */
+    public V putExpiring(K key, V value, long expiryTime) {
+        if (expiryTime < System.currentTimeMillis())
+            throw new IllegalArgumentException("The expiry time must be in the future");
+
+        synchronized (expiryTimes) {
+            expiryTimes.put(key, expiryTime);
+        }
+        return super.put(key, value);
+    }
+
+    /**
+     * Retrieves the expiration timestamp for a given key.
+     *
+     * @param key the key to check
+     * @return the expiration time in milliseconds since epoch
+     * @throws IllegalArgumentException if the given key is not present in the map
+     */
     public long getExpiryTime(K key) {
         if (!containsKey(key)) throw new IllegalArgumentException("The given key is not in the map");
         return expiryTimes.get(key);
     }
 
+    /**
+     * Set new expiry time for an existing key.
+     *
+     * @param key Existing key to modify its expiry time
+     * @param expiryTimeMillis New expiry time in milliseconds
+     * @throws IllegalArgumentException If this map does not contain given key.
+     */
     public void setExpiryTime(K key, long expiryTimeMillis) {
         if (!containsKey(key)) throw new IllegalArgumentException("The given key is not in the map");
         expiryTimes.put(key, expiryTimeMillis);
     }
 
+    /**
+     * Get the default expiry duration of this map.
+     *
+     * @return The expiry duration in milliseconds
+     */
     public long getExpiryDelay() {
         return expiryDelay;
     }
@@ -68,7 +135,10 @@ public class ExpiringCacheMap<K, V> extends HashMap<K, V> {
         expiryTimes.remove(key);
     }
 
-    public static class ExpiryThread extends Thread {
+    /**
+     * Expiry thread that runs every 1 second to clear any expired cache.
+     */
+    private static class ExpiryThread extends Thread {
 
         private static final Set<WeakReference<ExpiringCacheMap<?, ?>>> references = new HashSet<>();
 

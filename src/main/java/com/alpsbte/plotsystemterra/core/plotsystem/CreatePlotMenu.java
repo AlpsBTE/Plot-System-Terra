@@ -17,6 +17,8 @@ import org.ipvp.canvas.mask.BinaryMask;
 import org.ipvp.canvas.mask.Mask;
 import org.ipvp.canvas.type.ChestMenu;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -37,6 +39,15 @@ public class CreatePlotMenu {
     public CreatePlotMenu(Player player) {
         this.player = player;
         player.sendMessage(Utils.ChatUtils.getInfoFormat(text("Fetching city project data...")));
+
+        Collection<CityProject> cache = PlotSystemTerra.getPlugin().getCityProjectData().getCache();
+
+        if(!cache.isEmpty()) {
+            this.cityProjects = new ArrayList<>(cache);
+            return;
+        }
+
+        // If cache doesn't exist for some reason, fetch for it again.
         CompletableFuture.supplyAsync(() -> PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProjects())
                 .exceptionally(e -> {
                     player.sendMessage(Utils.ChatUtils.getAlertFormat(text("Could not fetch city project data!")));

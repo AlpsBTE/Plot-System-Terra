@@ -14,8 +14,9 @@ import com.alpsbte.plotsystemterra.core.config.ConfigUtil;
 import com.alpsbte.plotsystemterra.core.config.DataMode;
 import com.alpsbte.plotsystemterra.core.data.DataProvider;
 import com.alpsbte.plotsystemterra.core.database.DataProviderSQL;
-import com.alpsbte.plotsystemterra.core.plotsystem.CityProjectCache;
+import com.alpsbte.plotsystemterra.core.plotsystem.CityProjectData;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
+import com.alpsbte.plotsystemterra.utils.ExpiringCacheMap;
 import com.alpsbte.plotsystemterra.utils.Updater;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import com.sk89q.worldedit.WorldEdit;
@@ -42,7 +43,7 @@ public class PlotSystemTerra extends JavaPlugin {
     private static PlotSystemTerra plugin;
     private static DataProvider dataProvider;
     private PlotPaster plotPaster;
-    private CityProjectCache cache;
+    private CityProjectData cityProjectData;
 
     private boolean pluginEnabled = false;
     public String version;
@@ -120,6 +121,16 @@ public class PlotSystemTerra extends JavaPlugin {
         // Initialize API constants
         ApiConstants.updateApiConstants();
 
+        // Initialize city project(s) cache
+        int doExpireCache = configFile.getInt(ConfigPaths.CACHE_DURATION_MINUTES, -1);
+        if(doExpireCache != -1) {
+            this.cityProjectData = new CityProjectData(this, doExpireCache);
+
+            ExpiringCacheMap.runExpiryThread();
+        }
+        else this.cityProjectData = new CityProjectData();
+
+
         // Set data provider
         switch (dataMode) {
             case DATABASE -> dataProvider = new DataProviderSQL();
@@ -168,8 +179,6 @@ public class PlotSystemTerra extends JavaPlugin {
         plotPaster = new PlotPaster();
         plotPaster.start();
 
-        this.cache = new CityProjectCache(this);
-
         pluginEnabled = true;
         Bukkit.getConsoleSender().sendMessage(empty());
         Bukkit.getConsoleSender().sendMessage(text("Enabled Plot-System-Terra plugin.", DARK_GREEN));
@@ -213,8 +222,8 @@ public class PlotSystemTerra extends JavaPlugin {
         return dataProvider;
     }
 
-    public CityProjectCache getCache() {
-        return cache;
+    public CityProjectData getCityProjectData() {
+        return this.cityProjectData;
     }
 
     private String startUpdateChecker() {

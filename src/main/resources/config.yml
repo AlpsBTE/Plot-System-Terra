@@ -58,6 +58,12 @@ server-name: default
 # The world name of the terra server in which the schematic should be pasted
 world-name: world
 
+# Duration (in minutes) to keep city project data in the cache before it expires and is refreshed.
+#
+# Set to -1 to disable expiration,
+# city project data will be fetched once at startup and cached permanently.
+cache-duration-minutes: -1
+
 # Interval in which completed plots that have not yet been placed are checked
 # [interval] -> in seconds; default: 300 seconds (every 5 minutes)
 pasting-interval: 300
