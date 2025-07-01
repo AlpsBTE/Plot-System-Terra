@@ -14,6 +14,7 @@ import com.alpsbte.plotsystemterra.core.config.ConfigUtil;
 import com.alpsbte.plotsystemterra.core.config.DataMode;
 import com.alpsbte.plotsystemterra.core.data.DataProvider;
 import com.alpsbte.plotsystemterra.core.database.DataProviderSQL;
+import com.alpsbte.plotsystemterra.core.plotsystem.CityProjectCache;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
 import com.alpsbte.plotsystemterra.utils.Updater;
 import com.alpsbte.plotsystemterra.utils.Utils;
@@ -41,6 +42,7 @@ public class PlotSystemTerra extends JavaPlugin {
     private static PlotSystemTerra plugin;
     private static DataProvider dataProvider;
     private PlotPaster plotPaster;
+    private CityProjectCache cache;
 
     private boolean pluginEnabled = false;
     public String version;
@@ -166,6 +168,8 @@ public class PlotSystemTerra extends JavaPlugin {
         plotPaster = new PlotPaster();
         plotPaster.start();
 
+        this.cache = new CityProjectCache(this);
+
         pluginEnabled = true;
         Bukkit.getConsoleSender().sendMessage(empty());
         Bukkit.getConsoleSender().sendMessage(text("Enabled Plot-System-Terra plugin.", DARK_GREEN));
@@ -205,9 +209,12 @@ public class PlotSystemTerra extends JavaPlugin {
         ConfigUtil.getInstance().saveFiles();
     }
 
-
     public static DataProvider getDataProvider() {
         return dataProvider;
+    }
+
+    public CityProjectCache getCache() {
+        return cache;
     }
 
     private String startUpdateChecker() {
