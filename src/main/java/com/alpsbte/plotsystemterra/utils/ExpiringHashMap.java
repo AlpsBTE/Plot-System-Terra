@@ -1,7 +1,11 @@
 package com.alpsbte.plotsystemterra.utils;
 
+import com.alpsbte.plotsystemterra.PlotSystemTerra;
+
 import java.lang.ref.WeakReference;
 import java.util.*;
+
+import static net.kyori.adventure.text.Component.text;
 
 /**
  * HashMap cache with time-based expiration of entries.
@@ -9,14 +13,15 @@ import java.util.*;
  * <p>Entries can be added with an expiration time, after which they will be
  * automatically removed by a background cleanup thread if not refreshed.</p>
  *
- * <p>{@link ExpiringCacheMap#runExpiryThread()} must be called
+ * <p>{@link ExpiringHashMap#runExpiryThread()} must be called
  * once during application startup to clear expired cache automatically.</p>
  *
  * @param <K> the type of keys maintained by this map
  * @param <V> the type of cached values
  */
-public class ExpiringCacheMap<K, V> extends HashMap<K, V> {
+public class ExpiringHashMap<K, V> extends HashMap<K, V> {
 
+    private static final long CACHE_REFRESH_MILLIS = 5000;
     private static final ExpiryThread expiryThread = new ExpiryThread();
 
     private final HashMap<K, Long> expiryTimes = new HashMap<>();
@@ -24,9 +29,9 @@ public class ExpiringCacheMap<K, V> extends HashMap<K, V> {
 
     /**
      * Starts the global expiration thread for cleaning up expired entries
-     * from all active {@link ExpiringCacheMap} instances.
+     * from all active {@link ExpiringHashMap} instances.
      *
-     * <p>Note: If {@link ExpiringCacheMap} is used without calling this method,
+     * <p>Note: If {@link ExpiringHashMap} is used without calling this method,
      * expired entries will remain in memory and will not be cleaned automatically.</p>
      */
     public static void runExpiryThread() {
@@ -36,10 +41,18 @@ public class ExpiringCacheMap<K, V> extends HashMap<K, V> {
 
     /**
      * Create a new expiry map with default expiry duration.
+     */
+    public ExpiringHashMap() {
+        this.expiryDelay = CACHE_REFRESH_MILLIS;
+        ExpiryThread.references.add(new WeakReference<>(this));
+    }
+
+    /**
+     * Create a new expiry map with an expiry duration.
      *
      * @param expiryDelayMillis The default expiry time in milliseconds
      */
-    public ExpiringCacheMap(long expiryDelayMillis) {
+    public ExpiringHashMap(long expiryDelayMillis) {
         this.expiryDelay = expiryDelayMillis;
         ExpiryThread.references.add(new WeakReference<>(this));
     }
@@ -131,16 +144,18 @@ public class ExpiringCacheMap<K, V> extends HashMap<K, V> {
 
     @SuppressWarnings({"SuspiciousMethodCalls"})
     private void keyExpired(Object key) {
-        remove(key);
+        if(remove(key) != null) {
+            PlotSystemTerra.getPlugin().getComponentLogger().info(text("Expired cache for " + key));
+        }
         expiryTimes.remove(key);
     }
 
     /**
-     * Expiry thread that runs every 1 second to clear any expired cache.
+     * Expiry thread that runs every 5 second to clear any expired cache.
      */
     private static class ExpiryThread extends Thread {
 
-        private static final Set<WeakReference<ExpiringCacheMap<?, ?>>> references = new HashSet<>();
+        private static final Set<WeakReference<ExpiringHashMap<?, ?>>> references = new HashSet<>();
 
         private ExpiryThread() {
             super( "PlotSystem-Terra " + ExpiryThread.class.getSimpleName());
@@ -152,8 +167,8 @@ public class ExpiringCacheMap<K, V> extends HashMap<K, V> {
         public void run() {
             while (!isInterrupted()) {
                 long currentTime = System.currentTimeMillis();
-                for (WeakReference<ExpiringCacheMap<?, ?>> reference : new HashSet<>(references)) {
-                    final ExpiringCacheMap<?, ?> collection = reference.get();
+                for (WeakReference<ExpiringHashMap<?, ?>> reference : new HashSet<>(references)) {
+                    final ExpiringHashMap<?, ?> collection = reference.get();
                     if (collection == null) {
                         references.remove(reference);
                         continue;
@@ -172,7 +187,7 @@ public class ExpiringCacheMap<K, V> extends HashMap<K, V> {
                 }
 
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(CACHE_REFRESH_MILLIS);
                 } catch (InterruptedException ignored) {
                     break;
                 }

@@ -2,139 +2,238 @@ package com.alpsbte.plotsystemterra.core.plotsystem;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.model.CityProject;
-import com.alpsbte.plotsystemterra.utils.ExpiringCacheMap;
-import org.bukkit.Bukkit;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.scheduler.BukkitTask;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import com.alpsbte.plotsystemterra.utils.ExpiringHashMap;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static net.kyori.adventure.text.Component.text;
 
 /**
- * Handles caching of city project data, either as a permanent cache
- * or with automatic expiration and periodic refresh.
+ * Handles caching of city project data, with support for both static (non-expiring)
+ * and expiring cache configurations.
  *
- * <p>For expiring caches, this class schedules an asynchronous task to re-fetch
- * project data shortly before each cache entry's expiration time.</p>
+ * @see #getCache()
  */
 public class CityProjectData {
+    private final Cache cache;
+    private CompletableFuture<Cache> refresh = null;
 
-    private static final long CACHE_MARGIN_MILLIS = TimeUnit.SECONDS.toMillis(5);
-    private final ExpiringCacheMap<String, CityProject> cache;
-    private @Nullable BukkitTask expiryTask;
-    private int expiryMinute;
+    /**
+     * Fetch for city project data asynchronously using the plugin's data provider.
+     *
+     * <p>This handle exceptions and log to the plugin's logger.</p>
+     *
+     * @return A {@link CompletableFuture} that complete with the city project data.
+     * @see com.alpsbte.plotsystemterra.core.data.CityProjectDataProvider#getCityProjects()
+     */
+    public static CompletableFuture<List<CityProject>> fetchDataAsync() {
+        Supplier<List<CityProject>> action = () -> PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProjects();
 
-    private void putExpiring(String cityProjectID, CityProject cityProject, long expiryTime) {
-        synchronized (cache) {
-            cache.putExpiring(cityProjectID, cityProject, expiryTime);
-        }
+        return CompletableFuture.supplyAsync(action).orTimeout((long) 60.0, TimeUnit.SECONDS).handle((cityProjects, error) -> {
+            if(error != null) {
+                PlotSystemTerra.getPlugin().getComponentLogger().error(text("An error occurred fetching city project data"), error);
+                return List.of();
+            }
+
+            if (cityProjects.isEmpty())
+                PlotSystemTerra.getPlugin().getComponentLogger().error(text("Fetched city project data is empty!"));
+
+            PlotSystemTerra.getPlugin().getComponentLogger().info(text("Fetched #" + cityProjects.size()));
+
+            return cityProjects;
+        });
     }
 
     /**
-     * Creates a permanent cache for all city project data at construction time.
+     * Creates a static cache for all city project data.
+     *
+     * <p>Calling {@link #getCache()} will fetch for the city project data every call.</p>
      */
     public CityProjectData() {
-        this.cache = new ExpiringCacheMap<>(CACHE_MARGIN_MILLIS);
-
-        this.fetchDataAsync(cityProjects -> cityProjects.forEach(cityProject -> {
-            String id = cityProject.getId();
-            this.cache.putNotExpiring(id, cityProject);
-        }));
+        this.cache = new Cache();
     }
 
     /**
-     * Creates an expiring cache that automatically refreshes project data on a fixed interval.
+     * Creates an expiring cache that gets expired on X minutes of lifetime.
      *
-     * <p>This sets up an asynchronous task to refresh city project entries shortly before they expire.</p>
+     * <p>Calling {@link #getCache()} will return the cached data and refresh if expired.</p>
      *
-     * @param plugin        the plugin instance used to schedule background tasks
      * @param expiryMinute  the time (in minutes) after which cached entries should expire and be refreshed
      * @throws IllegalArgumentException if {@code expiryMinute} is less than or equal to 0
      */
-    public CityProjectData(Plugin plugin, int expiryMinute) {
-        if(expiryMinute <= 0) throw new IllegalArgumentException("Cannot have CityProjectData cache of 0 minute of expiry.");
+    public CityProjectData(int expiryMinute) {
+        this.cache = new Cache(expiryMinute);
 
-        this.expiryMinute = expiryMinute;
-        final long expiryTimeOnline = TimeUnit.MINUTES.toMillis(expiryMinute);
-        final long taskIntervalMillis = expiryTimeOnline - CACHE_MARGIN_MILLIS;
-
-        this.cache = new ExpiringCacheMap<>(expiryTimeOnline);
-
-        this.expiryTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
-            final long currentTime = System.currentTimeMillis();
-            final long newExpiry = currentTime + expiryTimeOnline;
-
-            this.fetchDataAsync(cityProjects -> cityProjects.forEach(project -> {
-                try {
-                    long expiry = cache.getExpiryTime(project.getId());
-                    if (expiry - currentTime <= CACHE_MARGIN_MILLIS)
-                        this.putExpiring(project.getId(), project, newExpiry);
-                } catch (IllegalArgumentException ex) {
-                    this.putExpiring(project.getId(), project, newExpiry);
-                }
-            }));
-        }, 1L, taskIntervalMillis / 50);
+        ExpiringHashMap.runExpiryThread();
     }
 
     /**
-     * Forces a full refresh of the city project data cache by reconstructing the {@link CityProjectData} instance.
+     * Retrieve the current city project cache, refreshing it if needed.
      *
-     * @param data the existing {@link CityProjectData} instance to refresh
-     * @return a new {@linkplain  CityProjectData} instance with freshly loaded data
+     * @return A {@link CompletableFuture} that will complete with the up-to-date {@link Cache}.
      */
-    @Contract("_ -> new")
-    public static @NotNull CityProjectData refresh(@NotNull CityProjectData data) {
-        if(data.expiryTask != null) {
-            data.expiryTask.cancel();
-            return new CityProjectData(data.expiryTask.getOwner(), data.expiryMinute);
-        }
-        else return new CityProjectData();
-    }
+    public CompletableFuture<Cache> getCache() {
+        if (!needsRefresh()) // Valid cache is returned instantly
+            return CompletableFuture.completedFuture(this.cache);
 
+        // Thread-safe access to the cache refresh logic.
+        synchronized (this) {
+            if (this.refresh != null)
+                return this.refresh;
 
-    /**
-     * Fetch city projects data asynchronously and handle for any error.
-     *
-     * @param retriever Callback to retrieve fetched data
-     */
-    private void fetchDataAsync(Consumer<List<CityProject>> retriever) {
-        CompletableFuture.supplyAsync(() -> PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProjects())
-            .exceptionally(e -> {
-                PlotSystemTerra.getPlugin().getComponentLogger().error(text("An error occurred fetching city project data"), e);
-                return List.of();
-            }).thenAccept((cityProjects) -> {
-                if (cityProjects.isEmpty()) {
-                    PlotSystemTerra.getPlugin().getComponentLogger().error(text("Fetched city project data is empty!"));
-                    retriever.accept(List.of());
-                    return;
+            // Trigger new async fetch and cache refresh
+            this.refresh = CityProjectData.fetchDataAsync().thenApply(this.cache::refresh);
+
+            this.refresh.whenComplete((cached, error) -> {
+                synchronized (this) {
+                    this.refresh = null;
                 }
-
-                retriever.accept(cityProjects);
             });
+
+            return this.refresh;
+        }
     }
 
-    public CityProject getFromCache(String id) {
-        return this.cache.get(id);
+    /**
+     * Determine whether the cache should be refreshed before use.
+     *
+     * <p>Expiry cache will return {@code true} only if the current (expired) cache has been cleared.
+     * <p>Static cache always returns {@code true}, to force a refresh on every access.
+     *
+     * @return {@code true} if the cache should be refreshed, {@code false} otherwise.
+     */
+    public boolean needsRefresh() {
+        if(this.cache.expiry().isPresent())
+            return this.cache.isEmpty() && System.currentTimeMillis() >= this.cache.expiry().get();
+
+        return true;
     }
 
-    public Collection<CityProject> getCache() {
-        return this.cache.values();
+    /**
+     * Forcefully refresh the cache using the given list of {@link CityProject} entries.
+     *
+     * @param newData The new project data to insert into the cache.
+     * @return The updated {@link Cache} instance.
+     */
+    public Cache refreshCache(List<CityProject> newData) {
+        return this.cache.refresh(newData);
     }
 
-    public Set<String> getCachedID() {
-        return this.cache.keySet();
-    }
+    /**
+     * Internal cache wrapper for city project data.
+     *
+     * <p>Manages either a static (non-expiring) or expiring cache of {@link CityProject} entries.
+     * The cache refresh behavior is explicitly updated via {@link #refresh(List)}.</p>
+     * 
+     * @see #refresh(List) 
+     */
+    public static class Cache {
+        private final ExpiringHashMap<String, CityProject> cache;
+        private Long expiry = null;
 
-    public boolean hasProjectID(String id) {
-        return this.cache.containsKey(id);
+        private void putExpiring(CityProject cityProject, long expiryTime) {
+            synchronized (cache) {
+                cache.putExpiring(cityProject.getId(), cityProject, expiryTime);
+            }
+        }
+
+        /** Create a static (non-expiring) cache. */
+        private Cache() {
+            this.cache = new ExpiringHashMap<>();
+        }
+
+        /**
+         * Create an expiring cache.
+         *
+         * @param expiryMinute Expiry duration in minutes; must be positive.
+         */
+        private Cache(int expiryMinute) {
+            this.cache = new ExpiringHashMap<>(TimeUnit.MINUTES.toMillis(expiryMinute));
+            this.expiry = System.currentTimeMillis();
+        }
+
+        /**
+         * Get the current expiry timestamp of the cache, if any.
+         *
+         * @return Optional expiry time in milliseconds since epoch.
+         */
+        private Optional<Long> expiry() {
+            return Optional.ofNullable(this.expiry);
+        }
+
+        /**
+         * Refresh the cache with new city project data.
+         *
+         * <p>If the cache is expiring, the expiry time of all entries is updated based on the cache's expiry delay.
+         * If the cache is static, the entire cache is cleared and reloaded.
+         *
+         * @param newData The new list of {@link CityProject} instances to cache.
+         * @return This cache instance after refresh (for chaining).
+         */
+        private Cache refresh(List<CityProject> newData) {
+
+            // Refresh the expiry if we're using expiry cache
+            if(expiry().isPresent()) {
+                this.expiry = System.currentTimeMillis() + this.cache.getExpiryDelay();
+                PlotSystemTerra.getPlugin().getComponentLogger().info(text("Refreshing expiry cache"));
+
+                for(CityProject data : newData)
+                    this.putExpiring(data, this.expiry);
+
+                return this;
+            }
+
+            // Clear all cache to override new one with static cache
+            this.cache.clear();
+            PlotSystemTerra.getPlugin().getComponentLogger().info(text("Refreshing static cache"));
+
+            for(CityProject project : newData)
+                this.cache.putNotExpiring(project.getId(), project);
+
+            return this;
+        }
+
+        /**
+         * Check if the cache is empty.
+         *
+         * @return {@code true} if no entries are cached; {@code false} otherwise.
+         */
+        public boolean isEmpty() {
+            return this.cache.isEmpty();
+        }
+
+        /**
+         * Get a city project from the cache by its ID.
+         *
+         * @param id The project ID.
+         * @return The {@link CityProject} if present or {@code null}
+         */
+        public CityProject get(String id) {
+            return this.cache.get(id);
+        }
+
+        /**
+         * Get a view of all cached {@link CityProject} values.
+         *
+         * @return A collection of cached projects (may be empty).
+         */
+        public Collection<CityProject> get() {
+            return this.cache.values();
+        }
+
+        /**
+         * Check whether a project with the given ID is currently cached.
+         *
+         * @param id The project ID.
+         * @return {@code true} if the project is present in the cache.
+         */
+        public boolean hasProjectID(String id) {
+            return this.cache.containsKey(id);
+        }
     }
 }

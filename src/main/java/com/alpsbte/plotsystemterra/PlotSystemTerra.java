@@ -16,7 +16,6 @@ import com.alpsbte.plotsystemterra.core.data.DataProvider;
 import com.alpsbte.plotsystemterra.core.database.DataProviderSQL;
 import com.alpsbte.plotsystemterra.core.plotsystem.CityProjectData;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
-import com.alpsbte.plotsystemterra.utils.ExpiringCacheMap;
 import com.alpsbte.plotsystemterra.utils.Updater;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import com.sk89q.worldedit.WorldEdit;
@@ -121,16 +120,6 @@ public class PlotSystemTerra extends JavaPlugin {
         // Initialize API constants
         ApiConstants.updateApiConstants();
 
-        // Initialize city project(s) cache
-        int doExpireCache = configFile.getInt(ConfigPaths.CACHE_DURATION_MINUTES, -1);
-        if(doExpireCache != -1) {
-            this.cityProjectData = new CityProjectData(this, doExpireCache);
-
-            ExpiringCacheMap.runExpiryThread();
-        }
-        else this.cityProjectData = new CityProjectData();
-
-
         // Set data provider
         switch (dataMode) {
             case DATABASE -> dataProvider = new DataProviderSQL();
@@ -174,6 +163,10 @@ public class PlotSystemTerra extends JavaPlugin {
             String result = startUpdateChecker();
             Bukkit.getConsoleSender().sendMessage(text("Update-Checker: " + result, GOLD));
         }
+
+        // Initialize city project data cache
+        int useExpiryCache = configFile.getInt(ConfigPaths.CACHE_DURATION_MINUTES, -1);
+        this.cityProjectData = (useExpiryCache >= 0)? new CityProjectData(useExpiryCache) : new CityProjectData();
 
         // Start checking for plots to paste
         plotPaster = new PlotPaster();

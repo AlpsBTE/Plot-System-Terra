@@ -142,8 +142,15 @@ public class PlotCreator {
     }
 
     public static void createPlotManually(Player player, String cityProjectID, String difficultyId) {
-        if(isCreationDataValid(player, cityProjectID, difficultyId))
-            createPlot(player, cityProjectID, difficultyId);
+        PlotSystemTerra.getPlugin().getCityProjectData().getCache().thenAccept(cache -> {
+            if(!cache.hasProjectID(cityProjectID)) {
+                player.sendMessage(Utils.ChatUtils.getAlertFormat(text("City Project ID does not exist to create plot on!")));
+                return;
+            }
+
+            if(isCreationDataValid(player, cityProjectID, difficultyId))
+                createPlot(player, cityProjectID, difficultyId);
+        });
     }
 
     /**
@@ -156,6 +163,7 @@ public class PlotCreator {
      * @param difficultyID The difficulty ID
      * @return {@code true} if the cityProjectID and difficultyID exist in the database
      */
+    @Deprecated(forRemoval = true)
     private static boolean isCreationDataValid(Player player, String cityProjectID, String difficultyID) {
         if(PlotSystemTerra.getDataProvider().getCityProjectDataProvider() instanceof CityProjectDataProviderSQL database) {
             try {
