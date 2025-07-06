@@ -40,7 +40,7 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CityProjectDataProviderAPI extends CityProjectDataProvider {
+public class CityProjectDataProviderAPI implements CityProjectDataProvider {
 
     @SuppressWarnings("unchecked") // org.json.simple.JSONArray is marked as unchecked internally. can't do anything about this
     @Override

@@ -27,11 +27,8 @@ package com.alpsbte.plotsystemterra.core.data;
 import com.alpsbte.plotsystemterra.core.model.CityProject;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-public abstract class CityProjectDataProvider {
+public interface CityProjectDataProvider {
 
     /**
      * Retrieves all CityProjects.
@@ -49,39 +46,4 @@ public abstract class CityProjectDataProvider {
      * @throws DataException If an error occurs while retrieving the CityProject.
      */
     public abstract CityProject getCityProject(String id) throws DataException;
-
-    /**
-     * Asynchronously retrieves a CityProject by its ID.
-     *
-     * @param id The ID of the CityProject to retrieve.
-     * @return A CompletableFuture that will complete with the CityProject or null if not found.
-     * @throws DataException If an error occurs while retrieving the CityProject.
-     */
-    public CompletableFuture<CityProject> getCityProjectAsync(String id) throws DataException {
-        CompletableFuture<CityProject> completableFuture = new CompletableFuture<>();
-        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
-            executor.submit(() -> {
-                completableFuture.complete(getCityProject(id));
-                return null;
-            });
-        }
-        return completableFuture;
-    }
-
-    /**
-     * Asynchronously retrieves all CityProjects.
-     *
-     * @return A CompletableFuture that will complete with a list of CityProjects.
-     * @throws DataException If an error occurs while retrieving the CityProjects.
-     */
-    public CompletableFuture<List<CityProject>> getCityProjectsAsync() throws DataException {
-        CompletableFuture<List<CityProject>> completableFuture = new CompletableFuture<>();
-        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
-            executor.submit(() -> {
-                completableFuture.complete(getCityProjects());
-                return null;
-            });
-        }
-        return completableFuture;
-    }
 }

@@ -33,7 +33,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CityProjectDataProviderSQL extends CityProjectDataProvider {
+public class CityProjectDataProviderSQL implements CityProjectDataProvider {
     @Override
     public List<CityProject> getCityProjects() {
         String queryGetIds = "SELECT city_project_id FROM city_project";

@@ -148,7 +148,7 @@ public class PlotPaster extends Thread {
                     Operations.complete(clipboardHolder);
                 }
 
-                PlotSystemTerra.getDataProvider().getPlotDataProvider().setPastedAsync(plot.getId())
+                CompletableFuture.runAsync(() -> PlotSystemTerra.getDataProvider().getPlotDataProvider().setPasted(plot.getId()))
                         .thenRun(() -> PlotSystemTerra.getPlugin().getComponentLogger().info(text("Plot #" + plot.getId() + " successfully marked as pasted!")));
 
             } catch (Exception e) {

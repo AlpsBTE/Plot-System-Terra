@@ -48,7 +48,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
-public class PlotDataProviderAPI extends PlotDataProvider {
+public class PlotDataProviderAPI implements PlotDataProvider {
     @Override
     public Plot getPlot(int id) throws DataException {
         try (HttpClient client = HttpClient.newHttpClient()) {

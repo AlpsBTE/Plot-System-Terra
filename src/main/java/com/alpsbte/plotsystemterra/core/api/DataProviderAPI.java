@@ -49,4 +49,9 @@ public class DataProviderAPI implements DataProvider {
     public PlotDataProvider getPlotDataProvider() {
         return plotDataProvider;
     }
+
+    @Override
+    public void shutdown() {
+        // no need to shut down anything for API
+    }
 }
