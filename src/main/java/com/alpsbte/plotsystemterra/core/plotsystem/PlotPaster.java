@@ -43,6 +43,8 @@ import com.sk89q.worldedit.session.ClipboardHolder;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
@@ -102,7 +104,7 @@ public class PlotPaster extends Thread {
             return false;
         }
 
-        if (serverName.equals(city.getServerName())) return false;
+        if (!serverName.equals(city.getServerName())) return false;
 
         // check mc version
         int[] serverVersion = getMajorMinorPatch(Bukkit.getServer().getMinecraftVersion());
@@ -125,7 +127,7 @@ public class PlotPaster extends Thread {
         Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> {
             try (EditSession editSession = WorldEdit.getInstance().newEditSession(FaweAPI.getWorld(world.getName()))) {
                 BlockVector3 toPaste;
-                if (!(plotVersion >= 3)) {
+                if (plotVersion < 3) {
                     PlotSystemTerra.getPlugin().getComponentLogger().error(text("Cannot paste plot! Plot version " + plotVersion + "is no longer supported! Must be at least 3!"));
                     return;
                 }
@@ -156,7 +158,7 @@ public class PlotPaster extends Thread {
         return true;
     }
 
-    private static int[] getMajorMinorPatch(String version) {
+    private static int @Nullable [] getMajorMinorPatch(@NotNull String version) {
         int[] output = new int[3];
         String[] versionArr = version.split("\\.");
 

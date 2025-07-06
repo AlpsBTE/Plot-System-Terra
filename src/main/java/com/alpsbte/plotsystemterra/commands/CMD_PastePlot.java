@@ -3,8 +3,8 @@ package com.alpsbte.plotsystemterra.commands;
 import com.alpsbte.alpslib.utils.AlpsUtils;
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.data.DataException;
-import com.alpsbte.plotsystemterra.core.model.Plot;
 import com.alpsbte.plotsystemterra.core.model.CityProject;
+import com.alpsbte.plotsystemterra.core.model.Plot;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import org.bukkit.Bukkit;
@@ -71,6 +71,8 @@ public class CMD_PastePlot implements CommandExecutor {
                 plot.getCompletedSchematic(),
                 plot.getPlotVersion())) {
             Bukkit.broadcast(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN).append(text(1, GOLD).append(text(" plot!", GREEN)))));
+        } else {
+            Bukkit.broadcast(Utils.ChatUtils.getAlertFormat(text("Failed to paste plot #" + plot.getId() + " in world " + plotPaster.world.getName())));
         }
     }
 }
