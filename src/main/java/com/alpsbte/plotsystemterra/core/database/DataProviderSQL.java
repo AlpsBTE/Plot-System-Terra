@@ -41,11 +41,17 @@ public class DataProviderSQL implements DataProvider {
 
     public DataProviderSQL(@NotNull PlotSystemTerra plugin, @NotNull Component successPrefix) throws ClassNotFoundException {
         // Initialize database connection
-        DatabaseConnection.initializeDatabase(DatabaseConfigPaths.getConfig(plugin.getConfig()), plugin.getComponentLogger());
+        DatabaseConnection.initializeDatabase(DatabaseConfigPaths.getConfig(plugin.getConfig()), true);
         plugin.getComponentLogger().info(successPrefix.append(text("Successfully initialized database connection.")));
 
         cityProjectDataProvider = new CityProjectDataProviderSQL();
         plotDataProvider = new PlotDataProviderSQL();
+    }
+
+    @Override
+    public void shutdown() {
+        // Close database connection
+        DatabaseConnection.shutdown();
     }
 
     @Override

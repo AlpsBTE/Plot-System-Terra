@@ -39,7 +39,6 @@ import com.alpsbte.plotsystemterra.core.database.DataProviderSQL;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.ipvp.canvas.MenuFunctionListener;
@@ -47,7 +46,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
-import static net.kyori.adventure.text.Component.empty;
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.format.NamedTextColor.DARK_GRAY;
 import static net.kyori.adventure.text.format.NamedTextColor.DARK_GREEN;
@@ -59,8 +57,6 @@ public class PlotSystemTerra extends JavaPlugin {
     private static PlotSystemTerra plugin;
     private static DataProvider dataProvider;
     private PlotPaster plotPaster;
-
-    private boolean pluginEnabled = false;
 
     @Override
     public void onEnable() {
@@ -140,16 +136,14 @@ public class PlotSystemTerra extends JavaPlugin {
         plotPaster = new PlotPaster();
         plotPaster.start();
 
-        pluginEnabled = true;
         getComponentLogger().info(text("Enabled Plot-System-Terra plugin. Made by Alps BTE - GitHub: https://github.com/AlpsBTE/Plot-System-Terra", DARK_GREEN));
     }
 
     @Override
     public void onDisable() {
-        if (!pluginEnabled) {
-            Bukkit.getConsoleSender().sendMessage(empty());
-            Bukkit.getConsoleSender().sendMessage(text("Disabled plugin. Made by Alps BTE - GitHub: https://github.com/AlpsBTE/Plot-System-Terra", RED));
-        }
+        dataProvider.shutdown();
+        getComponentLogger().info(text("Disabled plugin. Made by Alps BTE - GitHub: https://github.com/AlpsBTE/Plot-System-Terra", RED));
+
     }
 
     @Override
