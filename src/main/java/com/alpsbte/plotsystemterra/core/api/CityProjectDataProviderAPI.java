@@ -50,7 +50,8 @@ public class CityProjectDataProviderAPI implements CityProjectDataProvider {
                 output.add(new CityProject(id, countryCode, isVisible, material, customModelData, serverName));
             });
         } catch (IOException | InterruptedException | ParseException e) {
-            throw new DataException(e.getMessage());
+            Thread.currentThread().interrupt();
+            throw new DataException(e.getMessage(), e);
         }
 
         return output;
@@ -93,7 +94,8 @@ public class CityProjectDataProviderAPI implements CityProjectDataProvider {
 
             return new CityProject(cityProjectId, countryCode, isVisible, material, customModelData, serverName);
         } catch (IOException | InterruptedException | ParseException e) {
-            throw new DataException(e.getMessage());
+            Thread.currentThread().interrupt();
+            throw new DataException(e.getMessage(), e);
         }
     }
 

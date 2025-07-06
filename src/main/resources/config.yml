@@ -6,9 +6,6 @@
 # | [Contacts - Discord] R3tuxn#7169, Coppertine#1718
 # -----------------------------------------------------
 
-# Keep updated about newer versions
-check-for-updates: true
-
 # Enables special dev tools and features for development
 # NOTE: Do not change if you do not know what you are doing
 dev-mode: false

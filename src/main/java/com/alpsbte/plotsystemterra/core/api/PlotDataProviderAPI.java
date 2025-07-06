@@ -3,7 +3,12 @@ package com.alpsbte.plotsystemterra.core.api;
 import com.alpsbte.plotsystemterra.core.data.DataException;
 import com.alpsbte.plotsystemterra.core.data.PlotDataProvider;
 import com.alpsbte.plotsystemterra.core.model.Plot;
-import okhttp3.*;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -50,7 +55,8 @@ public class PlotDataProviderAPI implements PlotDataProvider {
                     completedSchematic
             );
         } catch (Exception e) {
-            throw new DataException(e.getMessage());
+            Thread.currentThread().interrupt();
+            throw new DataException(e.getMessage(), e);
         }
     }
 
@@ -92,7 +98,7 @@ public class PlotDataProviderAPI implements PlotDataProvider {
             String stringId = jsonObject.get("id").toString();
             return Integer.parseInt(stringId);
         } catch (Exception e) {
-            throw new DataException(e.getMessage());
+            throw new DataException(e.getMessage(), e);
         }
     }
 
@@ -120,7 +126,8 @@ public class PlotDataProviderAPI implements PlotDataProvider {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() != 200) throw new DataException("Invalid status code!: " + response.body());
         } catch (IOException | InterruptedException e) {
-            throw new DataException(e.getMessage());
+            Thread.currentThread().interrupt();
+            throw new DataException(e.getMessage(), e);
         }
     }
 
@@ -173,7 +180,8 @@ public class PlotDataProviderAPI implements PlotDataProvider {
                 ));
             });
         } catch (IOException | InterruptedException | ParseException e) {
-            throw new DataException(e.getMessage());
+            Thread.currentThread().interrupt();
+            throw new DataException(e.getMessage(), e);
         }
         return output;
     }

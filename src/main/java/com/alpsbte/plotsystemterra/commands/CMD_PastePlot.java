@@ -3,8 +3,8 @@ package com.alpsbte.plotsystemterra.commands;
 import com.alpsbte.alpslib.utils.AlpsUtils;
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.data.DataException;
-import com.alpsbte.plotsystemterra.core.model.Plot;
 import com.alpsbte.plotsystemterra.core.model.CityProject;
+import com.alpsbte.plotsystemterra.core.model.Plot;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import org.bukkit.Bukkit;
@@ -30,16 +30,18 @@ public class CMD_PastePlot implements CommandExecutor {
         }
 
         int plotID = Integer.parseInt(args[0]);
+        String genericNotFoundMsg = "Plot with the ID " + plotID + " could not be found!";
 
         sender.sendMessage(Utils.ChatUtils.getInfoFormat(text("Fetching plot data...")));
         try {
             CompletableFuture.supplyAsync(() -> PlotSystemTerra.getDataProvider().getPlotDataProvider().getPlot(plotID))
                     .thenAccept(plot -> plotValidation(sender, plot, plotID)).exceptionally(e -> {
-                        sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("Plot with the ID " + plotID + " could not be found!")));
+                        sender.sendMessage(Utils.ChatUtils.getAlertFormat(text(genericNotFoundMsg)));
                         return null;
                     });
         } catch (DataException e) {
-            sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("Plot with the ID " + plotID + " could not be found!")));
+            sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("Plot with the ID " + plotID + " could not be found!" + " " + e.getMessage())));
+            PlotSystemTerra.getPlugin().getComponentLogger().warn(genericNotFoundMsg, e);
         }
         return true;
     }
@@ -69,6 +71,8 @@ public class CMD_PastePlot implements CommandExecutor {
                 plot.getCompletedSchematic(),
                 plot.getPlotVersion())) {
             Bukkit.broadcast(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN).append(text(1, GOLD).append(text(" plot!", GREEN)))));
+        } else {
+            Bukkit.broadcast(Utils.ChatUtils.getAlertFormat(text("Failed to paste plot #" + plot.getId() + " in world " + plotPaster.world.getName())));
         }
     }
 }

@@ -16,8 +16,10 @@ import java.util.concurrent.Executors;
 public class PlotDataProviderSQL implements PlotDataProvider {
     @Override
     public Plot getPlot(int id) throws DataException {
-        try (ResultSet rs = DatabaseConnection.createStatement("SELECT status, city_project_id, plot_version, mc_version FROM plot WHERE id = ?")
-                .setValue(id).executeQuery()) {
+        try (PreparedStatement ps = Objects.requireNonNull(DatabaseConnection.getConnection()).prepareStatement("SELECT status, city_project_id, plot_version, mc_version FROM plot WHERE plot_id = ?")) {
+
+            ps.setInt(1, id);
+            ResultSet rs = ps.executeQuery();
 
             if (!rs.next()) return null;
 
@@ -36,7 +38,7 @@ public class PlotDataProviderSQL implements PlotDataProvider {
                     mcVersion
             );
         } catch (SQLException e) {
-            throw new DataException(e.getMessage());
+            throw new DataException(e.getMessage(), e);
         }
     }
 
@@ -88,7 +90,7 @@ public class PlotDataProviderSQL implements PlotDataProvider {
                 connection.rollback();
                 connection.close();
             } catch (SQLException ex) {
-                throw new DataException(ex.getMessage());
+                throw new DataException(ex.getMessage(), e);
             }
 
             throw new DataException(e.getMessage());
@@ -110,11 +112,10 @@ public class PlotDataProviderSQL implements PlotDataProvider {
 
     @Override
     public void setPasted(int id) throws DataException {
-        try {
-            DatabaseConnection.createStatement("UPDATE plot SET is_pasted = '1' WHERE plot_id = ?")
-                    .setValue(id).executeUpdate();
+        try (PreparedStatement ps = Objects.requireNonNull(DatabaseConnection.getConnection()).prepareStatement("UPDATE plot SET is_pasted = '1' WHERE plot_id = ?")){
+            ps.setInt(1, id);
         } catch (SQLException e) {
-            throw new DataException(e.getMessage());
+            throw new DataException(e.getMessage(), e);
         }
     }
 
@@ -136,7 +137,7 @@ public class PlotDataProviderSQL implements PlotDataProvider {
         List<Plot> plots = new ArrayList<>();
 
         try (ResultSet rs = DatabaseConnection
-                .createStatement("SELECT plot_id, status, city_project_id, plot_version, mc_version, completed_schematic FROM plot WHERE status = 'completed' AND is_pasted = '0' LIMIT 20")
+                .createStatement("SELECT plot_id, status, city_project_id, plot_version, mc_version, complete_schematic FROM plot WHERE status = 'completed' AND is_pasted = '0' LIMIT 20")
                 .executeQuery()) {
             if (!rs.next()) return plots;
 
@@ -152,7 +153,7 @@ public class PlotDataProviderSQL implements PlotDataProvider {
             ));
 
         } catch (SQLException e) {
-            throw new DataException(e.getMessage());
+            throw new DataException(e.getMessage(), e);
         }
         return plots;
     }

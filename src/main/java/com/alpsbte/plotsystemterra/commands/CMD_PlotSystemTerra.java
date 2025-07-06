@@ -43,9 +43,7 @@ public class CMD_PlotSystemTerra implements CommandExecutor {
                 .append(text(" ==============", GRAY)));
         sender.sendMessage(empty());
 
-        sender.sendMessage(text("Current Version: ", YELLOW).append(text(pluginVersion, GRAY)));
-        sender.sendMessage(text("Latest Version: ", YELLOW).append(text(PlotSystemTerra.getPlugin().updater.getVersion(), GRAY)));
-
+        sender.sendMessage(text("Version: ", YELLOW).append(text(pluginVersion, GRAY)));
         int length = pluginName.length();
         char[] array = new char[length];
         Arrays.fill(array, '=');
