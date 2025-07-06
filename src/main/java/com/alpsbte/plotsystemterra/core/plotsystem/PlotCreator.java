@@ -3,7 +3,6 @@ package com.alpsbte.plotsystemterra.core.plotsystem;
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.alpsbte.plotsystemterra.core.data.DataException;
-import com.alpsbte.plotsystemterra.core.database.CityProjectDataProviderSQL;
 import com.alpsbte.plotsystemterra.core.model.CityProject;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import com.sk89q.worldedit.*;
@@ -48,6 +47,7 @@ public class PlotCreator {
 
     public final static String schematicsPath = Paths.get(PlotSystemTerra.getPlugin().getDataFolder().getAbsolutePath(), "schematics") + File.separator;
     public final static int MIN_OFFSET_Y = 5;
+    public final static String[] DIFFICULTY = new String[] { "easy", "medium", "hard" };
 
     public static void create(Player player, int environmentRadius, IPlotRegionsAction plotRegionsAction) {
         Vector3 plotCenter;
@@ -137,64 +137,31 @@ public class PlotCreator {
         }
     }
 
-    public static void createPlot(Player player, CityProject cityProject, String difficultyId) {
-        createPlot(player, cityProject.getId(), difficultyId);
+    public static void createPlot(Player player, CityProject cityProject, String difficultyID) {
+        PlotCreator.createPlot(player, cityProject.getId(), difficultyID);
     }
 
-    public static void createPlotManually(Player player, String cityProjectID, String difficultyId) {
+    public static void createPlotManually(Player player, String cityProjectID, String difficultyID) {
         PlotSystemTerra.getPlugin().getCityProjectData().getCache().thenAccept(cache -> {
             if(!cache.hasProjectID(cityProjectID)) {
                 player.sendMessage(Utils.ChatUtils.getAlertFormat(text("City Project ID does not exist to create plot on!")));
                 return;
             }
 
-            if(isCreationDataValid(player, cityProjectID, difficultyId))
-                createPlot(player, cityProjectID, difficultyId);
+            for(String difficulty : DIFFICULTY) {
+                if(!difficultyID.equalsIgnoreCase(difficulty))
+                    continue;
+
+                // Both city project ID and difficulty is valid, proceed to plot creation.
+                PlotCreator.createPlot(player, cityProjectID, difficulty);
+                return;
+            }
+
+            player.sendMessage(Utils.ChatUtils.getAlertFormat(text("Difficulty does not exist, Supported difficulty are: " + Arrays.toString(DIFFICULTY))));
         });
     }
 
-    /**
-     * Check if data exists in the database
-     *
-     * <p>Note: API provider is skipped for the check and will always returns {@code true}</p>
-     *
-     * @param player Player to log messages to if data is invalid
-     * @param cityProjectID The city project ID
-     * @param difficultyID The difficulty ID
-     * @return {@code true} if the cityProjectID and difficultyID exist in the database
-     */
-    @Deprecated(forRemoval = true)
-    private static boolean isCreationDataValid(Player player, String cityProjectID, String difficultyID) {
-        if(PlotSystemTerra.getDataProvider().getCityProjectDataProvider() instanceof CityProjectDataProviderSQL database) {
-            try {
-                if(!database.checkCityProjectExist(cityProjectID)) {
-                    player.sendMessage(Utils.ChatUtils.getAlertFormat(text("City Project ID does not exist to create plot on!")));
-                    return false;
-                }
-
-                if(!database.checkDifficultyExist(difficultyID)) {
-                    player.sendMessage(Utils.ChatUtils.getAlertFormat(text("Difficulty ID does not exist to create plot on!")));
-                    return false;
-                }
-
-                return true;
-            }
-            catch (DataException ex) {
-                PlotSystemTerra.getPlugin().getComponentLogger().error("An error occurred while creating plot!", ex);
-                player.sendMessage(Utils.ChatUtils.getAlertFormat(text("An error occurred while validation plot creation data!")));
-                return false;
-            }
-        }
-        else {
-            // TODO: Validate API
-            player.sendMessage(Utils.ChatUtils.getAlertFormat(text(
-                "Data Provider is set to API! Manually creating plot with this mode is not fully supported!", GOLD))
-            );
-            return true;
-        }
-    }
-
-    private static void createPlot(Player player, String cityProjectID, String difficultyId) {
+    private static void createPlot(Player player, String cityProjectID, String difficultyID) {
         CompletableFuture.runAsync(() -> {
             boolean environmentEnabled;
 
@@ -227,18 +194,18 @@ public class PlotCreator {
                     initialSchematic = createPlotSchematic(environmentRegion);
 
                     // Insert into database
-                    int createdPlotId = PlotSystemTerra.getDataProvider().getPlotDataProvider().createPlot(
+                    int createdPlotID = PlotSystemTerra.getDataProvider().getPlotDataProvider().createPlot(
                             cityProjectID,
-                            difficultyId,
+                            difficultyID,
                             polyOutline,
                             player.getUniqueId(),
                             initialSchematic
                     );
                     // Place plot markings on plot region
-                    placePlotMarker(plotRegion, player, createdPlotId);
+                    placePlotMarker(plotRegion, player, createdPlotID);
                     // TODO: Change top blocks of the plot region to mark plot as created
                     player.sendMessage(Utils.ChatUtils.getInfoFormat(text("Successfully created new plot!", GREEN)
-                            .append(text(" (City-Id: " + cityProjectID + " | Plot-Id: " + createdPlotId + ")", WHITE))));
+                            .append(text(" (City-Id: " + cityProjectID + " | Plot-Id: " + createdPlotID + ")", WHITE))));
                     player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
                 } catch (DataException | IOException ex) {
                     PlotSystemTerra.getPlugin().getComponentLogger().error("An error occurred while creating plot!", ex);
