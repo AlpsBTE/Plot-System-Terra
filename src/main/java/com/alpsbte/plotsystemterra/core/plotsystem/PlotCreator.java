@@ -144,20 +144,26 @@ public class PlotCreator {
     public static void createPlotManually(Player player, String cityProjectID, String difficultyID) {
         PlotSystemTerra.getPlugin().getCityProjectData().getCache().thenAccept(cache -> {
             if(!cache.hasProjectID(cityProjectID)) {
-                player.sendMessage(Utils.ChatUtils.getAlertFormat(text("City Project ID does not exist to create plot on!")));
+                player.sendMessage(Utils.ChatUtils.getAlertFormat(text("City Project ID does not exist. Cannot create plot!")));
                 return;
             }
 
-            for(String difficulty : DIFFICULTY) {
-                if(!difficultyID.equalsIgnoreCase(difficulty))
+            String difficulty = null;
+            for(String id : DIFFICULTY) {
+                if(!difficultyID.equalsIgnoreCase(id))
                     continue;
+                difficulty = id;
+                break;
+            }
 
-                // Both city project ID and difficulty is valid, proceed to plot creation.
-                PlotCreator.createPlot(player, cityProjectID, difficulty);
+            if (difficulty == null) {
+                player.sendMessage(Utils.ChatUtils.getAlertFormat(
+                    text("Difficulty does not exist. Supported difficulties are: " + String.join(", ", DIFFICULTY))
+                ));
                 return;
             }
 
-            player.sendMessage(Utils.ChatUtils.getAlertFormat(text("Difficulty does not exist, Supported difficulty are: " + String.join(", ", DIFFICULTY))));
+            PlotCreator.createPlot(player, cityProjectID, difficulty);
         });
     }
 
