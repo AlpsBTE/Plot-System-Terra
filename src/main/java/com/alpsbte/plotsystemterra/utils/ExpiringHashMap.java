@@ -1,11 +1,12 @@
 package com.alpsbte.plotsystemterra.utils;
 
-import com.alpsbte.plotsystemterra.PlotSystemTerra;
-
 import java.lang.ref.WeakReference;
-import java.util.*;
-
-import static net.kyori.adventure.text.Component.text;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * HashMap cache with time-based expiration of entries.
@@ -144,9 +145,7 @@ public class ExpiringHashMap<K, V> extends HashMap<K, V> {
 
     @SuppressWarnings({"SuspiciousMethodCalls"})
     private void keyExpired(Object key) {
-        if(remove(key) != null) {
-            PlotSystemTerra.getPlugin().getComponentLogger().info(text("Expired cache for " + key));
-        }
+        remove(key);
         expiryTimes.remove(key);
     }
 

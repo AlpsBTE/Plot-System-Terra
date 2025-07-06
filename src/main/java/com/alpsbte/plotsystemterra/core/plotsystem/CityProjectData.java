@@ -43,8 +43,6 @@ public class CityProjectData {
             if (cityProjects.isEmpty())
                 PlotSystemTerra.getPlugin().getComponentLogger().error(text("Fetched city project data is empty!"));
 
-            PlotSystemTerra.getPlugin().getComponentLogger().info(text("Fetched #" + cityProjects.size()));
-
             return cityProjects;
         });
     }
@@ -180,7 +178,6 @@ public class CityProjectData {
             // Refresh the expiry if we're using expiry cache
             if(expiry().isPresent()) {
                 this.expiry = System.currentTimeMillis() + this.cache.getExpiryDelay();
-                PlotSystemTerra.getPlugin().getComponentLogger().info(text("Refreshing expiry cache"));
 
                 for(CityProject data : newData)
                     this.putExpiring(data, this.expiry);
@@ -190,7 +187,6 @@ public class CityProjectData {
 
             // Clear all cache to override new one with static cache
             this.cache.clear();
-            PlotSystemTerra.getPlugin().getComponentLogger().info(text("Refreshing static cache"));
 
             for(CityProject project : newData)
                 this.cache.putNotExpiring(project.getId(), project);
