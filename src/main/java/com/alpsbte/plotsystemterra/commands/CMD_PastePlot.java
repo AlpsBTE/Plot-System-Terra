@@ -58,7 +58,7 @@ public class CMD_PastePlot implements CommandExecutor {
         }
 
         sender.sendMessage(Utils.ChatUtils.getInfoFormat(text("Fetching city project data...")));
-        PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProjectAsync(plot.getCityProjectId())
+        CompletableFuture.supplyAsync(() -> PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProject(plot.getCityProjectId()))
                 .thenAccept(cityProject -> Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> plotPasting(plot, cityProject)));
     }
 

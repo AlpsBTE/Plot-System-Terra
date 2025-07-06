@@ -22,22 +22,30 @@
  *  SOFTWARE.
  */
 
-package com.alpsbte.plotsystemterra.core.data;
+package com.alpsbte.plotsystemterra.core.database;
 
-import com.alpsbte.plotsystemterra.core.model.Plot;
+import com.alpsbte.alpslib.io.database.SqlHelper;
+import com.alpsbte.plotsystemterra.core.data.DataException;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.sql.SQLException;
 
-public interface PlotDataProvider {
-    public abstract Plot getPlot(int id) throws DataException;
+public class SqlExceptionUtil {
+    private SqlExceptionUtil() { /* Prevent instantiation */ }
 
-    public abstract int createPlot(String cityProjectId, String difficultyId, String outlineBounds, UUID createPlayerUUID, byte[] initialSchematic) throws DataException;
+    public static <T> T handle(@NotNull SqlHelper.SQLCheckedSupplier<T> supplier) {
+        try {
+            return supplier.get();
+        } catch (SQLException e) {
+            throw new DataException(e.getMessage(), e);
+        }
+    }
 
-    public abstract void setPasted(int id) throws DataException;
-
-    public abstract List<Plot> getPlotsToPaste() throws DataException;
+    public static void handle(@NotNull SqlHelper.SQLRunnable supplier) {
+        try {
+            supplier.get();
+        } catch (SQLException e) {
+            throw new DataException(e.getMessage(), e);
+        }
+    }
 }

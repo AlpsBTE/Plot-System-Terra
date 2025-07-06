@@ -27,11 +27,13 @@ api:
 # If the data mode is set to DATABASE, the plugin will use a database to get the plot data
 # The database must be a MariaDB/MySQL database
 database:
-  db-url: jdbc:mariadb://adress:3306/
-  db-name: plotsystem
+  url: jdbc:mariadb://adress:3306/
+  dbname: plotsystem
   username: plotsystem
   password: minecraft
-
+  max-lifetime: 1800000 # 30 minutes
+  connection-timeout: 30000 # 30 seconds
+  keepalive-time: 120000 # 2 minutes
 
 # -----------------------------------------------------
 # | Plot Scanning
