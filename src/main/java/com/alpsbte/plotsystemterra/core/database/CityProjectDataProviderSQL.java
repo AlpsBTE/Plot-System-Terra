@@ -69,40 +69,6 @@ public class CityProjectDataProviderSQL implements CityProjectDataProvider {
         return new CityProject(id, countryCode, isVisible, material, customModelData, serverName);
     }
 
-    public boolean checkCityProjectExist(String id) throws DataException {
-        try (ResultSet rsCity = DatabaseConnection.createStatement(
-                "SELECT EXISTS (" +
-                "    SELECT 1 FROM city_project WHERE city_project_id = ?" +
-                ")")
-                .setValue(id).executeQuery()) {
-
-            boolean exist = false;
-            if (rsCity.next()) exist = rsCity.getBoolean(1);
-
-            DatabaseConnection.closeResultSet(rsCity);
-            return exist;
-        } catch (SQLException ex) {
-            throw new DataException(ex.getMessage());
-        }
-    }
-
-    public boolean checkDifficultyExist(String id) throws DataException {
-        try (ResultSet rs = DatabaseConnection.createStatement(
-                "SELECT EXISTS (" +
-                "    SELECT 1 FROM plot_difficulty WHERE difficulty_id = ?" +
-                ")")
-                .setValue(id).executeQuery()) {
-
-            boolean exist = false;
-            if(rs.next()) exist = rs.getBoolean(1);
-
-            DatabaseConnection.closeResultSet(rs);
-            return exist;
-        } catch (SQLException ex) {
-            throw new DataException(ex.getMessage());
-        }
-    }
-
     @Override
     public CompletableFuture<CityProject> getCityProjectAsync(String id) throws DataException {
         CompletableFuture<CityProject> completableFuture = new CompletableFuture<>();
