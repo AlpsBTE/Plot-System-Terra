@@ -157,7 +157,7 @@ public class PlotCreator {
                 return;
             }
 
-            player.sendMessage(Utils.ChatUtils.getAlertFormat(text("Difficulty does not exist, Supported difficulty are: " + Arrays.toString(DIFFICULTY))));
+            player.sendMessage(Utils.ChatUtils.getAlertFormat(text("Difficulty does not exist, Supported difficulty are: " + String.join(", ", DIFFICULTY))));
         });
     }
 
