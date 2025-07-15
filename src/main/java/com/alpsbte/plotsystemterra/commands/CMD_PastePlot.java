@@ -2,6 +2,7 @@ package com.alpsbte.plotsystemterra.commands;
 
 import com.alpsbte.alpslib.utils.AlpsUtils;
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
+import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.alpsbte.plotsystemterra.core.data.DataException;
 import com.alpsbte.plotsystemterra.core.model.CityProject;
 import com.alpsbte.plotsystemterra.core.model.Plot;
@@ -58,7 +59,7 @@ public class CMD_PastePlot implements CommandExecutor {
         }
 
         sender.sendMessage(Utils.ChatUtils.getInfoFormat(text("Fetching city project data...")));
-        PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProjectAsync(plot.getCityProjectId())
+        CompletableFuture.supplyAsync(() -> PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProject(plot.getCityProjectId()))
                 .thenAccept(cityProject -> Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> plotPasting(plot, cityProject)));
     }
 
@@ -72,7 +73,9 @@ public class CMD_PastePlot implements CommandExecutor {
                 plot.getPlotVersion())) {
             Bukkit.broadcast(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN).append(text(1, GOLD).append(text(" plot!", GREEN)))));
         } else {
-            Bukkit.broadcast(Utils.ChatUtils.getAlertFormat(text("Failed to paste plot #" + plot.getId() + " in world " + plotPaster.world.getName())));
+            Bukkit.broadcast(Utils.ChatUtils.getAlertFormat(text("Failed to paste plot #" + plot.getId() + " in world: " + plotPaster.world.getName())
+                    .append(text(".     Possible because you are on the wrong server. (Schematic Server: "
+                            + cityProject.getServerName() + ", Current Server: " + PlotSystemTerra.getPlugin().getConfig().getString(ConfigPaths.SERVER_NAME) + ")", GOLD))));
         }
     }
 }

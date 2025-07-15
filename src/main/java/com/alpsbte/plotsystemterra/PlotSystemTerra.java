@@ -1,3 +1,27 @@
+/*
+ *  The MIT License (MIT)
+ *
+ *  Copyright © 2021-2025, Alps BTE <bte.atchli@gmail.com>
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
 package com.alpsbte.plotsystemterra;
 
 import com.alpsbte.alpslib.io.YamlFileFactory;
@@ -6,7 +30,6 @@ import com.alpsbte.alpslib.utils.head.AlpsHeadEventListener;
 import com.alpsbte.plotsystemterra.commands.CMD_CreatePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PastePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PlotSystemTerra;
-import com.alpsbte.plotsystemterra.core.api.ApiConstants;
 import com.alpsbte.plotsystemterra.core.api.DataProviderAPI;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.alpsbte.plotsystemterra.core.config.ConfigUtil;
@@ -18,7 +41,6 @@ import com.alpsbte.plotsystemterra.core.plotsystem.CityProjectData;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.ipvp.canvas.MenuFunctionListener;
@@ -26,7 +48,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
-import static net.kyori.adventure.text.Component.empty;
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.format.NamedTextColor.DARK_GRAY;
 import static net.kyori.adventure.text.format.NamedTextColor.DARK_GREEN;
@@ -39,8 +60,6 @@ public class PlotSystemTerra extends JavaPlugin {
     private static DataProvider dataProvider;
     private PlotPaster plotPaster;
     private CityProjectData cityProjectData;
-
-    private boolean pluginEnabled = false;
 
     @Override
     public void onEnable() {
@@ -77,29 +96,20 @@ public class PlotSystemTerra extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
         }
 
-        // Initialize database connection
+        // Set data provider
         try {
-            if (dataMode == DataMode.DATABASE) {
-                DatabaseConnection.InitializeDatabase();
-                getComponentLogger().info(successPrefix.append(text("Successfully initialized database connection.")));
+            switch (dataMode) {
+                case DATABASE -> dataProvider = new DataProviderSQL(this, successPrefix);
+                case API -> dataProvider = new DataProviderAPI();
+                default -> {
+                    getComponentLogger().error(text("No Data Provider has been set! Disabling plugin..."));
+                    this.getServer().getPluginManager().disablePlugin(this);
+                }
             }
         } catch (Exception ex) {
-            getComponentLogger().error(errorPrefix.append(text("Could not initialize database connection.")), ex);
+            getComponentLogger().error(errorPrefix.append(text("Could not initialize data provider.")), ex);
             this.getServer().getPluginManager().disablePlugin(this);
             return;
-        }
-
-        // Initialize API constants
-        ApiConstants.updateApiConstants();
-
-        // Set data provider
-        switch (dataMode) {
-            case DATABASE -> dataProvider = new DataProviderSQL();
-            case API -> dataProvider = new DataProviderAPI();
-            default -> {
-                getComponentLogger().error(text("No Data Provider has been set! Disabling plugin..."));
-                this.getServer().getPluginManager().disablePlugin(this);
-            }
         }
 
         // Register event listeners
@@ -133,16 +143,14 @@ public class PlotSystemTerra extends JavaPlugin {
         plotPaster = new PlotPaster();
         plotPaster.start();
 
-        pluginEnabled = true;
         getComponentLogger().info(text("Enabled Plot-System-Terra plugin. Made by Alps BTE - GitHub: https://github.com/AlpsBTE/Plot-System-Terra", DARK_GREEN));
     }
 
     @Override
     public void onDisable() {
-        if (!pluginEnabled) {
-            Bukkit.getConsoleSender().sendMessage(empty());
-            Bukkit.getConsoleSender().sendMessage(text("Disabled plugin. Made by Alps BTE - GitHub: https://github.com/AlpsBTE/Plot-System-Terra", RED));
-        }
+        dataProvider.shutdown();
+        getComponentLogger().info(text("Disabled plugin. Made by Alps BTE - GitHub: https://github.com/AlpsBTE/Plot-System-Terra", RED));
+
     }
 
     @Override
