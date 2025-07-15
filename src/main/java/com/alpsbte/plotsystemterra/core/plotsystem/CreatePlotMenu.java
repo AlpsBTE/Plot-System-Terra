@@ -38,7 +38,7 @@ public class CreatePlotMenu {
         this.player = player;
         player.sendMessage(Utils.ChatUtils.getInfoFormat(text("Fetching city project data...")));
 
-        PlotSystemTerra.getPlugin().getCityProjectData().getCache().thenAccept(cache -> {
+        PlotSystemTerra.getDataProvider().getCityProjectData().getCache().thenAccept(cache -> {
             if (cache.get().isEmpty()) {
                 player.sendMessage(Utils.ChatUtils.getAlertFormat(text("No city projects were found for your build team!")));
                 return;

@@ -36,8 +36,6 @@ import com.alpsbte.plotsystemterra.core.config.ConfigUtil;
 import com.alpsbte.plotsystemterra.core.config.DataMode;
 import com.alpsbte.plotsystemterra.core.data.DataProvider;
 import com.alpsbte.plotsystemterra.core.database.DataProviderSQL;
-import com.alpsbte.plotsystemterra.core.database.DatabaseConnection;
-import com.alpsbte.plotsystemterra.core.plotsystem.CityProjectData;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import net.kyori.adventure.text.Component;
@@ -59,7 +57,6 @@ public class PlotSystemTerra extends JavaPlugin {
     private static PlotSystemTerra plugin;
     private static DataProvider dataProvider;
     private PlotPaster plotPaster;
-    private CityProjectData cityProjectData;
 
     @Override
     public void onEnable() {
@@ -98,9 +95,12 @@ public class PlotSystemTerra extends JavaPlugin {
 
         // Set data provider
         try {
+            // Cache duration for data provider (currently, only city project data)
+            int cacheDurationMinute = configFile.getInt(ConfigPaths.CACHE_DURATION_MINUTES, -1);
+
             switch (dataMode) {
-                case DATABASE -> dataProvider = new DataProviderSQL(this, successPrefix);
-                case API -> dataProvider = new DataProviderAPI();
+                case DATABASE -> dataProvider = new DataProviderSQL(this, successPrefix, cacheDurationMinute);
+                case API -> dataProvider = new DataProviderAPI(cacheDurationMinute);
                 default -> {
                     getComponentLogger().error(text("No Data Provider has been set! Disabling plugin..."));
                     this.getServer().getPluginManager().disablePlugin(this);
@@ -135,9 +135,6 @@ public class PlotSystemTerra extends JavaPlugin {
             return;
         }
 
-        // Initialize city project data cache
-        int useExpiryCache = configFile.getInt(ConfigPaths.CACHE_DURATION_MINUTES, -1);
-        this.cityProjectData = (useExpiryCache >= 0)? new CityProjectData(useExpiryCache) : new CityProjectData();
 
         // Start checking for plots to paste
         plotPaster = new PlotPaster();
@@ -173,10 +170,6 @@ public class PlotSystemTerra extends JavaPlugin {
 
     public static DataProvider getDataProvider() {
         return dataProvider;
-    }
-
-    public CityProjectData getCityProjectData() {
-        return cityProjectData;
     }
 
     public static PlotSystemTerra getPlugin() {

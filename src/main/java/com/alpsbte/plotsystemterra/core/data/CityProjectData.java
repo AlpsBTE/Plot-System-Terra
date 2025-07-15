@@ -1,4 +1,4 @@
-package com.alpsbte.plotsystemterra.core.plotsystem;
+package com.alpsbte.plotsystemterra.core.data;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.model.CityProject;
@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import static net.kyori.adventure.text.Component.text;
 
@@ -20,6 +19,7 @@ import static net.kyori.adventure.text.Component.text;
  * @see #getCache()
  */
 public class CityProjectData {
+    private final CityProjectDataProvider provider;
     private final Cache cache;
     private CompletableFuture<Cache> refresh = null;
 
@@ -31,10 +31,8 @@ public class CityProjectData {
      * @return A {@link CompletableFuture} that complete with the city project data.
      * @see com.alpsbte.plotsystemterra.core.data.CityProjectDataProvider#getCityProjects()
      */
-    public static CompletableFuture<List<CityProject>> fetchDataAsync() {
-        Supplier<List<CityProject>> action = () -> PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProjects();
-
-        return CompletableFuture.supplyAsync(action).orTimeout((long) 60.0, TimeUnit.SECONDS).handle((cityProjects, error) -> {
+    public CompletableFuture<List<CityProject>> fetchDataAsync() {
+        return CompletableFuture.supplyAsync(this.provider::getCityProjects).orTimeout(60L, TimeUnit.SECONDS).handle((cityProjects, error) -> {
             if(error != null) {
                 PlotSystemTerra.getPlugin().getComponentLogger().error(text("An error occurred fetching city project data"), error);
                 return List.of();
@@ -48,26 +46,22 @@ public class CityProjectData {
     }
 
     /**
-     * Creates a static cache for all city project data.
-     *
-     * <p>Calling {@link #getCache()} will fetch for the city project data every call.</p>
-     */
-    public CityProjectData() {
-        this.cache = new Cache();
-    }
-
-    /**
-     * Creates an expiring cache that gets expired on X minutes of lifetime.
+     * Creates a {@link CityProjectData} instance with optional expiration-based caching.
      *
      * <p>Calling {@link #getCache()} will return the cached data and refresh if expired.</p>
      *
-     * @param expiryMinute  the time (in minutes) after which cached entries should expire and be refreshed
-     * @throws IllegalArgumentException if {@code expiryMinute} is less than or equal to 0
+     * @param provider The data provider used to load city project data.
+     * @param expiryMinute The cache expiry duration in minutes. Use any value less than 0 for a static cache.
      */
-    public CityProjectData(int expiryMinute) {
-        this.cache = new Cache(expiryMinute);
+    public CityProjectData(CityProjectDataProvider provider, int expiryMinute) {
+        this.provider = provider;
 
-        ExpiringHashMap.runExpiryThread();
+        if (expiryMinute < 0) {
+            this.cache = new Cache(); // Static cache
+        } else {
+            this.cache = new Cache(expiryMinute); // Expiring cache
+            ExpiringHashMap.runExpiryThread();    // Background expiry thread
+        }
     }
 
     /**
@@ -85,7 +79,7 @@ public class CityProjectData {
                 return this.refresh;
 
             // Trigger new async fetch and cache refresh
-            this.refresh = CityProjectData.fetchDataAsync().thenApply(this.cache::refresh);
+            this.refresh = this.fetchDataAsync().thenApply(this.cache::refresh);
 
             this.refresh.whenComplete((cached, error) -> {
                 synchronized (this) {
