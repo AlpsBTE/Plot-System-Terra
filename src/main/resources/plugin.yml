@@ -7,7 +7,7 @@ depend: [ FastAsyncWorldEdit, HeadDatabase, LangLibs ]
 commands:
   createplot:
     description: Creates a new plot for the PlotSystem.
-    usage: /createplot
+    usage: /createplot, /createplot <city_project_id> <difficulty_id>
     permission: plotsystem.createplot
   pasteplot:
     description: Pastes a plot manually with specific ID

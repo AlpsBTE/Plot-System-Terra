@@ -17,8 +17,8 @@ import org.ipvp.canvas.mask.BinaryMask;
 import org.ipvp.canvas.mask.Mask;
 import org.ipvp.canvas.type.ChestMenu;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import static net.kyori.adventure.text.Component.empty;
 import static net.kyori.adventure.text.Component.text;
@@ -37,20 +37,17 @@ public class CreatePlotMenu {
     public CreatePlotMenu(Player player) {
         this.player = player;
         player.sendMessage(Utils.ChatUtils.getInfoFormat(text("Fetching city project data...")));
-        CompletableFuture.supplyAsync(() -> PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProjects())
-                .exceptionally(e -> {
-                    player.sendMessage(Utils.ChatUtils.getAlertFormat(text("Could not fetch city project data!")));
-                    PlotSystemTerra.getPlugin().getComponentLogger().error(text("An error occurred fetching city project data"), e);
-                    return List.of();
-                })
-                .thenAccept(cityProjects -> {
-                    this.cityProjects = cityProjects;
-                    if (cityProjects.isEmpty()) {
-                        player.sendMessage(Utils.ChatUtils.getAlertFormat(text("No city projects were found for your build team!")));
-                        return;
-                    }
-                    Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), this::openCityProjectUI);
-                });
+
+        PlotSystemTerra.getDataProvider().getCityProjectData().getCache().thenAccept(cache -> {
+            if (cache.get().isEmpty()) {
+                player.sendMessage(Utils.ChatUtils.getAlertFormat(text("No city projects were found for your build team!")));
+                return;
+            }
+
+            this.cityProjects = new ArrayList<>(cache.get());
+
+            Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), this::openCityProjectUI);
+        });
     }
 
     public void openCityProjectUI() {

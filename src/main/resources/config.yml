@@ -47,6 +47,14 @@ environment:
   radius: 50
 
 # -----------------------------------------------------
+# | Plot Creating
+# -----------------------------------------------------
+
+# Duration (in minutes) to keep city project data in the cache before it expires and is refreshed.
+# Set to -1 to disable expiration, city project data will then be fetched on every call of it.
+cache-duration-minutes: -1
+
+# -----------------------------------------------------
 # | Plot Pasting
 # -----------------------------------------------------
 

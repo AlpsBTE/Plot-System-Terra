@@ -95,9 +95,12 @@ public class PlotSystemTerra extends JavaPlugin {
 
         // Set data provider
         try {
+            // Cache duration for data provider (currently, only city project data)
+            int cacheDurationMinute = configFile.getInt(ConfigPaths.CACHE_DURATION_MINUTES, -1);
+
             switch (dataMode) {
-                case DATABASE -> dataProvider = new DataProviderSQL(this, successPrefix);
-                case API -> dataProvider = new DataProviderAPI();
+                case DATABASE -> dataProvider = new DataProviderSQL(this, successPrefix, cacheDurationMinute);
+                case API -> dataProvider = new DataProviderAPI(cacheDurationMinute);
                 default -> {
                     getComponentLogger().error(text("No Data Provider has been set! Disabling plugin..."));
                     this.getServer().getPluginManager().disablePlugin(this);
@@ -131,6 +134,7 @@ public class PlotSystemTerra extends JavaPlugin {
             this.getServer().getPluginManager().disablePlugin(this);
             return;
         }
+
 
         // Start checking for plots to paste
         plotPaster = new PlotPaster();

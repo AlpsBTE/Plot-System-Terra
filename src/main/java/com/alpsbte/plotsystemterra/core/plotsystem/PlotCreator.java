@@ -47,6 +47,7 @@ public class PlotCreator {
 
     public static final String SCHEMATICS_PATH = Paths.get(PlotSystemTerra.getPlugin().getDataFolder().getAbsolutePath(), "schematics") + File.separator;
     public static final int MIN_OFFSET_Y = 5;
+    public final static String[] DIFFICULTY = new String[] { "easy", "medium", "hard" };
 
     public static void create(Player player, int environmentRadius, IPlotRegionsAction plotRegionsAction) {
         Vector3 plotCenter;
@@ -117,7 +118,37 @@ public class PlotCreator {
         plotRegionsAction.onSchematicsCreationComplete(plotRegion, environmentRegion, plotCenter);
     }
 
-    public static void createPlot(Player player, CityProject cityProject, String difficultyId) {
+    public static void createPlot(Player player, CityProject cityProject, String difficultyID) {
+        PlotCreator.createPlot(player, cityProject.getId(), difficultyID);
+    }
+
+    public static void createPlotManually(Player player, String cityProjectID, String difficultyID) {
+        PlotSystemTerra.getDataProvider().getCityProjectData().getCache().thenAccept(cache -> {
+            if(!cache.hasCache(cityProjectID)) {
+                player.sendMessage(Utils.ChatUtils.getAlertFormat(text("City Project ID does not exist. Cannot create plot!")));
+                return;
+            }
+
+            String difficulty = null;
+            for(String id : DIFFICULTY) {
+                if (id.equalsIgnoreCase(difficultyID)) {
+                    difficulty = id;
+                    break;
+                }
+            }
+
+            if (difficulty == null) {
+                player.sendMessage(Utils.ChatUtils.getAlertFormat(
+                    text("Difficulty does not exist. Supported difficulties are: " + String.join(", ", DIFFICULTY))
+                ));
+                return;
+            }
+
+            PlotCreator.createPlot(player, cityProjectID, difficulty);
+        });
+    }
+
+    private static void createPlot(Player player, String cityProjectID, String difficultyID) {
         CompletableFuture.runAsync(() -> {
             boolean environmentEnabled;
 
@@ -150,18 +181,18 @@ public class PlotCreator {
                     initialSchematic = createPlotSchematic(environmentRegion);
 
                     // Insert into database
-                    int createdPlotId = PlotSystemTerra.getDataProvider().getPlotDataProvider().createPlot(
-                            cityProject.getId(),
-                            difficultyId,
+                    int createdPlotID = PlotSystemTerra.getDataProvider().getPlotDataProvider().createPlot(
+                            cityProjectID,
+                            difficultyID,
                             polyOutline,
                             player.getUniqueId(),
                             initialSchematic
                     );
                     // Place plot markings on plot region
-                    placePlotMarker(plotRegion, player, createdPlotId);
+                    placePlotMarker(plotRegion, player, createdPlotID);
                     // TODO: Change top blocks of the plot region to mark plot as created
                     player.sendMessage(Utils.ChatUtils.getInfoFormat(text("Successfully created new plot!", GREEN)
-                            .append(text(" (City-Id: " + cityProject.getId() + " | Plot-Id: " + createdPlotId + ")", WHITE))));
+                            .append(text(" (City-Id: " + cityProjectID + " | Plot-Id: " + createdPlotID + ")", WHITE))));
                     player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
                 } catch (DataException | IOException ex) {
                     PlotSystemTerra.getPlugin().getComponentLogger().error("An error occurred while creating plot!", ex);

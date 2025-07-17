@@ -31,6 +31,9 @@ public abstract class ConfigPaths {
 
     public static final String DEV_MODE = "dev-mode";
 
+    // Caching
+    public static final String CACHE_DURATION_MINUTES = "cache-duration-minutes";
+
     // Data Mode
     public static final String DATA_MODE = "data-mode";
 

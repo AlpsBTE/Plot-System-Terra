@@ -22,6 +22,7 @@ public class CMD_CreatePlot implements CommandExecutor {
         if (!player.hasPermission("plotsystem.createplot")) return true;
 
         try {
+            // Tutorial Plot (DEV ONLY)
             if (ConfigUtil.getInstance().configs[0].getBoolean(ConfigPaths.DEV_MODE)
                     && args.length > 1
                     && args[0].equalsIgnoreCase("tutorial")
@@ -29,6 +30,19 @@ public class CMD_CreatePlot implements CommandExecutor {
                 PlotCreator.createTutorialPlot(player, Integer.parseInt(args[1]));
                 return true;
             }
+
+            // manual input
+            if(args.length == 2) {
+                String cityID = args[0];
+                String difficultyID = args[1];
+
+                if (cityID != null && difficultyID != null) {
+                    PlotCreator.createPlotManually(((Player) sender).getPlayer(), cityID, difficultyID);
+                    return true;
+                }
+            }
+
+            // Creation Menu
             new CreatePlotMenu(player);
         } catch (Exception ex) {
             PlotSystemTerra.getPlugin().getComponentLogger()
