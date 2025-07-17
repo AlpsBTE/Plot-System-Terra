@@ -131,10 +131,10 @@ public class PlotCreator {
 
             String difficulty = null;
             for(String id : DIFFICULTY) {
-                if(!difficultyID.equalsIgnoreCase(id))
-                    continue;
-                difficulty = id;
-                break;
+                if (id.equalsIgnoreCase(difficultyID)) {
+                    difficulty = id;
+                    break;
+                }
             }
 
             if (difficulty == null) {
