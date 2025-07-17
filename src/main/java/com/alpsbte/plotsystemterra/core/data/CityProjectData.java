@@ -4,9 +4,7 @@ import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.model.CityProject;
 import com.alpsbte.plotsystemterra.utils.ExpiringHashMap;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -20,8 +18,8 @@ import static net.kyori.adventure.text.Component.text;
  */
 public class CityProjectData {
     private final CityProjectDataProvider provider;
-    private final Cache cache;
-    private CompletableFuture<Cache> refresh = null;
+    private final Cache<String, CityProject> cache;
+    private CompletableFuture<Cache<String, CityProject>> refresh = null;
 
     /**
      * Fetch for city project data asynchronously using the plugin's data provider.
@@ -57,10 +55,10 @@ public class CityProjectData {
         this.provider = provider;
 
         if (expiryMinute < 0) {
-            this.cache = new Cache(); // Static cache
+            this.cache = new Cache<>(); // Static cache
         } else {
-            this.cache = new Cache(expiryMinute); // Expiring cache
-            ExpiringHashMap.runExpiryThread();    // Background expiry thread
+            this.cache = new Cache<>(expiryMinute); // Expiring cache
+            ExpiringHashMap.runExpiryThread();      // Background expiry thread
         }
     }
 
@@ -69,7 +67,7 @@ public class CityProjectData {
      *
      * @return A {@link CompletableFuture} that will complete with the up-to-date {@link Cache}.
      */
-    public CompletableFuture<Cache> getCache() {
+    public CompletableFuture<Cache<String, CityProject>> getCache() {
         if (!needsRefresh()) // Valid cache is returned instantly
             return CompletableFuture.completedFuture(this.cache);
 
@@ -79,7 +77,7 @@ public class CityProjectData {
                 return this.refresh;
 
             // Trigger new async fetch and cache refresh
-            this.refresh = this.fetchDataAsync().thenApply(this.cache::refresh);
+            this.refresh = this.fetchDataAsync().thenApply(this::refreshCache);
 
             this.refresh.whenComplete((cached, error) -> {
                 synchronized (this) {
@@ -112,118 +110,7 @@ public class CityProjectData {
      * @param newData The new project data to insert into the cache.
      * @return The updated {@link Cache} instance.
      */
-    public Cache refreshCache(List<CityProject> newData) {
-        return this.cache.refresh(newData);
-    }
-
-    /**
-     * Internal cache wrapper for city project data.
-     *
-     * <p>Manages either a static (non-expiring) or expiring cache of {@link CityProject} entries.
-     * The cache refresh behavior is explicitly updated via {@link #refresh(List)}.</p>
-     * 
-     * @see #refresh(List) 
-     */
-    public static class Cache {
-        private final ExpiringHashMap<String, CityProject> cache;
-        private Long expiry = null;
-
-        private void putExpiring(CityProject cityProject, long expiryTime) {
-            synchronized (cache) {
-                cache.putExpiring(cityProject.getId(), cityProject, expiryTime);
-            }
-        }
-
-        /** Create a static (non-expiring) cache. */
-        private Cache() {
-            this.cache = new ExpiringHashMap<>();
-        }
-
-        /**
-         * Create an expiring cache.
-         *
-         * @param expiryMinute Expiry duration in minutes; must be positive.
-         */
-        private Cache(int expiryMinute) {
-            this.cache = new ExpiringHashMap<>(TimeUnit.MINUTES.toMillis(expiryMinute));
-            this.expiry = System.currentTimeMillis();
-        }
-
-        /**
-         * Get the current expiry timestamp of the cache, if any.
-         *
-         * @return Optional expiry time in milliseconds since epoch.
-         */
-        private Optional<Long> expiry() {
-            return Optional.ofNullable(this.expiry);
-        }
-
-        /**
-         * Refresh the cache with new city project data.
-         *
-         * <p>If the cache is expiring, the expiry time of all entries is updated based on the cache's expiry delay.
-         * If the cache is static, the entire cache is cleared and reloaded.
-         *
-         * @param newData The new list of {@link CityProject} instances to cache.
-         * @return This cache instance after refresh (for chaining).
-         */
-        private Cache refresh(List<CityProject> newData) {
-
-            // Refresh the expiry if we're using expiry cache
-            if(expiry().isPresent()) {
-                this.expiry = System.currentTimeMillis() + this.cache.getExpiryDelay();
-
-                for(CityProject data : newData)
-                    this.putExpiring(data, this.expiry);
-
-                return this;
-            }
-
-            // Clear all cache to override new one with static cache
-            this.cache.clear();
-
-            for(CityProject project : newData)
-                this.cache.putNotExpiring(project.getId(), project);
-
-            return this;
-        }
-
-        /**
-         * Check if the cache is empty.
-         *
-         * @return {@code true} if no entries are cached; {@code false} otherwise.
-         */
-        public boolean isEmpty() {
-            return this.cache.isEmpty();
-        }
-
-        /**
-         * Get a city project from the cache by its ID.
-         *
-         * @param id The project ID.
-         * @return The {@link CityProject} if present or {@code null}
-         */
-        public CityProject get(String id) {
-            return this.cache.get(id);
-        }
-
-        /**
-         * Get a view of all cached {@link CityProject} values.
-         *
-         * @return A collection of cached projects (may be empty).
-         */
-        public Collection<CityProject> get() {
-            return this.cache.values();
-        }
-
-        /**
-         * Check whether a project with the given ID is currently cached.
-         *
-         * @param id The project ID.
-         * @return {@code true} if the project is present in the cache.
-         */
-        public boolean hasProjectID(String id) {
-            return this.cache.containsKey(id);
-        }
+    public Cache<String, CityProject> refreshCache(List<CityProject> newData) {
+        return this.cache.refresh(newData, CityProject::getId);
     }
 }

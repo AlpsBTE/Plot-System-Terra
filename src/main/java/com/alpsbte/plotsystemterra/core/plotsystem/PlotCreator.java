@@ -124,7 +124,7 @@ public class PlotCreator {
 
     public static void createPlotManually(Player player, String cityProjectID, String difficultyID) {
         PlotSystemTerra.getDataProvider().getCityProjectData().getCache().thenAccept(cache -> {
-            if(!cache.hasProjectID(cityProjectID)) {
+            if(!cache.hasCache(cityProjectID)) {
                 player.sendMessage(Utils.ChatUtils.getAlertFormat(text("City Project ID does not exist. Cannot create plot!")));
                 return;
             }
