@@ -1,8 +1,8 @@
 name: PlotSystem-Terra
-version: '${project.version}${build.number}'
+version: '${version}'
 main: com.alpsbte.plotsystemterra.PlotSystemTerra
 api-version: '1.21'
-depend: [ FastAsyncWorldEdit, HeadDatabase, LangLibs ]
+depend: [ FastAsyncWorldEdit, HeadDatabase ]
 
 commands:
   createplot:
