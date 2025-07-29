@@ -45,10 +45,11 @@ dependencies {
     compileOnly(libs.org.jetbrains.annotations)
 }
 
-val gitVersion: groovy.lang.Closure<String> by extra
+val versionDetails: groovy.lang.Closure<com.palantir.gradle.gitversion.VersionDetails> by extra
+val details = versionDetails()
 
 group = "com.alpsbte"
-version = gitVersion() // last tag + commit distance + short hash - release "5.0.0"
+version = "5.0.0-" + details.gitHash
 description = "PlotSystem-Terra"
 java.sourceCompatibility = JavaVersion.VERSION_21
 
