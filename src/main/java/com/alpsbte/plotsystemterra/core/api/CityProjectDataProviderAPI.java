@@ -99,7 +99,7 @@ public class CityProjectDataProviderAPI implements CityProjectDataProvider {
             boolean isVisible = (boolean) jsonObj.get("isVisible");
             String material = (String) jsonObj.get("material");
             String customModelData = (String) jsonObj.get("customModelData");
-            String serverName = (String) jsonObj.get("customModelData");
+            String serverName = (String) jsonObj.get("serverName");
 
             return new CityProject(cityProjectId, countryCode, isVisible, material, customModelData, serverName);
         } catch (IOException | InterruptedException | ParseException e) {
