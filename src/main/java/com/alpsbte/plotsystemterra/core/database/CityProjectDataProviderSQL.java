@@ -25,6 +25,8 @@
 package com.alpsbte.plotsystemterra.core.database;
 
 import com.alpsbte.alpslib.io.database.SqlHelper;
+import com.alpsbte.plotsystemterra.PlotSystemTerra;
+import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
 import com.alpsbte.plotsystemterra.core.data.CityProjectDataProvider;
 import com.alpsbte.plotsystemterra.core.data.DataException;
 import com.alpsbte.plotsystemterra.core.model.CityProject;
@@ -38,7 +40,16 @@ public class CityProjectDataProviderSQL implements CityProjectDataProvider {
     public List<CityProject> getCityProjects() {
         String queryGetIds = "SELECT city_project_id FROM city_project";
 
-        return SqlExceptionUtil.handle(() -> SqlHelper.runQuery(queryGetIds, ps -> {
+        var serverName = PlotSystemTerra.getPlugin().getConfig().getString(ConfigPaths.SERVER_NAME);
+        if (serverName != null && !serverName.isEmpty() && !serverName.equalsIgnoreCase("default")) {
+            queryGetIds += " WHERE server_name = ?";
+        }
+
+        String finalQueryGetIds = queryGetIds;
+        return SqlExceptionUtil.handle(() -> SqlHelper.runQuery(finalQueryGetIds, ps -> {
+            if (serverName != null && !serverName.isEmpty() && !serverName.equalsIgnoreCase("default")) {
+                ps.setString(1, serverName);
+            }
             List<CityProject> listProjects = new ArrayList<>();
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
