@@ -39,7 +39,7 @@ public class PlotDataProviderSQL implements PlotDataProvider {
 
     @Override
     public Plot getPlot(int id) throws DataException {
-        String queryGetPlot = "SELECT status, city_project_id, plot_version, mc_version FROM plot WHERE plot_id = ?";
+        String queryGetPlot = "SELECT status, city_project_id, plot_version, mc_version, complete_schematic FROM plot WHERE plot_id = ?";
 
         return SqlExceptionUtil.handle(() -> SqlHelper.runQuery(queryGetPlot, ps -> {
             ps.setInt(1, id);
@@ -51,13 +51,15 @@ public class PlotDataProviderSQL implements PlotDataProvider {
             String cityProjectId = rs.getString(2);
             double plotVersion = rs.getDouble(3);
             String mcVersion = rs.getString(4);
+            byte[] completedSchematic = rs.getBytes(5);
 
             return new Plot(
                     id,
                     status,
                     cityProjectId,
                     plotVersion,
-                    mcVersion
+                    mcVersion,
+                    completedSchematic
             );
         }));
     }
