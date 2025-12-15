@@ -60,10 +60,10 @@ public class CMD_PastePlot implements CommandExecutor {
 
         sender.sendMessage(Utils.ChatUtils.getInfoFormat(text("Fetching city project data...")));
         CompletableFuture.supplyAsync(() -> PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProject(plot.getCityProjectId()))
-                .thenAccept(cityProject -> Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> plotPasting(plot, cityProject)));
+                .thenAccept(cityProject -> Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> plotPasting(plot, cityProject, sender)));
     }
 
-    private void plotPasting(Plot plot, CityProject cityProject) {
+    private void plotPasting(Plot plot, CityProject cityProject, CommandSender sender) {
         PlotPaster plotPaster = PlotSystemTerra.getPlugin().getPlotPaster();
         if (PlotPaster.pastePlotSchematic(
                 plot,
@@ -71,9 +71,9 @@ public class CMD_PastePlot implements CommandExecutor {
                 plotPaster.world,
                 plot.getCompletedSchematic(),
                 plot.getPlotVersion())) {
-            Bukkit.broadcast(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN).append(text(1, GOLD).append(text(" plot!", GREEN)))));
+            sender.sendMessage(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN).append(text(1, GOLD).append(text(" plot!", GREEN)))));
         } else {
-            Bukkit.broadcast(Utils.ChatUtils.getAlertFormat(text("Failed to paste plot #" + plot.getId() + " in world: " + plotPaster.world.getName())
+            sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("Failed to paste plot #" + plot.getId() + " in world: " + plotPaster.world.getName())
                     .append(text(".     Possible because you are on the wrong server. (Schematic Server: "
                             + cityProject.getServerName() + ", Current Server: " + PlotSystemTerra.getPlugin().getConfig().getString(ConfigPaths.SERVER_NAME) + ")", GOLD))));
         }
