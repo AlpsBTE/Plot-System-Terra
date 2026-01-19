@@ -12,6 +12,8 @@ com-zaxxer-hikaricp = "6.3.0"
 io-papermc-paper-paper-api = "1.21.4-R0.1-SNAPSHOT"
 org-jetbrains-annotations = "26.0.2"
 org-mariadb-jdbc-mariadb-java-client = "3.5.3"
+com-gradleup-shadow = "9.3.1" # https://github.com/GradleUp/shadow/releases
+com-palantir-git-version = "4.2.0" # https://github.com/palantir/gradle-git-version/releases
 
 [libraries]
 com-alpsbte-alpslib-alpslib-io = { module = "com.alpsbte.alpslib:alpslib-io", version.ref = "com-alpsbte-alpslib-alpslib-io" }
@@ -24,3 +26,7 @@ com-zaxxer-hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "com-zaxxe
 io-papermc-paper-paper-api = { module = "io.papermc.paper:paper-api", version.ref = "io-papermc-paper-paper-api" }
 org-jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "org-jetbrains-annotations" }
 org-mariadb-jdbc-mariadb-java-client = { module = "org.mariadb.jdbc:mariadb-java-client", version.ref = "org-mariadb-jdbc-mariadb-java-client" }
+
+[plugins]
+git-version = { id = "com.palantir.git-version", version.ref = "com-palantir-git-version" }
+shadow = { id = "com.gradleup.shadow", version.ref = "com-gradleup-shadow" }

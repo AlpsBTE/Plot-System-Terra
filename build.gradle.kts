@@ -4,8 +4,8 @@
 
 plugins {
     java
-    id("com.palantir.git-version") version "4.0.0"
-    id("com.gradleup.shadow") version "9.0.0-rc1"
+    alias(libs.plugins.git.version)
+    alias(libs.plugins.shadow)
 }
 
 repositories {
@@ -70,6 +70,9 @@ tasks.shadowJar {
     // Exclude slf4j classes
     exclude("org/slf4j/**")
     archiveClassifier = ""
+
+    relocationPrefix = "com.alpsbte.plotsystemterra.shaded"
+    enableAutoRelocation = true
 }
 
 tasks.assemble {
@@ -77,6 +80,7 @@ tasks.assemble {
 }
 
 tasks.jar {
+    archiveClassifier = "UNSHADED"
     enabled = false // Disable the default jar task since we are using shadowJar
 }
 
