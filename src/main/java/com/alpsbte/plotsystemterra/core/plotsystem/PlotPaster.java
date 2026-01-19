@@ -57,7 +57,7 @@ import static net.kyori.adventure.text.format.NamedTextColor.GOLD;
 import static net.kyori.adventure.text.format.NamedTextColor.GREEN;
 
 public class PlotPaster extends Thread {
-    private static String serverName = null;
+    private final String serverName;
     private final int pasteInterval;
     public final World world;
     private final boolean broadcastMessages;
@@ -97,7 +97,7 @@ public class PlotPaster extends Thread {
                 }).orTimeout((long) 60.0, TimeUnit.SECONDS), 0L, 20L * pasteInterval);
     }
 
-    public static boolean pastePlotSchematic(Plot plot, CityProject city, World world, byte[] completedSchematic, double plotVersion) throws WorldEditException {
+    public boolean pastePlotSchematic(Plot plot, CityProject city, World world, byte[] completedSchematic, double plotVersion) throws WorldEditException {
         // check server name
         if (serverName == null) {
             PlotSystemTerra.getPlugin().getComponentLogger().error(text("Server name is not configured properly! Unable to paste plots."));

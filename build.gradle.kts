@@ -4,6 +4,7 @@
 
 plugins {
     java
+    alias(libs.plugins.lombok)
     alias(libs.plugins.git.version)
     alias(libs.plugins.shadow)
 }
@@ -32,7 +33,6 @@ repositories {
 }
 
 dependencies {
-
     implementation(libs.com.alpsbte.canvas)
     implementation(libs.com.zaxxer.hikaricp)
     implementation(libs.com.alpsbte.alpslib.alpslib.utils)

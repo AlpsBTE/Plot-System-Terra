@@ -24,11 +24,10 @@
 
 package com.alpsbte.plotsystemterra.core.config;
 
-public abstract class ConfigPaths {
-    private ConfigPaths() {
-        throw new IllegalStateException("Utility class");
-    }
+import lombok.experimental.UtilityClass;
 
+@UtilityClass
+public class ConfigPaths {
     public static final String DEV_MODE = "dev-mode";
 
     // Caching

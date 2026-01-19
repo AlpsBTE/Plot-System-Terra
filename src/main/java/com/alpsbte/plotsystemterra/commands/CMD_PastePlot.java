@@ -65,7 +65,7 @@ public class CMD_PastePlot implements CommandExecutor {
 
     private void plotPasting(Plot plot, CityProject cityProject, CommandSender sender) {
         PlotPaster plotPaster = PlotSystemTerra.getPlugin().getPlotPaster();
-        if (PlotPaster.pastePlotSchematic(
+        if (PlotSystemTerra.getPlugin().getPlotPaster().pastePlotSchematic(
                 plot,
                 cityProject,
                 plotPaster.world,

@@ -24,6 +24,7 @@ import org.bukkit.block.Sign;
 import org.bukkit.block.sign.Side;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+import org.jspecify.annotations.NonNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -40,14 +41,14 @@ import static net.kyori.adventure.text.format.NamedTextColor.*;
 import static net.kyori.adventure.text.format.TextDecoration.BOLD;
 
 public class PlotCreator {
+    public static final String SCHEMATICS_PATH = Paths.get(PlotSystemTerra.getPlugin().getDataFolder().getAbsolutePath(), "schematics") + File.separator;
+    public static final int MIN_OFFSET_Y = 5;
+    private static final String[] DIFFICULTY = new String[] { "easy", "medium", "hard" };
+
     @FunctionalInterface
     public interface IPlotRegionsAction {
         void onSchematicsCreationComplete(Polygonal2DRegion plotRegion, CylinderRegion environmentRegion, Vector3 plotCenter);
     }
-
-    public static final String SCHEMATICS_PATH = Paths.get(PlotSystemTerra.getPlugin().getDataFolder().getAbsolutePath(), "schematics") + File.separator;
-    public static final int MIN_OFFSET_Y = 5;
-    public final static String[] DIFFICULTY = new String[] { "easy", "medium", "hard" };
 
     public static void create(Player player, int environmentRadius, IPlotRegionsAction plotRegionsAction) {
         Vector3 plotCenter;
@@ -65,17 +66,18 @@ public class PlotCreator {
         // Create plot and environment regions
         // Get poly region
         Polygonal2DRegion plotRegion;
-        if (rawPlotRegion instanceof Polygonal2DRegion pr) plotRegion = pr;
-        else if (rawPlotRegion instanceof CuboidRegion cr) {
-            plotRegion = new Polygonal2DRegion(
+        switch (rawPlotRegion) {
+            case Polygonal2DRegion pr -> plotRegion = pr;
+            case CuboidRegion cr -> plotRegion = new Polygonal2DRegion(
                     rawPlotRegion.getWorld(),
                     cr.polygonize(4),
                     cr.getMinimumY(),
                     cr.getMaximumY()
             );
-        } else {
-            player.sendMessage(Utils.ChatUtils.getAlertFormat(text("Please use polygonal selection to create a new plot!")));
-            return;
+            default -> {
+                player.sendMessage(Utils.ChatUtils.getAlertFormat(text("Please use polygonal selection to create a new plot!")));
+                return;
+            }
         }
 
         // Check if the polygonal region is valid
@@ -118,7 +120,7 @@ public class PlotCreator {
         plotRegionsAction.onSchematicsCreationComplete(plotRegion, environmentRegion, plotCenter);
     }
 
-    public static void createPlot(Player player, CityProject cityProject, String difficultyID) {
+    public static void createPlot(Player player, @NonNull CityProject cityProject, String difficultyID) {
         PlotCreator.createPlot(player, cityProject.getId(), difficultyID);
     }
 
@@ -309,7 +311,7 @@ public class PlotCreator {
      * @param world      Region world
      * @return true if polygon region contains a sign, false otherwise
      */
-    private static boolean containsSign(Polygonal2DRegion polyRegion, World world) {
+    private static boolean containsSign(@NonNull Polygonal2DRegion polyRegion, World world) {
         boolean hasSign = false;
         for (int i = polyRegion.getMinimumPoint().x(); i <= polyRegion.getMaximumPoint().x(); i++) {
             for (int j = polyRegion.getMinimumPoint().y(); j <= polyRegion.getMaximumPoint().y(); j++) {
@@ -342,7 +344,7 @@ public class PlotCreator {
      * @param player     Player
      * @param plotID     Plot ID
      */
-    private static void placePlotMarker(Region plotRegion, Player player, int plotID) {
+    private static void placePlotMarker(@NonNull Region plotRegion, @NonNull Player player, int plotID) {
         Vector3 centerBlock = plotRegion.getCenter();
         Location highestBlock = player.getWorld().getHighestBlockAt(centerBlock.toBlockPoint().x(), centerBlock.toBlockPoint().z()).getLocation();
 
@@ -369,7 +371,7 @@ public class PlotCreator {
      * @param player Player
      * @return Direction
      */
-    private static BlockFace getPlayerFaceDirection(Player player) {
+    private static BlockFace getPlayerFaceDirection(@NonNull Player player) {
         float y = player.getLocation().getYaw();
         if (y < 0) {
             y += 360;
