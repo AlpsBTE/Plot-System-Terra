@@ -2,18 +2,19 @@ package com.alpsbte.plotsystemterra.commands;
 
 import com.alpsbte.alpslib.utils.AlpsUtils;
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
-import com.alpsbte.plotsystemterra.core.DatabaseConnection;
-import com.alpsbte.plotsystemterra.core.plotsystem.CityProject;
+import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
+import com.alpsbte.plotsystemterra.core.data.DataException;
+import com.alpsbte.plotsystemterra.core.model.CityProject;
+import com.alpsbte.plotsystemterra.core.model.Plot;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
 import com.alpsbte.plotsystemterra.utils.Utils;
-import com.sk89q.worldedit.math.BlockVector3;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.jetbrains.annotations.NotNull;
 
-import java.sql.ResultSet;
-import java.util.logging.Level;
+import java.util.concurrent.CompletableFuture;
 
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.format.NamedTextColor.GOLD;
@@ -21,45 +22,60 @@ import static net.kyori.adventure.text.format.NamedTextColor.GREEN;
 
 public class CMD_PastePlot implements CommandExecutor {
     @Override
-    public boolean onCommand(CommandSender sender, Command cmd, String s, String[] args) {
-        if(Utils.hasPermission(sender, "pasteplot")) {
-            try {
-                if (args.length >= 1 && AlpsUtils.tryParseInt(args[0]) != null) {
-                    int plotID = Integer.parseInt(args[0]);
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String s, String @NotNull [] args) {
+        if (!sender.hasPermission("plotsystem.pasteplot")) return false;
 
-                    try (ResultSet rs = DatabaseConnection.createStatement("SELECT status, city_project_id, mc_coordinates, version FROM plotsystem_plots WHERE id = ?")
-                            .setValue(plotID).executeQuery()) {
+        if (args.length < 1 || AlpsUtils.tryParseInt(args[0]) == null) {
+            sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("Incorrect Input! Try /pasteplot <ID>")));
+            return true;
+        }
 
-                        if (rs.next() && rs.getString(1).equals("completed")) {
-                            PlotPaster plotPaster = PlotSystemTerra.getPlugin().getPlotPaster();
+        int plotID = Integer.parseInt(args[0]);
+        String genericNotFoundMsg = "Plot with the ID " + plotID + " could not be found!";
 
-                            String[] splitCoordinates = rs.getString(3).split(",");
-                            BlockVector3 mcCoordinates = BlockVector3.at(
-                                    Float.parseFloat(splitCoordinates[0]),
-                                    Float.parseFloat(splitCoordinates[1]),
-                                    Float.parseFloat(splitCoordinates[2])
-                            );
-
-                            try {
-                                if (PlotPaster.pastePlotSchematic(plotID, new CityProject(rs.getInt(2)), plotPaster.world, mcCoordinates, rs.getDouble(4), plotPaster.fastMode)) {
-                                    Bukkit.broadcast(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN).append(text(1, GOLD).append(text(" plot!", GREEN)))));
-                                }
-                            } catch (Exception ex) {
-                                Bukkit.getLogger().log(Level.SEVERE, "An error occurred while pasting plot with the ID " + plotID + "!", ex);
-                                sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("An error occurred while pasting plot!")));
-                            }
-                        } else sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("Plot with the ID " + plotID + " is not completed!")));
-
-                        DatabaseConnection.closeResultSet(rs);
-                    }
-                } else {
-                    sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("Incorrect Input! Try /pasteplot <ID>")));
-                }
-            } catch (Exception ex) {
-                Bukkit.getLogger().log(Level.SEVERE, "An error occurred while pasting plot!", ex);
-                sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("An error occurred while pasting plot!")));
-            }
+        sender.sendMessage(Utils.ChatUtils.getInfoFormat(text("Fetching plot data...")));
+        try {
+            CompletableFuture.supplyAsync(() -> PlotSystemTerra.getDataProvider().getPlotDataProvider().getPlot(plotID))
+                    .thenAccept(plot -> plotValidation(sender, plot, plotID)).exceptionally(e -> {
+                        sender.sendMessage(Utils.ChatUtils.getAlertFormat(text(genericNotFoundMsg)));
+                        return null;
+                    });
+        } catch (DataException e) {
+            sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("Plot with the ID " + plotID + " could not be found!" + " " + e.getMessage())));
+            PlotSystemTerra.getPlugin().getComponentLogger().warn(genericNotFoundMsg, e);
         }
         return true;
+    }
+
+    private void plotValidation(CommandSender sender, Plot plot, int plotId) {
+        if (plot == null) {
+            sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("Plot with the ID " + plotId + " could not be found!")));
+            return;
+        }
+
+        if (!plot.getStatus().equals("completed")) {
+            sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("Plot with the ID " + plotId + " is not completed!")));
+            return;
+        }
+
+        sender.sendMessage(Utils.ChatUtils.getInfoFormat(text("Fetching city project data...")));
+        CompletableFuture.supplyAsync(() -> PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProject(plot.getCityProjectId()))
+                .thenAccept(cityProject -> Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> plotPasting(plot, cityProject, sender)));
+    }
+
+    private void plotPasting(Plot plot, CityProject cityProject, CommandSender sender) {
+        PlotPaster plotPaster = PlotSystemTerra.getPlugin().getPlotPaster();
+        if (PlotSystemTerra.getPlugin().getPlotPaster().pastePlotSchematic(
+                plot,
+                cityProject,
+                plotPaster.world,
+                plot.getCompletedSchematic(),
+                plot.getPlotVersion())) {
+            sender.sendMessage(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN).append(text(1, GOLD).append(text(" plot!", GREEN)))));
+        } else {
+            sender.sendMessage(Utils.ChatUtils.getAlertFormat(text("Failed to paste plot #" + plot.getId() + " in world: " + plotPaster.world.getName())
+                    .append(text(".     Possible because you are on the wrong server. (Schematic Server: "
+                            + cityProject.getServerName() + ", Current Server: " + PlotSystemTerra.getPlugin().getConfig().getString(ConfigPaths.SERVER_NAME) + ")", GOLD))));
+        }
     }
 }

@@ -11,7 +11,7 @@ public class ConfigUtil {
     public static void init() throws ConfigNotImplementedException {
         if (configUtilInstance == null) {
             configUtilInstance = new ConfigurationUtil(new ConfigurationUtil.ConfigFile[]{
-                    new ConfigurationUtil.ConfigFile(Paths.get("config.yml"), 2.0, true)
+                    new ConfigurationUtil.ConfigFile(Paths.get("config.yml"), 3.0, true)
             });
         }
     }

@@ -6,9 +6,6 @@
 # | [Contacts - Discord] R3tuxn#7169, Coppertine#1718
 # -----------------------------------------------------
 
-# Keep updated about newer versions
-check-for-updates: true
-
 # Enables special dev tools and features for development
 # NOTE: Do not change if you do not know what you are doing
 dev-mode: false
@@ -22,20 +19,21 @@ dev-mode: false
 data-mode: API
 
 # If the data mode is set to API, the plugin will use the PlotSystem API to get the plot data
-# Documentation for the PlotSystem API: https://github.com/BuildTheEarth/PlotSystemAPI
+# Documentation for the PlotSystem API: https://github.com/AlpsBTE/Plot-System-API
 api:
-  api-url: psapi.buildtheearth.net
-  port: 8080
+  api-url: https://plot.alps-bte.com/api/
   api-key: ffffffff-ffff-ffff-ffff-ffffffffffff
 
 # If the data mode is set to DATABASE, the plugin will use a database to get the plot data
 # The database must be a MariaDB/MySQL database
 database:
-  db-url: jdbc:mariadb://adress:3306/
-  db-name: plotsystem
+  url: jdbc:mariadb://adress:3306/
+  dbname: plotsystem
   username: plotsystem
   password: minecraft
-
+  max-lifetime: 1800000 # 30 minutes
+  connection-timeout: 30000 # 30 seconds
+  keepalive-time: 120000 # 2 minutes
 
 # -----------------------------------------------------
 # | Plot Scanning
@@ -47,6 +45,14 @@ database:
 environment:
   enabled: true
   radius: 50
+
+# -----------------------------------------------------
+# | Plot Creating
+# -----------------------------------------------------
+
+# Duration (in minutes) to keep city project data in the cache before it expires and is refreshed.
+# Set to -1 to disable expiration, city project data will then be fetched on every call of it.
+cache-duration-minutes: -1
 
 # -----------------------------------------------------
 # | Plot Pasting
@@ -76,4 +82,4 @@ chat-format:
 
 
 # NOTE: Do not change
-config-version: 2.0
+config-version: 3.0

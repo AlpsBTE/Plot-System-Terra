@@ -1,4 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~  The MIT License (MIT)
+  ~
+  ~  Copyright © 2021-2025, Alps BTE <bte.atchli@gmail.com>
+  ~
+  ~  Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~  of this software and associated documentation files (the "Software"), to deal
+  ~  in the Software without restriction, including without limitation the rights
+  ~  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~  copies of the Software, and to permit persons to whom the Software is
+  ~  furnished to do so, subject to the following conditions:
+  ~
+  ~  The above copyright notice and this permission notice shall be included in all
+  ~  copies or substantial portions of the Software.
+  ~
+  ~  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~  SOFTWARE.
+  -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -6,7 +30,7 @@
 
     <groupId>com.alpsbte</groupId>
     <artifactId>PlotSystem-Terra</artifactId>
-    <version>3.1</version>
+    <version>5.0.0</version>
 
     <repositories>
         <repository>
@@ -40,87 +64,77 @@
             <artifactId>FastAsyncWorldEdit-Core</artifactId>
             <scope>provided</scope>
         </dependency>
-        <dependency>
+        <dependency> <!-- https://mvn.alps-bte.com/#browse/browse:alps-canvas:com/alpsbte/canvas -->
             <groupId>com.alpsbte</groupId>
             <artifactId>canvas</artifactId>
-            <version>1.1</version>
+            <version>1.3</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
+        <dependency> <!-- https://github.com/Arcaniax-Development/HeadDatabase-API/releases -->
             <groupId>com.arcaniax</groupId>
             <artifactId>HeadDatabase-API</artifactId>
-            <version>1.3.1</version>
+            <version>1.3.2</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>org.mariadb.jdbc</groupId>
-            <artifactId>mariadb-java-client</artifactId>
-            <version>2.7.1</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
+        <dependency> <!-- https://central.sonatype.com/artifact/com.zaxxer/HikariCP -->
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
-            <version>4.0.3</version>
+            <version>6.3.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-vfs2</artifactId>
-            <version>2.4</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>commons-net</groupId>
-            <artifactId>commons-net</artifactId>
-            <version>3.9.0</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.github.mwiede</groupId>
-            <artifactId>jsch</artifactId>
-            <version>0.2.0</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.7</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
+        <dependency>  <!-- https://central.sonatype.com/artifact/org.jetbrains/annotations -->
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>22.0.0</version>
-            <scope>compile</scope>
+            <version>26.0.2</version>
+            <scope>provided</scope>
         </dependency>
 
-        <dependency>
+        <dependency> <!-- https://mvn.alps-bte.com/#browse/browse:alps-lib:com/alpsbte/alpslib/alpslib-utils -->
             <groupId>com.alpsbte.alpslib</groupId>
             <artifactId>alpslib-utils</artifactId>
-            <version>1.1.1</version>
+            <version>1.3.4</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
+        <dependency> <!-- https://mvn.alps-bte.com/#browse/browse:lang-libs -->
             <groupId>li.cinnazeyy</groupId>
             <artifactId>LangLibs</artifactId>
             <version>1.4.2</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
+        <dependency> <!-- https://mvn.alps-bte.com/#browse/browse:alps-lib:com/alpsbte/alpslib/alpslib-io -->
             <groupId>com.alpsbte.alpslib</groupId>
             <artifactId>alpslib-io</artifactId>
-            <version>1.0.38</version>
+            <version>1.2.0</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- OkHttp -->
+        <dependency> <!-- https://central.sonatype.com/artifact/com.squareup.okhttp3/okhttp -->
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp-jvm</artifactId>
+            <version>5.0.0-alpha.16</version>
+        </dependency>
+
+        <dependency> <!-- https://central.sonatype.com/artifact/org.mariadb.jdbc/mariadb-java-client -->
+            <groupId>org.mariadb.jdbc</groupId>
+            <artifactId>mariadb-java-client</artifactId>
+            <version>3.5.3</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
     <!-- Fast Async World Edit -->
     <dependencyManagement>
         <dependencies>
-            <dependency>
+            <dependency> <!-- https://central.sonatype.com/artifact/com.intellectualsites.bom/bom-newest -->
                 <groupId>com.intellectualsites.bom</groupId>
                 <artifactId>bom-newest</artifactId>
-                <version>1.51</version>
+                <version>1.52</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -141,21 +155,21 @@
         <!-- IMPORTANT: Plugin Building Path -->
         <sourceDirectory>src/main/java</sourceDirectory>
         <!-- IMPORTANT: Output File Name -->
-        <finalName>${project.artifactId}-${project.version}-${build.number}</finalName>
+        <finalName>${project.artifactId}-${project.version}${build.number}</finalName>
         <plugins>
-            <plugin>
+            <plugin> <!-- https://maven.apache.org/plugins/maven-compiler-plugin/ -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.14.0</version>
                 <configuration>
                     <source>21</source>
                     <target>21</target>
                 </configuration>
             </plugin>
-            <plugin>
+            <plugin> <!-- https://maven.apache.org/plugins/maven-shade-plugin/ -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version>
+                <version>3.6.0</version>
                 <configuration>
                     <outputDirectory>${project.build.directory}/shaded/</outputDirectory>
                     <createDependencyReducedPom>true</createDependencyReducedPom>
@@ -182,12 +196,31 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <version>9.0.2</version>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                    <commitIdGenerationMode>full</commitIdGenerationMode>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <build.number>SNAPSHOT</build.number>
+        <build.number>-${git.commit.id.describe-short}-SNAPSHOT</build.number>
     </properties>
 </project>

@@ -1,43 +1,63 @@
+/*
+ *  The MIT License (MIT)
+ *
+ *  Copyright © 2021-2025, Alps BTE <bte.atchli@gmail.com>
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
 package com.alpsbte.plotsystemterra.core.plotsystem;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
-import com.alpsbte.plotsystemterra.core.DatabaseConnection;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
-import com.alpsbte.plotsystemterra.utils.FTPManager;
+import com.alpsbte.plotsystemterra.core.model.CityProject;
+import com.alpsbte.plotsystemterra.core.model.Plot;
 import com.alpsbte.plotsystemterra.utils.Utils;
 import com.fastasyncworldedit.core.FaweAPI;
-import com.sk89q.worldedit.*;
+import com.sk89q.worldedit.EditSession;
+import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
-import com.sk89q.worldedit.function.mask.BlockTypeMask;
-import com.sk89q.worldedit.function.mask.Mask;
+import com.sk89q.worldedit.extent.clipboard.io.BuiltInClipboardFormat;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
 import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
-import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldedit.session.ClipboardHolder;
-import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.logging.Level;
+import java.io.ByteArrayInputStream;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.format.NamedTextColor.GOLD;
 import static net.kyori.adventure.text.format.NamedTextColor.GREEN;
 
 public class PlotPaster extends Thread {
-
     private final String serverName;
-
-    public final boolean fastMode;
     private final int pasteInterval;
     public final World world;
     private final boolean broadcastMessages;
@@ -45,113 +65,124 @@ public class PlotPaster extends Thread {
     public PlotPaster() {
         FileConfiguration config = PlotSystemTerra.getPlugin().getConfig();
 
-        this.serverName = config.getString(ConfigPaths.SERVER_NAME);
-        this.fastMode = config.getBoolean(ConfigPaths.FAST_MODE);
-        this.world = Bukkit.getWorld(config.getString(ConfigPaths.WORLD_NAME));
+        serverName = config.getString(ConfigPaths.SERVER_NAME);
+        this.world = Bukkit.getWorld(Objects.requireNonNull(config.getString(ConfigPaths.WORLD_NAME)));
         this.pasteInterval = config.getInt(ConfigPaths.PASTING_INTERVAL);
         this.broadcastMessages = config.getBoolean(ConfigPaths.BROADCAST_INFO);
     }
 
     @Override
     public void run() {
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(PlotSystemTerra.getPlugin(), () -> {
-            try (ResultSet rs = DatabaseConnection.createStatement("SELECT id, city_project_id, mc_coordinates, version FROM plotsystem_plots WHERE status = 'completed' AND pasted = '0' LIMIT 20")
-                    .executeQuery()) {
-                int pastedPlots = 0;
-
-                if (rs.isBeforeFirst()) {
-                    while (rs.next()) {
-                        int plotID = -1;
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(PlotSystemTerra.getPlugin(),
+                () -> CompletableFuture.runAsync(() -> {
+                    List<Plot> plots = PlotSystemTerra.getDataProvider().getPlotDataProvider().getPlotsToPaste();
+                    int pastedPlots = 0;
+                    for (Plot plot : plots) {
+                        // paste schematic
                         try {
-                            plotID = rs.getInt(1);
-                            CityProject city = new CityProject(rs.getInt(2));
-
-                            try (ResultSet rsServer = DatabaseConnection.createStatement("SELECT name FROM plotsystem_servers WHERE id = ?")
-                                    .setValue(city.getServerID()).executeQuery()) {
-
-                                if (rsServer.next()) {
-                                    String name = rsServer.getString(1);
-                                    if (name.equals(serverName)) {
-                                        String[] splitCoordinates = rs.getString(3).split(",");
-
-                                        BlockVector3 mcCoordinates = Vector3.toBlockPoint(
-                                                Double.parseDouble(splitCoordinates[0]),
-                                                Double.parseDouble(splitCoordinates[1]),
-                                                Double.parseDouble(splitCoordinates[2])
-                                        );
-
-                                        double version = rs.getDouble(4);
-                                        if (rs.wasNull()) { version = 2; }
-
-                                        if (pastePlotSchematic(plotID, city, world, mcCoordinates, version , fastMode)) {
-                                            pastedPlots++;
-                                        }
-                                    }
-                                }
-                                DatabaseConnection.closeResultSet(rsServer);
+                            CityProject cityProject = PlotSystemTerra.getDataProvider().getCityProjectDataProvider().getCityProject(plot.getCityProjectId());
+                            if (pastePlotSchematic(plot, cityProject, world, plot.getCompletedSchematic(), plot.getPlotVersion())) {
+                                pastedPlots++;
                             }
-                        } catch (Exception ex) {
-                            Bukkit.getLogger().log(Level.SEVERE, "An error occurred while pasting plot #" + plotID + "!", ex);
-                            DatabaseConnection.closeResultSet(rs);
+                        } catch (Exception e) {
+                            PlotSystemTerra.getPlugin().getComponentLogger().error(text("An error occurred while pasting plot #" + plot.getId()), e);
                         }
                     }
 
                     if (broadcastMessages && pastedPlots != 0) {
                         Bukkit.broadcast(Utils.ChatUtils.getInfoFormat(text("Pasted ", GREEN)
                                 .append(text(pastedPlots, GOLD)
-                                .append(text(" plot" + (pastedPlots > 1 ? "s" : "") + "!", GREEN)))));
+                                        .append(text(" plot" + (pastedPlots > 1 ? "s" : "") + "!", GREEN)))));
                     }
-                }
-                DatabaseConnection.closeResultSet(rs);
-            } catch (SQLException ex) {
-                Bukkit.getLogger().log(Level.SEVERE, "A SQL error occurred!", ex);
-            }
-        }, 0L, 20L * pasteInterval);
+                }).orTimeout((long) 60.0, TimeUnit.SECONDS), 0L, 20L * pasteInterval);
     }
 
-    public static boolean pastePlotSchematic(int plotID, CityProject city, World world, BlockVector3 mcCoordinates, double plotVersion, boolean fastMode) throws IOException, WorldEditException, SQLException, URISyntaxException {
-        File outlineSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), String.valueOf(city.getID()), plotID + ".schem").toFile();
-        if (!outlineSchematic.exists()) outlineSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), String.valueOf(city.getID()), plotID + ".schematic").toFile();
-        File completedSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), "finishedSchematics", String.valueOf(city.getID()), plotID + ".schem").toFile();
-
-        // Download from SFTP or FTP server if enabled
-        FTPConfiguration ftpConfiguration = city.getFTPConfiguration();
-        if (ftpConfiguration != null) {
-            Files.deleteIfExists(completedSchematic.toPath());
-            if (!FTPManager.downloadSchematic(FTPManager.getFTPUrl(ftpConfiguration, city.getID()), completedSchematic)) {
-                completedSchematic = Paths.get(PlotCreator.schematicsPath, String.valueOf(city.getServerID()), "finishedSchematics", String.valueOf(city.getID()), plotID + ".schematic").toFile();
-                Files.deleteIfExists(completedSchematic.toPath());
-                FTPManager.downloadSchematic(FTPManager.getFTPUrl(ftpConfiguration, city.getID()), completedSchematic);
-            }
-        }
-
-        if (outlineSchematic.exists() && completedSchematic.exists()) {
-            try (EditSession editSession = WorldEdit.getInstance().newEditSession(FaweAPI.getWorld(world.getName()))) {
-                BlockVector3 toPaste;
-                if (plotVersion >= 3) {
-                    try (Clipboard clipboard = FaweAPI.load(outlineSchematic)) {
-                        BlockVector3 plotOriginOutline = clipboard.getOrigin();
-                        toPaste = BlockVector3.at(plotOriginOutline.getX(), plotOriginOutline.getY(), plotOriginOutline.getZ());
-                    }
-                } else toPaste = mcCoordinates;
-
-                if (fastMode) editSession.setFastMode(true);
-                Clipboard completedClipboard = FaweAPI.load(completedSchematic);
-
-                Operation clipboardHolder = new ClipboardHolder(completedClipboard)
-                        .createPaste(editSession)
-                        .to(toPaste)
-                        .ignoreAirBlocks(true)
-                        .build();
-                Operations.complete(clipboardHolder);
-
-                DatabaseConnection.createStatement("UPDATE plotsystem_plots SET pasted = '1' WHERE id = ?")
-                        .setValue(plotID).executeUpdate();
-            }
-        } else {
-            Bukkit.getLogger().log(Level.WARNING, "Could not find schematic file(s) of plot #" + plotID + "!");
+    public boolean pastePlotSchematic(Plot plot, CityProject city, World world, byte[] completedSchematic, double plotVersion) throws WorldEditException {
+        // check server name
+        if (serverName == null) {
+            PlotSystemTerra.getPlugin().getComponentLogger().error(text("Server name is not configured properly! Unable to paste plots."));
             return false;
         }
+
+        if (!serverName.equals(city.getServerName())) return false;
+
+        // check mc version
+        int[] serverVersion = getMajorMinorPatch(Bukkit.getServer().getMinecraftVersion());
+        int[] plotMcVersion = getMajorMinorPatch(plot.getMcVersion());
+
+        if (serverVersion == null) {
+            PlotSystemTerra.getPlugin().getComponentLogger().error(text("Invalid server version! Aborting plot pasting."));
+            return false;
+        }
+        if (plotMcVersion == null) {
+            PlotSystemTerra.getPlugin().getComponentLogger().error(text("Invalid plot version for plot " + plot.getId() + "! Aborting plot pasting."));
+            return false;
+        }
+        if (isMMPVersionNewer(plotMcVersion, serverVersion)) {
+            PlotSystemTerra.getPlugin().getComponentLogger().error(
+                    text("Plot " + plot.getId() + " was built on a newer minecraft version! Cannot paste plot! Please update to version " + plotMcVersion[0] + "." + plotMcVersion[1] + "." + plotMcVersion[2] + "!"));
+            return false;
+        }
+
+        Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> {
+            try (EditSession editSession = WorldEdit.getInstance().newEditSession(FaweAPI.getWorld(world.getName()))) {
+                BlockVector3 toPaste;
+                if (plotVersion < 3) {
+                    PlotSystemTerra.getPlugin().getComponentLogger().error(text("Cannot paste plot! Plot version " + plotVersion + "is no longer supported! Must be at least 3!"));
+                    return;
+                }
+
+                ByteArrayInputStream inputStream = new ByteArrayInputStream(completedSchematic);
+                try (ClipboardReader reader = BuiltInClipboardFormat.FAST_V2.getReader(inputStream)) {
+                    Clipboard completedClipboard = reader.read();
+                    BlockVector3 plotOriginOutline = completedClipboard.getOrigin();
+                    toPaste = BlockVector3.at(plotOriginOutline.x(), plotOriginOutline.y(), plotOriginOutline.z());
+                    PlotSystemTerra.getPlugin().getComponentLogger().info(text("Pasting plot at " + toPaste.toParserString()));
+
+
+                    Operation clipboardHolder = new ClipboardHolder(completedClipboard)
+                            .createPaste(editSession)
+                            .to(toPaste)
+                            .ignoreAirBlocks(true)
+                            .build();
+                    Operations.complete(clipboardHolder);
+                }
+
+                CompletableFuture.runAsync(() -> PlotSystemTerra.getDataProvider().getPlotDataProvider().setPasted(plot.getId()))
+                        .thenRun(() -> PlotSystemTerra.getPlugin().getComponentLogger().info(text("Plot #" + plot.getId() + " successfully marked as pasted!")));
+
+            } catch (Exception e) {
+                PlotSystemTerra.getPlugin().getComponentLogger().error(text("An error occurred while pasting plot #" + plot.getId()), e);
+            }
+        });
         return true;
+    }
+
+    private static int @Nullable [] getMajorMinorPatch(@NotNull String version) {
+        int[] output = new int[3];
+        String[] versionArr = version.split("\\.");
+
+        // Invalid version!
+        if (versionArr.length < 1 || versionArr.length > 3) return null;
+
+        // Major
+        output[0] = Integer.parseInt(versionArr[0]);
+
+        // Minor
+        output[1] = (versionArr.length > 1) ? Integer.parseInt(versionArr[1]) : 0;
+
+        // Patch
+        output[2] = (versionArr.length > 2) ? Integer.parseInt(versionArr[2]) : 0;
+
+        return output;
+    }
+
+    private static boolean isMMPVersionNewer(int[] a, int[] b) {
+        for (int i = 0; i < 3; i++) {
+            if (a[i] > b[i]) return true; // A is newer than B
+            if (a[i] < b[i]) return false; // A is older than B
+        }
+
+        return false; // A and B are the same
     }
 }
