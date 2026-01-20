@@ -49,7 +49,7 @@ val versionDetails: groovy.lang.Closure<com.palantir.gradle.gitversion.VersionDe
 val details = versionDetails()
 
 group = "com.alpsbte"
-version = "5.0.0" + "-" + details.commitDistance + "-" + details.gitHash + "-SNAPSHOT"
+version = "5.0.0" // + "-" + details.commitDistance + "-" + details.gitHash + "-SNAPSHOT"
 description = "PlotSystem-Terra"
 java.sourceCompatibility = JavaVersion.VERSION_21
 
@@ -71,7 +71,7 @@ tasks.shadowJar {
     exclude("org/slf4j/**")
     archiveClassifier = ""
 
-    relocationPrefix = "com.alpsbte.plotsystemterra.shaded"
+    relocationPrefix = "$group.plotsystemterra.shaded"
     enableAutoRelocation = true
 }
 
