@@ -34,13 +34,17 @@ repositories {
 
 dependencies {
     implementation(libs.com.alpsbte.canvas)
-    implementation(libs.com.zaxxer.hikaricp)
+    implementation(libs.com.zaxxer.hikaricp) {
+        exclude(group = "org.slf4j")
+    }
     implementation(libs.com.alpsbte.alpslib.alpslib.utils)
     implementation(libs.com.alpsbte.alpslib.alpslib.io)
     implementation(libs.com.squareup.okhttp3.okhttp.jvm)
     implementation(libs.org.mariadb.jdbc.mariadb.java.client)
+    implementation(libs.com.googlecode.json.simple)
+    implementation(platform(libs.com.intellectualsites.bom.bom.newest))
+    compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Core")
     compileOnly(libs.io.papermc.paper.paper.api)
-    compileOnly(libs.com.fastasyncworldedit.fastasyncworldedit.core)
     compileOnly(libs.com.arcaniax.headdatabase.api)
     compileOnly(libs.org.jetbrains.annotations)
 }
@@ -65,12 +69,7 @@ tasks.withType<Javadoc> {
 }
 
 tasks.shadowJar {
-    // Exclude annotation classes (e.g. org.jetbrains.annotations)
-    exclude("org/jetbrains/annotations/**")
-    // Exclude slf4j classes
-    exclude("org/slf4j/**")
     archiveClassifier = ""
-
     relocationPrefix = "$group.plotsystemterra.shaded"
     enableAutoRelocation = true
 }
