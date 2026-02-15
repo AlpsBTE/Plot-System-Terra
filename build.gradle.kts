@@ -6,7 +6,8 @@ plugins {
 }
 
 repositories {
-    //mavenLocal()
+    //mavenLocal() // NEVER use in Production/Commits!
+    mavenCentral()
     maven {
         url = uri("https://repo.papermc.io/repository/maven-public/")
     }
@@ -21,10 +22,6 @@ repositories {
 
     maven {
         url = uri("https://jitpack.io")
-    }
-
-    maven {
-        url = uri("https://repo.maven.apache.org/maven2/")
     }
 }
 
@@ -49,7 +46,7 @@ val versionDetails: groovy.lang.Closure<com.palantir.gradle.gitversion.VersionDe
 val details = versionDetails()
 
 group = "com.alpsbte"
-version = "5.0.1" //+ "-" + details.gitHash + "-SNAPSHOT"
+version = "5.0.2" + "-" + details.gitHash + "-SNAPSHOT"
 description = "PlotSystem-Terra"
 java.sourceCompatibility = JavaVersion.VERSION_21
 
