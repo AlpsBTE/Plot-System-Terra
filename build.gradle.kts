@@ -50,9 +50,6 @@ version = "5.0.2" + "-" + details.gitHash + "-SNAPSHOT"
 description = "PlotSystem-Terra"
 java.sourceCompatibility = JavaVersion.VERSION_21
 
-apply(plugin = "java")
-apply(plugin = "com.gradleup.shadow")
-
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
@@ -63,7 +60,7 @@ tasks.withType<Javadoc> {
 
 tasks.shadowJar {
     archiveClassifier = ""
-    relocationPrefix = "$group.plotsystemterra.shaded"
+    relocationPrefix = "com.alpsbte.plotsystemterra.shaded"
     enableAutoRelocation = true
 }
 

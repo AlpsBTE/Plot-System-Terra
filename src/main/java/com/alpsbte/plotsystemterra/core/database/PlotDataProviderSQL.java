@@ -33,6 +33,7 @@ import org.jetbrains.annotations.NotNull;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 public class PlotDataProviderSQL implements PlotDataProvider {
@@ -73,7 +74,7 @@ public class PlotDataProviderSQL implements PlotDataProvider {
 
         return SqlExceptionUtil.handle(() -> SqlHelper.runInsertQuery(queryInsert, ps -> {
             ps.setString(1, cityProjectId);
-            ps.setString(2, difficultyId);
+            ps.setString(2, difficultyId.toUpperCase(Locale.ROOT)); // Our initial Schema contains uppercase
             ps.setString(3, outlineBounds);
             ps.setBytes(4, initialSchematic);
             ps.setString(5, createPlayerUUID.toString());
