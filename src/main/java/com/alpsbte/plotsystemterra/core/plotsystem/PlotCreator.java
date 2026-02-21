@@ -168,7 +168,7 @@ public class PlotCreator {
                     player.sendMessage(Utils.ChatUtils.getInfoFormat(text("Creating plot...")));
 
                     // Check if selection contains sign
-                    if (!containsSign(plotRegion, player.getWorld())) {
+                    if (config.getBoolean(ConfigPaths.ENFORCE_STREET_SIGN, true) && !containsSign(plotRegion, player.getWorld())) {
                         player.sendMessage(Utils.ChatUtils.getAlertFormat(text("Please place a minimum of one sign for the street side!")));
                         return;
                     }
