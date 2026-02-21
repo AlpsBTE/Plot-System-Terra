@@ -47,7 +47,7 @@ public class PlotCreator {
 
     @FunctionalInterface
     public interface IPlotRegionsAction {
-        void onSchematicsCreationComplete(Polygonal2DRegion plotRegion, CylinderRegion environmentRegion, Vector3 plotCenter);
+        void onSchematicsCreationComplete(Polygonal2DRegion plotRegion, CylinderRegion region, Vector3 plotCenter);
     }
 
     public static void create(Player player, int environmentRadius, IPlotRegionsAction plotRegionsAction) {
@@ -107,8 +107,7 @@ public class PlotCreator {
         plotRegion.setMinimumY(minY);
         plotRegion.setMaximumY(maxY);
 
-        // Create the environment selection
-        CylinderRegion environmentRegion = createEnvironmentRegion(
+        CylinderRegion region = createCompleteRegion(
                 plotRegion,
                 environmentRadius,
                 player.getWorld(),
@@ -119,7 +118,7 @@ public class PlotCreator {
         );
 
         plotCenter = plotRegion.getCenter();
-        plotRegionsAction.onSchematicsCreationComplete(plotRegion, environmentRegion, plotCenter);
+        plotRegionsAction.onSchematicsCreationComplete(plotRegion, region, plotCenter);
     }
 
     public static void createPlot(Player player, @NonNull CityProject cityProject, String difficultyID) {
@@ -159,9 +158,9 @@ public class PlotCreator {
             // Read the config
             FileConfiguration config = PlotSystemTerra.getPlugin().getConfig();
             environmentEnabled = config.getBoolean(ConfigPaths.ENVIRONMENT_ENABLED);
-            int environmentRadius = config.getInt(ConfigPaths.ENVIRONMENT_RADIUS);
+            int environmentRadius = environmentEnabled ? config.getInt(ConfigPaths.ENVIRONMENT_RADIUS) : 0;
 
-            create(player, environmentEnabled ? environmentRadius : -1, (plotRegion, environmentRegion, plotCenter) -> {
+            create(player, environmentRadius, (plotRegion, schematicRegion, plotCenter) -> {
                 byte[] initialSchematic;
 
                 try {
@@ -182,7 +181,7 @@ public class PlotCreator {
                         points.add(point.x() + "," + point.z());
                     polyOutline = StringUtils.join(points, "|");
 
-                    initialSchematic = createPlotSchematic(environmentRegion);
+                    initialSchematic = createPlotSchematic(schematicRegion);
 
                     // Insert into database
                     int createdPlotID = PlotSystemTerra.getDataProvider().getPlotDataProvider().createPlot(
@@ -241,8 +240,8 @@ public class PlotCreator {
         }));
     }
 
-    public static CylinderRegion createEnvironmentRegion(Polygonal2DRegion plotRegion, int environmentRadius, World world, int minY, int maxY, int minYOffset, int maxYOffset) {
-        if (environmentRadius <= 0) return null;
+    // This creates the Region which contains plot + environment where we later create a schematic from
+    public static @NonNull CylinderRegion createCompleteRegion(@NonNull Polygonal2DRegion plotRegion, int environmentRadius, World world, int minY, int maxY, int minYOffset, int maxYOffset) {
         CylinderRegion environmentRegion;
 
         // Get min region size for environment radius
@@ -258,7 +257,7 @@ public class PlotCreator {
                 maxY
         );
 
-        // Convert environment region to polygonal region and save points
+        // Convert region to polygonal region and save points
         final List<BlockVector2> environmentRegionPoints = environmentRegion.polygonize(-1);
         final AtomicInteger newYMin = new AtomicInteger(minY);
 
