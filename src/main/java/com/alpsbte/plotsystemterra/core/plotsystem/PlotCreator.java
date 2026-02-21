@@ -82,12 +82,14 @@ public class PlotCreator {
 
         // Check if the polygonal region is valid
         String text = "Please adjust your selection size!";
-        if (plotRegion.getLength() > 100) {
-            player.sendMessage(Utils.ChatUtils.getAlertFormat(text(text + " Length is " + plotRegion.getLength() + " and can only be smaller than 100.!")));
+        int max = PlotSystemTerra.getPlugin().getConfig().getInt(ConfigPaths.PLOT_LENGTH_LIMIT, 100);
+        if (plotRegion.getLength() > max) {
+            player.sendMessage(Utils.ChatUtils.getAlertFormat(text(text + " Length is " + plotRegion.getLength() + " and can only be smaller than " + max + "!")));
             return;
         }
-        if (plotRegion.getWidth() > 100) {
-            player.sendMessage(Utils.ChatUtils.getAlertFormat(text(text + " Width is " + plotRegion.getWidth() + " and can only be smaller than 100.!")));
+        max = PlotSystemTerra.getPlugin().getConfig().getInt(ConfigPaths.PLOT_WIDTH_LIMIT, 100);
+        if (plotRegion.getWidth() > max) {
+            player.sendMessage(Utils.ChatUtils.getAlertFormat(text(text + " Width is " + plotRegion.getWidth() + " and can only be smaller than " + max + "!")));
             return;
         }
         if (plotRegion.getHeight() > 256 - MIN_OFFSET_Y) {
