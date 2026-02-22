@@ -244,11 +244,24 @@ public class PlotCreator {
     public static @NonNull CylinderRegion createCompleteRegion(@NonNull Polygonal2DRegion plotRegion, int environmentRadius, World world, int minY, int maxY, int minYOffset, int maxYOffset) {
         CylinderRegion environmentRegion;
 
-        // Get min region size for environment radius
-        int radius = Math.max(plotRegion.getWidth() / 2 + environmentRadius, plotRegion.getLength() / 2 + environmentRadius);
+        // Get the center of the plot region
+        Vector3 plotRegionCenter = plotRegion.getCenter();
+
+        // Calculate the maximum distance from center to any point in the plot region
+        // This ensures all plot points will be inside the cylinder
+        double maxDistanceFromCenter = 0;
+        for (BlockVector2 point : plotRegion.getPoints()) {
+            double distance = Math.sqrt(
+                Math.pow(point.x() - plotRegionCenter.x(), 2) +
+                Math.pow(point.z() - plotRegionCenter.z(), 2)
+            );
+            maxDistanceFromCenter = Math.max(maxDistanceFromCenter, distance);
+        }
+
+        // Add environment radius to the maximum distance to ensure plot is fully contained
+        int radius = (int) Math.ceil(maxDistanceFromCenter) + environmentRadius;
 
         // Create a new cylinder region with the size of the plot + the configured radius around it
-        Vector3 plotRegionCenter = plotRegion.getCenter();
         environmentRegion = new CylinderRegion(
                 plotRegion.getWorld(),
                 BlockVector3.at(Math.floor(plotRegionCenter.x()), plotRegionCenter.y(), Math.floor(plotRegionCenter.z())),
