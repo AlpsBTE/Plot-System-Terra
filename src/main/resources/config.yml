@@ -54,6 +54,11 @@ environment:
 # Set to -1 to disable expiration, city project data will then be fetched on every call of it.
 cache-duration-minutes: -1
 
+# The maximum length and width of a plot in blocks. We test only against 100 - everything above is at your own risk.
+# Let us know if there are any issues with plots larger than 100 blocks.
+length-limit: 100
+width-limit: 100
+
 # -----------------------------------------------------
 # | Plot Pasting
 # -----------------------------------------------------
@@ -82,4 +87,4 @@ chat-format:
 
 
 # NOTE: Do not change
-config-version: 3.0
+config-version: 3.1

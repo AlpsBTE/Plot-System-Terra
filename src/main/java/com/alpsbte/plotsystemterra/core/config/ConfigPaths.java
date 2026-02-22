@@ -33,6 +33,10 @@ public class ConfigPaths {
     // Caching
     public static final String CACHE_DURATION_MINUTES = "cache-duration-minutes";
 
+    // Plot Creating
+    public static final String PLOT_LENGTH_LIMIT = "length-limit";
+    public static final String PLOT_WIDTH_LIMIT = "width-limit";
+
     // Data Mode
     public static final String DATA_MODE = "data-mode";
 
