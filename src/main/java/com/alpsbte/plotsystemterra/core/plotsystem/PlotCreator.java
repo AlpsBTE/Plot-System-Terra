@@ -47,7 +47,7 @@ public class PlotCreator {
 
     @FunctionalInterface
     public interface IPlotRegionsAction {
-        void onSchematicsCreationComplete(Polygonal2DRegion plotRegion, CylinderRegion environmentRegion, Vector3 plotCenter);
+        void onSchematicsCreationComplete(Polygonal2DRegion plotRegion, AbstractRegion region, Vector3 plotCenter);
     }
 
     public static void create(Player player, int environmentRadius, IPlotRegionsAction plotRegionsAction) {
@@ -107,8 +107,7 @@ public class PlotCreator {
         plotRegion.setMinimumY(minY);
         plotRegion.setMaximumY(maxY);
 
-        // Create the environment selection
-        CylinderRegion environmentRegion = createEnvironmentRegion(
+        AbstractRegion region = createCompleteRegion(
                 plotRegion,
                 environmentRadius,
                 player.getWorld(),
@@ -119,7 +118,7 @@ public class PlotCreator {
         );
 
         plotCenter = plotRegion.getCenter();
-        plotRegionsAction.onSchematicsCreationComplete(plotRegion, environmentRegion, plotCenter);
+        plotRegionsAction.onSchematicsCreationComplete(plotRegion, region, plotCenter);
     }
 
     public static void createPlot(Player player, @NonNull CityProject cityProject, String difficultyID) {
@@ -159,9 +158,9 @@ public class PlotCreator {
             // Read the config
             FileConfiguration config = PlotSystemTerra.getPlugin().getConfig();
             environmentEnabled = config.getBoolean(ConfigPaths.ENVIRONMENT_ENABLED);
-            int environmentRadius = config.getInt(ConfigPaths.ENVIRONMENT_RADIUS);
+            int environmentRadius = environmentEnabled ? config.getInt(ConfigPaths.ENVIRONMENT_RADIUS) : 0;
 
-            create(player, environmentEnabled ? environmentRadius : -1, (plotRegion, environmentRegion, plotCenter) -> {
+            create(player, environmentRadius, (plotRegion, schematicRegion, plotCenter) -> {
                 byte[] initialSchematic;
 
                 try {
@@ -182,7 +181,7 @@ public class PlotCreator {
                         points.add(point.x() + "," + point.z());
                     polyOutline = StringUtils.join(points, "|");
 
-                    initialSchematic = createPlotSchematic(environmentRegion);
+                    initialSchematic = createPlotSchematic(schematicRegion);
 
                     // Insert into database
                     int createdPlotID = PlotSystemTerra.getDataProvider().getPlotDataProvider().createPlot(
@@ -241,15 +240,33 @@ public class PlotCreator {
         }));
     }
 
-    public static CylinderRegion createEnvironmentRegion(Polygonal2DRegion plotRegion, int environmentRadius, World world, int minY, int maxY, int minYOffset, int maxYOffset) {
-        if (environmentRadius <= 0) return null;
+    // This creates the Region which contains plot + environment where we later create a schematic from
+    public static @NonNull AbstractRegion createCompleteRegion(@NonNull Polygonal2DRegion plotRegion, int environmentRadius, World world, int minY, int maxY, int minYOffset, int maxYOffset) {
+        // If no environment is needed, return the plot region directly
+        if (environmentRadius <= 0) {
+            return plotRegion;
+        }
+
         CylinderRegion environmentRegion;
 
-        // Get min region size for environment radius
-        int radius = Math.max(plotRegion.getWidth() / 2 + environmentRadius, plotRegion.getLength() / 2 + environmentRadius);
+        // Get the center of the plot region
+        Vector3 plotRegionCenter = plotRegion.getCenter();
+
+        // Calculate the maximum distance from center to any point in the plot region
+        // This ensures all plot points will be inside the cylinder
+        double maxDistanceFromCenter = 0;
+        for (BlockVector2 point : plotRegion.getPoints()) {
+            double distance = Math.sqrt(
+                Math.pow(point.x() - plotRegionCenter.x(), 2) +
+                Math.pow(point.z() - plotRegionCenter.z(), 2)
+            );
+            maxDistanceFromCenter = Math.max(maxDistanceFromCenter, distance);
+        }
+
+        // Add environment radius to ensure plot is fully contained with surrounding area
+        int radius = (int) Math.ceil(maxDistanceFromCenter) + environmentRadius;
 
         // Create a new cylinder region with the size of the plot + the configured radius around it
-        Vector3 plotRegionCenter = plotRegion.getCenter();
         environmentRegion = new CylinderRegion(
                 plotRegion.getWorld(),
                 BlockVector3.at(Math.floor(plotRegionCenter.x()), plotRegionCenter.y(), Math.floor(plotRegionCenter.z())),
@@ -258,7 +275,7 @@ public class PlotCreator {
                 maxY
         );
 
-        // Convert environment region to polygonal region and save points
+        // Convert region to polygonal region and save points
         final List<BlockVector2> environmentRegionPoints = environmentRegion.polygonize(-1);
         final AtomicInteger newYMin = new AtomicInteger(minY);
 
