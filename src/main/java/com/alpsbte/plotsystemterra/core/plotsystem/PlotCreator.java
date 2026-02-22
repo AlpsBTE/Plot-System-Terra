@@ -47,7 +47,7 @@ public class PlotCreator {
 
     @FunctionalInterface
     public interface IPlotRegionsAction {
-        void onSchematicsCreationComplete(Polygonal2DRegion plotRegion, CylinderRegion region, Vector3 plotCenter);
+        void onSchematicsCreationComplete(Polygonal2DRegion plotRegion, AbstractRegion region, Vector3 plotCenter);
     }
 
     public static void create(Player player, int environmentRadius, IPlotRegionsAction plotRegionsAction) {
@@ -107,7 +107,7 @@ public class PlotCreator {
         plotRegion.setMinimumY(minY);
         plotRegion.setMaximumY(maxY);
 
-        CylinderRegion region = createCompleteRegion(
+        AbstractRegion region = createCompleteRegion(
                 plotRegion,
                 environmentRadius,
                 player.getWorld(),
@@ -241,7 +241,12 @@ public class PlotCreator {
     }
 
     // This creates the Region which contains plot + environment where we later create a schematic from
-    public static @NonNull CylinderRegion createCompleteRegion(@NonNull Polygonal2DRegion plotRegion, int environmentRadius, World world, int minY, int maxY, int minYOffset, int maxYOffset) {
+    public static @NonNull AbstractRegion createCompleteRegion(@NonNull Polygonal2DRegion plotRegion, int environmentRadius, World world, int minY, int maxY, int minYOffset, int maxYOffset) {
+        // If no environment is needed, return the plot region directly
+        if (environmentRadius <= 0) {
+            return plotRegion;
+        }
+
         CylinderRegion environmentRegion;
 
         // Get the center of the plot region
@@ -258,7 +263,7 @@ public class PlotCreator {
             maxDistanceFromCenter = Math.max(maxDistanceFromCenter, distance);
         }
 
-        // Add environment radius to the maximum distance to ensure plot is fully contained
+        // Add environment radius to ensure plot is fully contained with surrounding area
         int radius = (int) Math.ceil(maxDistanceFromCenter) + environmentRadius;
 
         // Create a new cylinder region with the size of the plot + the configured radius around it
