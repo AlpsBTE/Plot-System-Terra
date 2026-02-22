@@ -40,7 +40,7 @@ public class PlotDataProviderSQL implements PlotDataProvider {
 
     @Override
     public Plot getPlot(int id) throws DataException {
-        String queryGetPlot = "SELECT status, city_project_id, plot_version, mc_version, complete_schematic FROM plot WHERE plot_id = ?";
+        String queryGetPlot = "SELECT status, city_project_id, plot_version, mc_version, complete_schematic, created_by, owner_uuid FROM plot WHERE plot_id = ?";
 
         return SqlExceptionUtil.handle(() -> SqlHelper.runQuery(queryGetPlot, ps -> {
             ps.setInt(1, id);
@@ -53,6 +53,8 @@ public class PlotDataProviderSQL implements PlotDataProvider {
             double plotVersion = rs.getDouble(3);
             String mcVersion = rs.getString(4);
             byte[] completedSchematic = rs.getBytes(5);
+            String createdBy = rs.getString(6);
+            String owner = rs.getString(7);
 
             return new Plot(
                     id,
@@ -60,6 +62,8 @@ public class PlotDataProviderSQL implements PlotDataProvider {
                     cityProjectId,
                     plotVersion,
                     mcVersion,
+                    createdBy,
+                    owner,
                     completedSchematic
             );
         }));
@@ -104,7 +108,7 @@ public class PlotDataProviderSQL implements PlotDataProvider {
     @Override
     public List<Plot> getPlotsToPaste() throws DataException {
         String queryPlotsToPaste = "SELECT plot_id, status, city_project_id, plot_version, mc_version, " +
-                "complete_schematic FROM plot WHERE status = 'completed' AND is_pasted = '0' LIMIT 20";
+                "complete_schematic, created_by, owner_uuid FROM plot WHERE status = 'completed' AND is_pasted = '0' LIMIT 20";
 
         return SqlExceptionUtil.handle(() -> SqlHelper.runQuery(queryPlotsToPaste, ps -> {
             List<Plot> plots = new ArrayList<>();
@@ -117,8 +121,10 @@ public class PlotDataProviderSQL implements PlotDataProvider {
                 double plotVersion = rs.getDouble(4);
                 String mcVersion = rs.getString(5);
                 byte[] completedSchematic = rs.getBytes(6);
+                String createdBy = rs.getString(7);
+                String owner = rs.getString(8);
 
-                plots.add(new Plot(id, status, cityProjectId, plotVersion, mcVersion, completedSchematic));
+                plots.add(new Plot(id, status, cityProjectId, plotVersion, mcVersion, createdBy, owner, completedSchematic));
             }
             return plots;
         }));

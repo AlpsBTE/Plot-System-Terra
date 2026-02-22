@@ -69,6 +69,8 @@ public class PlotDataProviderAPI implements PlotDataProvider {
             String cityProjectId = (String) jsonObj.get("cityProjectId");
             double plotVersion = ((Number) jsonObj.get("plotVersion")).doubleValue();
             String mcVersion = (String) jsonObj.get("mcVersion");
+            String createdBy = (String) jsonObj.get("createdBy");
+            String owner = (String) jsonObj.get("owner");
             byte[] completedSchematic = Base64.getDecoder().decode((String) jsonObj.get("completedSchematic"));
             return new Plot(
                     id,
@@ -76,6 +78,8 @@ public class PlotDataProviderAPI implements PlotDataProvider {
                     cityProjectId,
                     plotVersion,
                     mcVersion,
+                    createdBy,
+                    owner,
                     completedSchematic
             );
         } catch (Exception e) {
@@ -155,6 +159,8 @@ public class PlotDataProviderAPI implements PlotDataProvider {
                 String cityProjectId = (String) jsonObj.get("cityProjectId");
                 double plotVersion = ((Number) jsonObj.get("plotVersion")).doubleValue();
                 String mcVersion = (String) jsonObj.get("mcVersion");
+                String createdBy = (String) jsonObj.get("createdBy");
+                String owner = (String) jsonObj.get("owner");
                 byte[] completedSchematic = Base64.getDecoder().decode((String) jsonObj.get("completedSchematic"));
 
                 output.add(new Plot(
@@ -163,6 +169,8 @@ public class PlotDataProviderAPI implements PlotDataProvider {
                         cityProjectId,
                         plotVersion,
                         mcVersion,
+                        createdBy,
+                        owner,
                         completedSchematic
                 ));
             });

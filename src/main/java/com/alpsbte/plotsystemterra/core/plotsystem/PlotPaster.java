@@ -41,7 +41,13 @@ import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.Sign;
+import org.bukkit.block.sign.Side;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -49,12 +55,12 @@ import org.jetbrains.annotations.Nullable;
 import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static net.kyori.adventure.text.Component.text;
-import static net.kyori.adventure.text.format.NamedTextColor.GOLD;
-import static net.kyori.adventure.text.format.NamedTextColor.GREEN;
+import static net.kyori.adventure.text.format.NamedTextColor.*;
 
 public class PlotPaster extends Thread {
     private final String serverName;
@@ -104,7 +110,7 @@ public class PlotPaster extends Thread {
             return false;
         }
 
-        if (!serverName.equals(city.getServerName())) return false;
+        if (!serverName.equalsIgnoreCase("default") && !serverName.equals(city.getServerName())) return false;
 
         // check mc version
         int[] serverVersion = getMajorMinorPatch(Bukkit.getServer().getMinecraftVersion());
@@ -148,6 +154,9 @@ public class PlotPaster extends Thread {
                     Operations.complete(clipboardHolder);
                 }
 
+                // Place plot information sign after pasting
+                if (plot.getOwner() != null && plot.getCreatedBy() != null) placePlotInformationSign(plot, toPaste, world);
+
                 CompletableFuture.runAsync(() -> PlotSystemTerra.getDataProvider().getPlotDataProvider().setPasted(plot.getId()))
                         .thenRun(() -> PlotSystemTerra.getPlugin().getComponentLogger().info(text("Plot #" + plot.getId() + " successfully marked as pasted!")));
 
@@ -156,6 +165,71 @@ public class PlotPaster extends Thread {
             }
         });
         return true;
+    }
+
+    /**
+     * Places a plot information sign after the plot has been pasted
+     *
+     * @param plot The plot that was pasted
+     * @param pastedAt The location where the plot was pasted
+     * @param world The world where the plot was pasted
+     */
+    private static void placePlotInformationSign(Plot plot, BlockVector3 pastedAt, World world) {
+        Bukkit.getScheduler().runTask(PlotSystemTerra.getPlugin(), () -> {
+            try {
+                // Find a suitable location for the sign (directly above the pasted location)
+                Location signLocation = new Location(world, pastedAt.x(), pastedAt.y() + 1.0, pastedAt.z());
+                Block signBlock = signLocation.getBlock();
+
+                // Check if we need to find a higher location
+                while (signBlock.getType() != Material.AIR && signBlock.getType() != Material.OAK_SIGN && signLocation.getBlockY() < 256) {
+                    signBlock = signLocation.add(0, 1, 0).getBlock();
+                }
+
+                // Place oak sign
+                signBlock.setType(Material.OAK_SIGN);
+                Sign sign = (Sign) signBlock.getState();
+
+                // Get builder name from UUID if available
+                String builderName = "Unknown";
+                if (plot.getOwner() != null && !plot.getOwner().isEmpty()) {
+                    try {
+                        UUID createdByUUID = UUID.fromString(plot.getOwner());
+                        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(createdByUUID);
+                        builderName = offlinePlayer.getName() != null ? offlinePlayer.getName() : "Unknown";
+                    } catch (IllegalArgumentException ignored) {
+                        // If UUID parsing fails, use the string directly
+                        builderName = plot.getOwner();
+                    }
+                }
+
+                // Get creator name from UUID if available
+                String creatorName = "Unknown";
+                if (plot.getCreatedBy() != null && !plot.getCreatedBy().isEmpty()) {
+                    try {
+                        UUID createdByUUID = UUID.fromString(plot.getCreatedBy());
+                        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(createdByUUID);
+                        creatorName = offlinePlayer.getName() != null ? offlinePlayer.getName() : "Unknown";
+                    } catch (IllegalArgumentException ignored) {
+                        // If UUID parsing fails, use the string directly
+                        creatorName = plot.getCreatedBy();
+                    }
+                }
+
+                // Set sign text
+                sign.getSide(Side.FRONT).line(0, text("Plot #" + plot.getId(), GOLD));
+                sign.getSide(Side.FRONT).line(1, text("City: ", GRAY).append(text(plot.getCityProjectId(), GOLD)));
+                sign.getSide(Side.FRONT).line(2, text("Builder: ", GRAY));
+                sign.getSide(Side.FRONT).line(3, text(builderName, GREEN));
+                sign.getSide(Side.BACK).line(0, text("Plot #" + plot.getId(), GOLD));
+                sign.getSide(Side.BACK).line(1, text("City: ", GRAY).append(text(plot.getCityProjectId(), GOLD)));
+                sign.getSide(Side.BACK).line(2, text("Creator: ", GRAY));
+                sign.getSide(Side.BACK).line(3, text(creatorName, GREEN));
+                sign.update();
+            } catch (Exception e) {
+                PlotSystemTerra.getPlugin().getComponentLogger().warn(text("Failed to place plot information sign for plot #" + plot.getId()), e);
+            }
+        });
     }
 
     private static int @Nullable [] getMajorMinorPatch(@NotNull String version) {
