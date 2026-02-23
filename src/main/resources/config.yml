@@ -46,6 +46,9 @@ environment:
   enabled: true
   radius: 50
 
+# If enabled, the plugin will enforce that plots must be signed with a street sign
+enforce-street-sign: true
+
 # -----------------------------------------------------
 # | Plot Creating
 # -----------------------------------------------------

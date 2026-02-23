@@ -16,6 +16,7 @@ import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector2;
 import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldedit.regions.*;
+import com.sk89q.worldedit.world.block.BlockCategories;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -168,7 +169,7 @@ public class PlotCreator {
                     player.sendMessage(Utils.ChatUtils.getInfoFormat(text("Creating plot...")));
 
                     // Check if selection contains sign
-                    if (!containsSign(plotRegion, player.getWorld())) {
+                    if (config.getBoolean(ConfigPaths.ENFORCE_STREET_SIGN, true) && !containsSign(plotRegion, player.getWorld())) {
                         player.sendMessage(Utils.ChatUtils.getAlertFormat(text("Please place a minimum of one sign for the street side!")));
                         return;
                     }
@@ -337,7 +338,7 @@ public class PlotCreator {
                 for (int k = polyRegion.getMinimumPoint().z(); k <= polyRegion.getMaximumPoint().z(); k++) {
                     if (!polyRegion.contains(BlockVector3.at(i, j, k))) continue;
                     Block block = world.getBlockAt(i, j, k);
-                    if (!block.getType().equals(Material.OAK_SIGN) && !block.getType().equals(Material.OAK_WALL_SIGN))
+                    if (!Tag.ALL_SIGNS.isTagged(block.getType()))
                         continue;
                     hasSign = true;
 

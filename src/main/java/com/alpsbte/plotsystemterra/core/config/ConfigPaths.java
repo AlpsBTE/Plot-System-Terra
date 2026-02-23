@@ -40,6 +40,8 @@ public class ConfigPaths {
     // Data Mode
     public static final String DATA_MODE = "data-mode";
 
+    public static final String ENFORCE_STREET_SIGN = "enforce-street-sign";
+
     // API
     public static final String API = "api.";
     public static final String API_URL = API + "api-url";
