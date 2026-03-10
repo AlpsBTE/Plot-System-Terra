@@ -1,51 +1,46 @@
 package com.alpsbte.plotsystemterra.core.model;
 
+import lombok.Getter;
+import org.jspecify.annotations.Nullable;
+
 public class Plot {
+    @Getter
     private final int id;
+    @Getter
     private final String status;
+    @Getter
     private final String cityProjectId;
+    @Getter
     private final double plotVersion;
+    @Getter
     private final String mcVersion;
+    @Getter
+    private final @Nullable String createdByUuid;
+    @Getter
+    private final @Nullable String ownerUuid;
+    @Getter
     private byte[] completedSchematic = null;
 
     public Plot(int id, String status, String cityProjectId, double plotVersion, String mcVersion) {
-        this.id = id;
-        this.status = status;
-        this.cityProjectId = cityProjectId;
-        this.plotVersion = plotVersion;
-        this.mcVersion = mcVersion;
+        this(id, status, cityProjectId, plotVersion, mcVersion, null, null, null);
+    }
+
+    public Plot(int id, String status, String cityProjectId, double plotVersion, String mcVersion, @Nullable String createdByUuid) {
+        this(id, status, cityProjectId, plotVersion, mcVersion, createdByUuid, null, null);
     }
 
     public Plot(int id, String status, String cityProjectId, double plotVersion, String mcVersion, byte[] completedSchematic) {
+        this(id, status, cityProjectId, plotVersion, mcVersion, null, null, completedSchematic);
+    }
+
+    public Plot(int id, String status, String cityProjectId, double plotVersion, String mcVersion, @Nullable String createdByUuid, @Nullable String ownerUuid, byte[] completedSchematic) {
         this.id = id;
         this.status = status;
         this.cityProjectId = cityProjectId;
         this.plotVersion = plotVersion;
         this.mcVersion = mcVersion;
+        this.createdByUuid = createdByUuid;
+        this.ownerUuid = ownerUuid;
         this.completedSchematic = completedSchematic;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public String getCityProjectId() {
-        return cityProjectId;
-    }
-
-    public double getPlotVersion() {
-        return plotVersion;
-    }
-
-    public String getMcVersion() {
-        return mcVersion;
-    }
-
-    public byte[] getCompletedSchematic() {
-        return completedSchematic;
     }
 }
