@@ -15,9 +15,9 @@ public class Plot {
     @Getter
     private final String mcVersion;
     @Getter
-    private final @Nullable String createdBy;
+    private final @Nullable String createdByUuid;
     @Getter
-    private final @Nullable String owner;
+    private final @Nullable String ownerUuid;
     @Getter
     private byte[] completedSchematic = null;
 
@@ -25,22 +25,22 @@ public class Plot {
         this(id, status, cityProjectId, plotVersion, mcVersion, null, null, null);
     }
 
-    public Plot(int id, String status, String cityProjectId, double plotVersion, String mcVersion, @Nullable String createdBy) {
-        this(id, status, cityProjectId, plotVersion, mcVersion, createdBy, null, null);
+    public Plot(int id, String status, String cityProjectId, double plotVersion, String mcVersion, @Nullable String createdByUuid) {
+        this(id, status, cityProjectId, plotVersion, mcVersion, createdByUuid, null, null);
     }
 
     public Plot(int id, String status, String cityProjectId, double plotVersion, String mcVersion, byte[] completedSchematic) {
         this(id, status, cityProjectId, plotVersion, mcVersion, null, null, completedSchematic);
     }
 
-    public Plot(int id, String status, String cityProjectId, double plotVersion, String mcVersion, @Nullable String createdBy, @Nullable String owner, byte[] completedSchematic) {
+    public Plot(int id, String status, String cityProjectId, double plotVersion, String mcVersion, @Nullable String createdByUuid, @Nullable String ownerUuid, byte[] completedSchematic) {
         this.id = id;
         this.status = status;
         this.cityProjectId = cityProjectId;
         this.plotVersion = plotVersion;
         this.mcVersion = mcVersion;
-        this.createdBy = createdBy;
-        this.owner = owner;
+        this.createdByUuid = createdByUuid;
+        this.ownerUuid = ownerUuid;
         this.completedSchematic = completedSchematic;
     }
 }

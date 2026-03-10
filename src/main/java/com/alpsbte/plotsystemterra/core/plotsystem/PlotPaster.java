@@ -151,7 +151,7 @@ public class PlotPaster extends Thread {
                 }
 
                 // Place plot information sign after pasting
-                if (plot.getOwner() != null && plot.getCreatedBy() != null) placePlotInformationSign(plot, toPaste, world);
+                if (plot.getOwnerUuid() != null && plot.getCreatedByUuid() != null) placePlotInformationSign(plot, toPaste, world);
 
                 CompletableFuture.runAsync(() -> PlotSystemTerra.getDataProvider().getPlotDataProvider().setPasted(plot.getId()))
                         .thenRun(() -> PlotSystemTerra.getPlugin().getComponentLogger().info(text("Plot #" + plot.getId() + " successfully marked as pasted!")));
@@ -188,27 +188,27 @@ public class PlotPaster extends Thread {
 
                 // Get builder name from UUID if available
                 String builderName = "Unknown";
-                if (plot.getOwner() != null && !plot.getOwner().isEmpty()) {
+                if (plot.getOwnerUuid() != null && !plot.getOwnerUuid().isEmpty()) {
                     try {
-                        UUID createdByUUID = UUID.fromString(plot.getOwner());
+                        UUID createdByUUID = UUID.fromString(plot.getOwnerUuid());
                         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(createdByUUID);
                         builderName = offlinePlayer.getName() != null ? offlinePlayer.getName() : "Unknown";
                     } catch (IllegalArgumentException ignored) {
                         // If UUID parsing fails, use the string directly
-                        builderName = plot.getOwner();
+                        builderName = plot.getOwnerUuid();
                     }
                 }
 
                 // Get creator name from UUID if available
                 String creatorName = "Unknown";
-                if (plot.getCreatedBy() != null && !plot.getCreatedBy().isEmpty()) {
+                if (plot.getCreatedByUuid() != null && !plot.getCreatedByUuid().isEmpty()) {
                     try {
-                        UUID createdByUUID = UUID.fromString(plot.getCreatedBy());
+                        UUID createdByUUID = UUID.fromString(plot.getCreatedByUuid());
                         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(createdByUUID);
                         creatorName = offlinePlayer.getName() != null ? offlinePlayer.getName() : "Unknown";
                     } catch (IllegalArgumentException ignored) {
                         // If UUID parsing fails, use the string directly
-                        creatorName = plot.getCreatedBy();
+                        creatorName = plot.getCreatedByUuid();
                     }
                 }
 

@@ -53,8 +53,8 @@ public class PlotDataProviderSQL implements PlotDataProvider {
             double plotVersion = rs.getDouble(3);
             String mcVersion = rs.getString(4);
             byte[] completedSchematic = rs.getBytes(5);
-            String createdBy = rs.getString(6);
-            String owner = rs.getString(7);
+            String createdByUuid = rs.getString(6);
+            String ownerUuid = rs.getString(7);
 
             return new Plot(
                     id,
@@ -62,8 +62,8 @@ public class PlotDataProviderSQL implements PlotDataProvider {
                     cityProjectId,
                     plotVersion,
                     mcVersion,
-                    createdBy,
-                    owner,
+                    createdByUuid,
+                    ownerUuid,
                     completedSchematic
             );
         }));
@@ -121,10 +121,10 @@ public class PlotDataProviderSQL implements PlotDataProvider {
                 double plotVersion = rs.getDouble(4);
                 String mcVersion = rs.getString(5);
                 byte[] completedSchematic = rs.getBytes(6);
-                String createdBy = rs.getString(7);
-                String owner = rs.getString(8);
+                String createdByUuid = rs.getString(7);
+                String ownerUuid = rs.getString(8);
 
-                plots.add(new Plot(id, status, cityProjectId, plotVersion, mcVersion, createdBy, owner, completedSchematic));
+                plots.add(new Plot(id, status, cityProjectId, plotVersion, mcVersion, createdByUuid, ownerUuid, completedSchematic));
             }
             return plots;
         }));

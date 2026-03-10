@@ -27,12 +27,7 @@ package com.alpsbte.plotsystemterra.core.api;
 import com.alpsbte.plotsystemterra.core.data.DataException;
 import com.alpsbte.plotsystemterra.core.data.PlotDataProvider;
 import com.alpsbte.plotsystemterra.core.model.Plot;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import okhttp3.*;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -69,8 +64,8 @@ public class PlotDataProviderAPI implements PlotDataProvider {
             String cityProjectId = (String) jsonObj.get("cityProjectId");
             double plotVersion = ((Number) jsonObj.get("plotVersion")).doubleValue();
             String mcVersion = (String) jsonObj.get("mcVersion");
-            String createdBy = (String) jsonObj.get("createdBy");
-            String owner = (String) jsonObj.get("owner");
+            String createdByUuid = (String) jsonObj.get("createdByUuid");
+            String ownerUuid = (String) jsonObj.get("ownerUuid");
             byte[] completedSchematic = Base64.getDecoder().decode((String) jsonObj.get("completedSchematic"));
             return new Plot(
                     id,
@@ -78,8 +73,8 @@ public class PlotDataProviderAPI implements PlotDataProvider {
                     cityProjectId,
                     plotVersion,
                     mcVersion,
-                    createdBy,
-                    owner,
+                    createdByUuid,
+                    ownerUuid,
                     completedSchematic
             );
         } catch (Exception e) {
@@ -159,8 +154,8 @@ public class PlotDataProviderAPI implements PlotDataProvider {
                 String cityProjectId = (String) jsonObj.get("cityProjectId");
                 double plotVersion = ((Number) jsonObj.get("plotVersion")).doubleValue();
                 String mcVersion = (String) jsonObj.get("mcVersion");
-                String createdBy = (String) jsonObj.get("createdBy");
-                String owner = (String) jsonObj.get("owner");
+                String createdByUuid = (String) jsonObj.get("createdByUuid");
+                String ownerUuid = (String) jsonObj.get("ownerUuid");
                 byte[] completedSchematic = Base64.getDecoder().decode((String) jsonObj.get("completedSchematic"));
 
                 output.add(new Plot(
@@ -169,8 +164,8 @@ public class PlotDataProviderAPI implements PlotDataProvider {
                         cityProjectId,
                         plotVersion,
                         mcVersion,
-                        createdBy,
-                        owner,
+                        createdByUuid,
+                        ownerUuid,
                         completedSchematic
                 ));
             });
