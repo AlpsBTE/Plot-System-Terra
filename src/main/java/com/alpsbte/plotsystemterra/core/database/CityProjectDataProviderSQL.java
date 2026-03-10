@@ -38,18 +38,11 @@ import java.util.List;
 public class CityProjectDataProviderSQL implements CityProjectDataProvider {
     @Override
     public List<CityProject> getCityProjects() {
-        String queryGetIds = "SELECT city_project_id FROM city_project";
+        String queryGetIds = "SELECT city_project_id FROM city_project  WHERE server_name = ?";
 
-        var serverName = PlotSystemTerra.getPlugin().getConfig().getString(ConfigPaths.SERVER_NAME);
-        if (serverName != null && !serverName.isEmpty() && !serverName.equalsIgnoreCase("default")) {
-            queryGetIds += " WHERE server_name = ?";
-        }
-
-        String finalQueryGetIds = queryGetIds;
-        return SqlExceptionUtil.handle(() -> SqlHelper.runQuery(finalQueryGetIds, ps -> {
-            if (serverName != null && !serverName.isEmpty() && !serverName.equalsIgnoreCase("default")) {
-                ps.setString(1, serverName);
-            }
+        var serverName = PlotSystemTerra.getPlugin().getConfig().getString(ConfigPaths.SERVER_NAME, "NOTHING_CONFIGURED");
+        return SqlExceptionUtil.handle(() -> SqlHelper.runQuery(queryGetIds, ps -> {
+            ps.setString(1, serverName);
             List<CityProject> listProjects = new ArrayList<>();
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {

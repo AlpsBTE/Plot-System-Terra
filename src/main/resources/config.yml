@@ -68,7 +68,7 @@ width-limit: 100
 
 # The name of the server registered in the database on the plot server
 # Read more here: https://github.com/AlpsBTE/Plot-System-Terra/wiki
-server-name: default
+server-name: SERVER_NAME
 
 # The world name of the terra server in which the schematic should be pasted
 world-name: world

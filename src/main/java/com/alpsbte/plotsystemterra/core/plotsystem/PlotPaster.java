@@ -40,11 +40,7 @@ import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.session.ClipboardHolder;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.block.sign.Side;
@@ -110,7 +106,7 @@ public class PlotPaster extends Thread {
             return false;
         }
 
-        if (!serverName.equalsIgnoreCase("default") && !serverName.equals(city.getServerName())) return false;
+        if (!serverName.equals(city.getServerName())) return false;
 
         // check mc version
         int[] serverVersion = getMajorMinorPatch(Bukkit.getServer().getMinecraftVersion());
