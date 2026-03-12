@@ -46,7 +46,7 @@ val versionDetails: groovy.lang.Closure<com.palantir.gradle.gitversion.VersionDe
 val details = versionDetails()
 
 group = "com.alpsbte"
-version = "5.0.2" + "-" + details.gitHash + "-SNAPSHOT"
+version = "5.1.0" // + "-" + details.gitHash + "-SNAPSHOT"
 description = "PlotSystem-Terra"
 java.sourceCompatibility = JavaVersion.VERSION_21
 
