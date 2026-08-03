@@ -54,10 +54,10 @@ public class CreatePlotMenu {
         Mask mask = BinaryMask.builder(createPlotMenu)
                 .item(new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE, 1).setName(empty()).build())
                 .pattern("111101111") // First row
-                .pattern("000000000") // Second row
-                .pattern("000000000") // Third row
-                .pattern("000000000") // Fourth row
-                .pattern("000000000") // Fifth row
+                .pattern(BinaryMask.EMPTY_PATTERN) // Second row
+                .pattern(BinaryMask.EMPTY_PATTERN) // Third row
+                .pattern(BinaryMask.EMPTY_PATTERN) // Fourth row
+                .pattern(BinaryMask.EMPTY_PATTERN) // Fifth row
                 .pattern("111010111") // Sixth row
                 .build();
         mask.apply(createPlotMenu);
@@ -72,6 +72,7 @@ public class CreatePlotMenu {
             try {
                 cityProjectItem = cityProjects.get(i).getItem();
             } catch (DataException e) {
+                PlotSystemTerra.getPlugin().getComponentLogger().warn(text("An error occurred while loading city project #" + cityID), e);
                 cityProjectItem = new ItemBuilder(Material.BARRIER)
                         .setName(text("Error", RED, BOLD))
                         .setLore(new LoreBuilder()
