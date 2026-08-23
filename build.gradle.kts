@@ -60,8 +60,17 @@ tasks.withType<Javadoc> {
 
 tasks.shadowJar {
     archiveClassifier = ""
+
     relocationPrefix = "com.alpsbte.plotsystemterra.shaded"
     enableAutoRelocation = true
+
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+    mergeServiceFiles()
+
+    filesNotMatching("META-INF/services/**") {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
 }
 
 tasks.assemble {

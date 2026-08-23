@@ -16,7 +16,6 @@ import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector2;
 import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldedit.regions.*;
-import com.sk89q.worldedit.world.block.BlockCategories;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -309,11 +308,11 @@ public class PlotCreator {
     private static byte[] createPlotSchematic(AbstractRegion region) throws WorldEditException, IOException {
         // Store content of region in schematic
         BlockArrayClipboard clipboard = new BlockArrayClipboard(region);
-        clipboard.setOrigin(BlockVector3.at(region.getCenter().x(), region.getMinimumPoint().y(), region.getCenter().z()));
-        ForwardExtentCopy forwardExtentCopy = new ForwardExtentCopy(
-                Objects.requireNonNull(region.getWorld()), region, clipboard, region.getMinimumPoint()
-        );
-        Operations.complete(forwardExtentCopy);
+        try (EditSession session = WorldEdit.getInstance().newEditSession(region.getWorld())) {
+            clipboard.setOrigin(BlockVector3.at(region.getCenter().x(), region.getMinimumPoint().y(), region.getCenter().z()));
+            ForwardExtentCopy forwardExtentCopy = new ForwardExtentCopy(session, region, clipboard, region.getMinimumPoint());
+            Operations.complete(forwardExtentCopy);
+        }
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
