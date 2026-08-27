@@ -7,7 +7,6 @@ import okhttp3.*;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
 import java.net.URI;
@@ -145,7 +144,7 @@ public class PlotDataProviderAPI implements PlotDataProvider {
                         completedSchematic
                 ));
             });
-        } catch (IOException | InterruptedException | ParseException e) {
+        } catch (Exception e) {
             Thread.currentThread().interrupt();
             throw new DataException(e.getMessage(), e);
         }

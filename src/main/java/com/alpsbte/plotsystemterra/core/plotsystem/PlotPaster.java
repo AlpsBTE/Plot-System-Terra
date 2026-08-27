@@ -2,6 +2,7 @@ package com.alpsbte.plotsystemterra.core.plotsystem;
 
 import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import com.alpsbte.plotsystemterra.core.config.ConfigPaths;
+import com.alpsbte.plotsystemterra.core.data.DataException;
 import com.alpsbte.plotsystemterra.core.model.CityProject;
 import com.alpsbte.plotsystemterra.core.model.Plot;
 import com.alpsbte.plotsystemterra.utils.Utils;
@@ -53,7 +54,13 @@ public class PlotPaster extends Thread {
     public void run() {
         Bukkit.getScheduler().scheduleSyncRepeatingTask(PlotSystemTerra.getPlugin(),
                 () -> CompletableFuture.runAsync(() -> {
-                    List<Plot> plots = PlotSystemTerra.getDataProvider().getPlotDataProvider().getPlotsToPaste();
+                    List<Plot> plots;
+                    try {
+                        plots = PlotSystemTerra.getDataProvider().getPlotDataProvider().getPlotsToPaste();
+                    } catch (DataException e) {
+                        PlotSystemTerra.getPlugin().getComponentLogger().error(text("An error occurred while fetching plots to paste"), e);
+                        return;
+                    }
                     int pastedPlots = 0;
                     for (Plot plot : plots) {
                         // paste schematic
