@@ -1,8 +1,8 @@
 package com.alpsbte.plotsystemterra.utils;
 
 import com.alpsbte.alpslib.utils.AlpsUtils;
-import com.alpsbte.alpslib.utils.head.AlpsHeadUtils;
 import com.alpsbte.alpslib.utils.item.ItemBuilder;
+import com.alpsbte.plotsystemterra.PlotSystemTerra;
 import lombok.experimental.UtilityClass;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
@@ -36,7 +36,7 @@ public class Utils {
         ItemStack base;
         if (material.startsWith("head(") && material.endsWith(")")) {
             String headId = material.substring(material.indexOf("(") + 1, material.lastIndexOf(")"));
-            base = AlpsHeadUtils.getCustomHead(headId);
+            base = PlotSystemTerra.getPlugin().getHeadLookupService().getCustomHead(headId);
         } else {
             Material mat = Material.getMaterial(material);
             base = new ItemStack(mat == null ? Material.BARRIER : mat);

@@ -2,7 +2,7 @@ package com.alpsbte.plotsystemterra;
 
 import com.alpsbte.alpslib.io.YamlFileFactory;
 import com.alpsbte.alpslib.io.config.ConfigNotImplementedException;
-import com.alpsbte.alpslib.utils.head.AlpsHeadEventListener;
+import com.alpsbte.alpslib.utils.head.HeadLookupService;
 import com.alpsbte.plotsystemterra.commands.CMD_CreatePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PastePlot;
 import com.alpsbte.plotsystemterra.commands.CMD_PlotSystemTerra;
@@ -28,6 +28,7 @@ import static net.kyori.adventure.text.format.NamedTextColor.*;
 public class PlotSystemTerra extends JavaPlugin {
     private static PlotSystemTerra plugin;
     private static DataProvider dataProvider;
+    private HeadLookupService headLookupService;
     private PlotPaster plotPaster;
 
     @Override
@@ -87,7 +88,7 @@ public class PlotSystemTerra extends JavaPlugin {
         // Register event listeners
         try {
             this.getServer().getPluginManager().registerEvents(new MenuFunctionListener(), this);
-            this.getServer().getPluginManager().registerEvents(new AlpsHeadEventListener(), this);
+            headLookupService = HeadLookupService.createForPlugin(this).registerEvents(this);
             getComponentLogger().info(successPrefix.append(text("Successfully registered event listeners.")));
         } catch (Exception ex) {
             getComponentLogger().error(errorPrefix.append(text("Could not register event listeners.")), ex);
@@ -150,5 +151,9 @@ public class PlotSystemTerra extends JavaPlugin {
 
     public PlotPaster getPlotPaster() {
         return plotPaster;
+    }
+
+    public HeadLookupService getHeadLookupService() {
+        return headLookupService;
     }
 }
