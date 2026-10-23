@@ -119,7 +119,7 @@ public class PlotSystemTerra extends JavaPlugin {
     @Override
     public void onDisable() {
         dataProvider.shutdown();
-        getComponentLogger().info(text("Disabled plugin. Made by Alps BTE - GitHub: https://github.com/AlpsBTE/Plot-System-Terra", RED));
+        getComponentLogger().info(text("Disabled plugin. Made by Alps BTE - GitHub: https://github.com/AlpsBTE/Plot-System-Terra", DARK_GREEN));
 
     }
 
