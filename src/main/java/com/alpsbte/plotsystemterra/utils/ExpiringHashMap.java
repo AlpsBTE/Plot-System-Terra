@@ -1,5 +1,7 @@
 package com.alpsbte.plotsystemterra.utils;
 
+import lombok.Getter;
+
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,6 +28,10 @@ public class ExpiringHashMap<K, V> extends HashMap<K, V> {
     private static final ExpiryThread expiryThread = new ExpiryThread();
 
     private final HashMap<K, Long> expiryTimes = new HashMap<>();
+    /**
+     *  The default expiry duration of this map in milliseconds.
+     */
+    @Getter
     private final long expiryDelay;
 
     /**
@@ -132,15 +138,6 @@ public class ExpiringHashMap<K, V> extends HashMap<K, V> {
     public void setExpiryTime(K key, long expiryTimeMillis) {
         if (!containsKey(key)) throw new IllegalArgumentException("The given key is not in the map");
         expiryTimes.put(key, expiryTimeMillis);
-    }
-
-    /**
-     * Get the default expiry duration of this map.
-     *
-     * @return The expiry duration in milliseconds
-     */
-    public long getExpiryDelay() {
-        return expiryDelay;
     }
 
     @SuppressWarnings({"SuspiciousMethodCalls"})

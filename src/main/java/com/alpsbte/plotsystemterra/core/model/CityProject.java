@@ -3,6 +3,7 @@ package com.alpsbte.plotsystemterra.core.model;
 import com.alpsbte.alpslib.utils.item.ItemBuilder;
 import com.alpsbte.alpslib.utils.item.LoreBuilder;
 import com.alpsbte.plotsystemterra.utils.Utils;
+import lombok.Getter;
 import org.bukkit.inventory.ItemStack;
 
 import static net.kyori.adventure.text.Component.text;
@@ -11,11 +12,13 @@ import static net.kyori.adventure.text.format.NamedTextColor.GRAY;
 import static net.kyori.adventure.text.format.TextDecoration.BOLD;
 
 public class CityProject {
+    @Getter
     private final String id;
     private final String countryCode;
     private final boolean isVisible;
     private final String material;
     private final String customModelData;
+    @Getter
     private final String serverName;
 
     public CityProject(String id, String countryCode, boolean isVisible, String material, String customModelData, String serverName) {
@@ -25,14 +28,6 @@ public class CityProject {
         this.material = material;
         this.customModelData = customModelData;
         this.serverName = serverName;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public String getServerName() {
-        return serverName;
     }
 
     public ItemStack getItem() {

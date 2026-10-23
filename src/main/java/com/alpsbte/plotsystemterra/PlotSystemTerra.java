@@ -14,6 +14,7 @@ import com.alpsbte.plotsystemterra.core.data.DataProvider;
 import com.alpsbte.plotsystemterra.core.database.DataProviderSQL;
 import com.alpsbte.plotsystemterra.core.plotsystem.PlotPaster;
 import com.alpsbte.plotsystemterra.utils.Utils;
+import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -25,8 +26,11 @@ import java.util.Objects;
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.format.NamedTextColor.*;
 
+@Getter
 public class PlotSystemTerra extends JavaPlugin {
+    @Getter
     private static PlotSystemTerra plugin;
+    @Getter
     private static DataProvider dataProvider;
     private HeadLookupService headLookupService;
     private PlotPaster plotPaster;
@@ -141,19 +145,4 @@ public class PlotSystemTerra extends JavaPlugin {
         ConfigUtil.getInstance().saveFiles();
     }
 
-    public static DataProvider getDataProvider() {
-        return dataProvider;
-    }
-
-    public static PlotSystemTerra getPlugin() {
-        return plugin;
-    }
-
-    public PlotPaster getPlotPaster() {
-        return plotPaster;
-    }
-
-    public HeadLookupService getHeadLookupService() {
-        return headLookupService;
-    }
 }
